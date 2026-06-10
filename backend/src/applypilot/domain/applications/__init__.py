@@ -1,0 +1,1 @@
+"""Canonical application record boundary."""
