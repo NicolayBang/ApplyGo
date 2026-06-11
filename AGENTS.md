@@ -153,18 +153,56 @@ ApplyPilot/
 - ADRs: `ADR-0001-short-title.md`
 - contracts: `domain-contract.md`
 
+---
+
+## Repository Naming Convention
+
+Use this convention for new work only. Do not rename existing branches, commits, or PRs.
+
+### Tickets
+
+Format:
+
+`M<milestone>-APP-###`
+
+Example:
+
+`M1-APP-002` - Add Cloud Development Environment
+
+Tickets are for planning and traceability.
+
 ### Branches
 
-- `feature/APP-001-short-description`
-- `docs/APP-001-short-description`
-- `fix/APP-001-short-description`
+Format:
+
+`feature/M<milestone>-<short-description>`
+`docs/M<milestone>-<short-description>`
+`fix/M<milestone>-<short-description>`
+
+Examples:
+
+`feature/M1-codespaces-support`
+`feature/M1-state-machine-foundation`
+`docs/M1-virtual-team-personas`
+
+Branches should be readable at a glance and show the roadmap milestone.
 
 ### Commits
 
-- `feat: add state machine foundation`
-- `fix: correct policy evaluation bug`
-- `docs: add architecture documentation`
-- `test: add executor contract tests`
+Use Conventional Commits.
+
+Examples:
+
+`feat(devops): add codespaces support`
+`docs: add virtual team persona routing`
+`fix(db): correct migration ordering`
+
+Commits describe the actual change.
+
+### Transition Rule
+
+Existing APP-001 and APP-002 branch names remain unchanged.
+Apply this convention only to future work.
 
 ---
 
