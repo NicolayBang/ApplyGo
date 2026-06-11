@@ -6,6 +6,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from applypilot.db.base import Base
+import applypilot.db.models  # noqa: F401 - registers all ORM models with Base.metadata
 
 config = context.config
 if config.config_file_name is not None:
