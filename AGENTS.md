@@ -218,3 +218,12 @@ ApplyPilot/
 - If code, models, states, or workflow behavior conflict with the locked architecture PDF, stop and flag architecture drift.
 - Do not resolve architecture drift silently.
 - Resolve drift only by aligning code to the PDF or creating an approved ADR.
+
+---
+
+## Dev Environment
+
+- Local Docker and GitHub Codespaces are both supported.
+- `docker-compose.yml` is the shared source of truth.
+- No machine-specific setup should be required.
+- Environment changes must be documented.
