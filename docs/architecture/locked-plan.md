@@ -1,20 +1,38 @@
 # Locked Plan
 
-This repository follows the uploaded final architecture document as the implementation baseline.
+## Baseline
+This repository follows the final architecture baseline in:
 
-Implementation must not deviate from these core decisions without explicit review:
+- `docs/architecture/OpenClaw_Final_Agreed_Architecture.pdf`
 
-- canonical data model as source of truth
-- explicit application state machine
-- append-only event log
-- policy engine with manual, semi-auto, full-auto, and dry-run
-- executor contract with `execute` and `dry_run`
-- worker boundaries for Gmail, documents, and browser actions
-- dry-run support from day one
-- idempotency keys on executor actions
-- confidence and explanation schema
-- deterministic error taxonomy and fallback behavior
-- worker-specific secret boundaries
-- v1 non-goals enforced
+Status: locked baseline design. Remaining work should focus on implementation artifacts, not reopening core architecture.
 
-The first milestone is the platform spine only. Feature workers remain placeholders until the control plane is proven.
+## Authority Order
+1. `docs/architecture/OpenClaw_Final_Agreed_Architecture.pdf`
+2. Approved ADRs in `docs/decisions/`
+3. `docs/architecture/`
+4. `docs/contracts/`
+5. `AGENTS.md`
+6. Chat discussion
+
+If code conflicts with the PDF, flag it as architecture drift unless a newer approved ADR explicitly supersedes it.
+
+## Locked Principles
+- Workflow owns state.
+- Database owns truth.
+- Policy owns permission.
+- LLM is constrained to extraction/classification/scoring support/drafting.
+- Workers execute only approved structured actions.
+- Audit before and after execution.
+- Dry-run support from day one through the executor contract.
+
+## Milestone Scope
+Milestone 1 is platform spine only:
+
+- Canonical tracker and state machine
+- Append-only event log
+- Policy engine and modes
+- Executor contract with execute/dry_run parity
+- Stub executor and minimal dashboard visibility
+
+No business logic implementation for Gmail, browser automation, or autonomous LLM action execution in this milestone.
