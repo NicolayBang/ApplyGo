@@ -54,6 +54,47 @@ Never update workflow state without recording execution results.
 
 ---
 
+## AI Roles
+
+### Archi — Architecture Lead
+
+Owns:
+
+- Architecture decisions
+- ADRs
+- Tradeoff analysis
+- Long-term system design
+- Architecture consistency
+
+Does not implement code.
+
+### Dick — DevOps / Governance Reviewer
+
+Owns:
+
+- Architecture enforcement
+- PR review guidance
+- Risk assessment
+- Process discipline
+- Drift detection
+
+Does not approve merges automatically.
+
+### Copilot / Codex
+
+Owns:
+
+- Scoped ticket implementation
+- Code changes
+- Test updates
+- Documentation updates
+
+Must not invent architecture.
+
+Must follow approved architecture and contracts.
+
+---
+
 ## Virtual Team Routing
 
 Virtual personas advise only.
@@ -152,6 +193,19 @@ ApplyPilot/
 - markdown: `kebab-case.md`
 - ADRs: `ADR-0001-short-title.md`
 - contracts: `domain-contract.md`
+
+### Branches
+
+- `feature/APP-001-short-description`
+- `docs/APP-001-short-description`
+- `fix/APP-001-short-description`
+
+### Commits
+
+- `feat: add state machine foundation`
+- `fix: correct policy evaluation bug`
+- `docs: add architecture documentation`
+- `test: add executor contract tests`
 
 ---
 
