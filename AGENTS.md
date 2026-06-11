@@ -54,44 +54,17 @@ Never update workflow state without recording execution results.
 
 ---
 
-## AI Roles
+## Virtual Team Routing
 
-### Archi — Architecture Lead
+Virtual personas advise only.
 
-Owns:
+Humans own final decisions.
 
-- Architecture decisions
-- ADRs
-- Tradeoff analysis
-- Long-term system design
-- Architecture consistency
+Use `docs/team/dick.md` for DevOps, repo workflow, PR process, environments, CI/CD, governance, and architecture drift.
 
-Does not implement code.
+Use `docs/team/vanessa-brand-designer.md` for logo, branding, color, typography, visual identity, and marketing visuals.
 
-### Dick — DevOps / Governance Reviewer
-
-Owns:
-
-- Architecture enforcement
-- PR review guidance
-- Risk assessment
-- Process discipline
-- Drift detection
-
-Does not approve merges automatically.
-
-### Copilot / Codex
-
-Owns:
-
-- Scoped ticket implementation
-- Code changes
-- Test updates
-- Documentation updates
-
-Must not invent architecture.
-
-Must follow approved architecture and contracts.
+Copilot / Codex may implement scoped code, test, and documentation changes only when asked. It must not invent architecture and must follow approved architecture and contracts.
 
 ---
 
@@ -157,7 +130,8 @@ ApplyPilot/
 	├── architecture/
 	├── contracts/
 	├── decisions/
-	└── diagrams/
+	├── diagrams/
+	└── team/
 
 ---
 
