@@ -289,6 +289,27 @@ Apply this convention only to future work.
 
 ---
 
+## PR and Merge Process
+
+Default rule:
+
+- Do not push directly to main.
+- Use a branch + PR for all changes that affect repository history.
+
+Exceptions:
+
+- Direct main progression is allowed only when explicitly approved by humans.
+
+Governance-only changes:
+
+- Still use a PR when possible, even if low risk.
+- If GitHub cannot open a PR because there is no head/base diff, do not create fake changes just to force a PR.
+- Treat the work as closed with push evidence and human signoff.
+
+Dick / DevOps persona should enforce this process and flag uncertainty before merge.
+
+---
+
 ## Dev Environment
 
 - Local Docker and GitHub Codespaces are both supported.
