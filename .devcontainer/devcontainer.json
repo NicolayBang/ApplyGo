@@ -2,8 +2,10 @@
   "name": "ApplyPilot Codespaces",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-  },
+  "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+    "moby": false
+  }
+},
   "postCreateCommand": "cd backend && python -m pip install --upgrade pip && python -m pip install -e .[dev]",
   "customizations": {
     "vscode": {
