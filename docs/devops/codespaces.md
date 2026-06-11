@@ -77,3 +77,17 @@ Expected response contains `"status": "ok"`.
 Stop Codespaces when done to avoid unnecessary usage and cost:
 - Stop containers with `docker compose down`.
 - Stop the Codespace from the GitHub Codespaces UI.
+
+## APP-001 Closure Record
+Date: 2026-06-11
+
+Validation evidence:
+- [x] `docker compose up -d` succeeded in Codespaces.
+- [x] `docker compose ps` showed `applypilot-postgres` and `applypilot-redis` in Up state.
+- [x] `alembic upgrade head` succeeded from `backend`.
+- [x] Repository status clean and synchronized on `main`.
+
+Governance decision:
+- Outcome: done
+- Blocker: none
+- Human signoff: approved in chat with explicit "go" instruction.
