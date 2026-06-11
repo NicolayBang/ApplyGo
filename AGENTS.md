@@ -227,3 +227,36 @@ ApplyPilot/
 - `docker-compose.yml` is the shared source of truth.
 - No machine-specific setup should be required.
 - Environment changes must be documented.
+
+---
+
+## Repository Naming Convention
+
+Rules:
+
+- Do not rename existing branches or commits.
+- Existing APP-001 and APP-002 history remains unchanged.
+- Apply the new convention only to future work.
+
+Ticket names use milestone + ticket ID:
+
+`M1-APP-002 - Add Cloud Development Environment`
+
+Branch names use milestone + short description:
+
+- `feature/M1-codespaces-support`
+- `feature/M1-policy-engine`
+- `docs/M1-devops-guide`
+- `fix/M1-migration-ordering`
+
+Commits use Conventional Commits:
+
+- `feat(devops): add codespaces support`
+- `docs: define repository naming conventions`
+- `fix(db): correct migration ordering`
+
+Purpose:
+
+- Tickets are for planning and traceability.
+- Branches are for readable development workflow.
+- Commits describe the actual change.
