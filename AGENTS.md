@@ -95,6 +95,22 @@ Must follow approved architecture and contracts.
 
 ---
 
+## Virtual Team Routing
+
+Virtual personas advise only.
+
+Humans own final decisions.
+
+Use `docs/team/dick.md` for DevOps, repo workflow, PR process, environments, CI/CD, governance, and architecture drift.
+
+Use `docs/team/architect.md` for system architecture, domain modeling, state machines, event flows, data model alignment, architecture drift, and technical tradeoff review.
+
+Use `docs/team/vanessa-brand-designer.md` for logo, branding, color, typography, visual identity, and marketing visuals.
+
+Copilot / Codex may implement scoped code, test, and documentation changes only when asked. It must not invent architecture and must follow approved architecture and contracts.
+
+---
+
 ## Human Authority
 
 Nicolay and Francis are the final authority.
@@ -157,7 +173,8 @@ ApplyPilot/
 	├── architecture/
 	├── contracts/
 	├── decisions/
-	└── diagrams/
+	├── diagrams/
+	└── team/
 
 ---
 
@@ -189,6 +206,57 @@ ApplyPilot/
 - `fix: correct policy evaluation bug`
 - `docs: add architecture documentation`
 - `test: add executor contract tests`
+
+---
+
+## Repository Naming Convention
+
+Use this convention for new work only. Do not rename existing branches, commits, or PRs.
+
+### Tickets
+
+Format:
+
+`M<milestone>-APP-###`
+
+Example:
+
+`M1-APP-002` - Add Cloud Development Environment
+
+Tickets are for planning and traceability.
+
+### Branches
+
+Format:
+
+`feature/M<milestone>-<short-description>`
+`docs/M<milestone>-<short-description>`
+`fix/M<milestone>-<short-description>`
+
+Examples:
+
+`feature/M1-codespaces-support`
+`feature/M1-state-machine-foundation`
+`docs/M1-virtual-team-personas`
+
+Branches should be readable at a glance and show the roadmap milestone.
+
+### Commits
+
+Use Conventional Commits.
+
+Examples:
+
+`feat(devops): add codespaces support`
+`docs: add virtual team persona routing`
+`fix(db): correct migration ordering`
+
+Commits describe the actual change.
+
+### Transition Rule
+
+Existing APP-001 and APP-002 branch names remain unchanged.
+Apply this convention only to future work.
 
 ---
 
