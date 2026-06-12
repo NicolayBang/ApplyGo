@@ -13,6 +13,11 @@ from sqlalchemy.orm import Session
 
 from applypilot.db.models import Application, EventLogEntry, Job
 from applypilot.domain.applications.models import ApplicationCreate, JobCreate
+from applypilot.domain.state_machine import (
+    ApplicationState,
+    ApplicationStateMachine,
+    InvalidStateTransitionError,
+)
 
 
 class Tracker:
@@ -20,6 +25,7 @@ class Tracker:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+        self._state_machine = ApplicationStateMachine()
 
     # ------------------------------------------------------------------
     # Job
@@ -42,7 +48,7 @@ class Tracker:
         app = Application(
             job_id=data.job_id,
             automation_mode=data.automation_mode,
-            state="discovered",
+            state=ApplicationState.APPLICATION_CREATED.value,
         )
         self._session.add(app)
         self._session.flush()
@@ -50,7 +56,7 @@ class Tracker:
             application_id=app.id,
             event_type="application.created",
             actor="system",
-            to_state="discovered",
+            to_state=ApplicationState.APPLICATION_CREATED.value,
             payload={"automation_mode": data.automation_mode},
         )
         return app
@@ -81,8 +87,21 @@ class Tracker:
         if app is None:
             raise ValueError(f"Application {application_id} not found")
 
-        old_state = app.state
-        app.state = new_state
+        try:
+            old_state = ApplicationState(app.state)
+        except ValueError as exc:
+            raise InvalidStateTransitionError(
+                f"Application {application_id} has unknown state: {app.state}"
+            ) from exc
+
+        try:
+            target_state = ApplicationState(new_state)
+        except ValueError as exc:
+            raise InvalidStateTransitionError(f"Unknown target state: {new_state}") from exc
+
+        self._state_machine.apply_transition(old_state, target_state)
+
+        app.state = target_state.value
         app.updated_at = datetime.now(tz=timezone.utc)
         self._session.flush()
 
@@ -90,8 +109,8 @@ class Tracker:
             application_id=application_id,
             event_type="application.state_changed",
             actor=actor,
-            from_state=old_state,
-            to_state=new_state,
+            from_state=old_state.value,
+            to_state=target_state.value,
             payload=payload,
         )
         return app

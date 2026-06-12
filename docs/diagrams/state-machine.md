@@ -2,29 +2,40 @@
 
 ```mermaid
 stateDiagram-v2
-    [*] --> discovered
-    discovered --> parsed
-    parsed --> scored
-    scored --> packet_ready
-    packet_ready --> review_needed
+    [*] --> ApplicationCreated
+    ApplicationCreated --> Draft
 
-    review_needed --> form_filled
-    form_filled --> submitted
-    submitted --> confirmed
-    confirmed --> interview
-    interview --> closed
+    Draft --> ReadyForReview
+    Draft --> Archived
 
-    discovered --> blocked_by_policy
-    parsed --> blocked_by_policy
-    scored --> blocked_by_policy
-    packet_ready --> blocked_by_policy
-    form_filled --> failed_retryable
-    submitted --> failed_retryable
+    ReadyForReview --> Approved
+    ReadyForReview --> Rejected
+    ReadyForReview --> Draft
 
-    failed_retryable --> review_needed
+    Approved --> Submitted
+    Approved --> Rejected
+
+    Submitted --> Archived
+    Rejected --> Archived
+
+    Archived --> [*]
 ```
 
-## Fallback States
-- `review_needed` for uncertainty and missing data.
-- `blocked_by_policy` for denied actions.
-- `failed_retryable` for transient worker/API failures.
+## Transition Table
+
+| Current state | Allowed next states |
+| --- | --- |
+| `ApplicationCreated` | `Draft` |
+| `Draft` | `ReadyForReview`, `Archived` |
+| `ReadyForReview` | `Approved`, `Rejected`, `Draft` |
+| `Approved` | `Submitted`, `Rejected` |
+| `Submitted` | `Archived` |
+| `Rejected` | `Archived` |
+| `Archived` | None |
+
+## M1 Rules
+
+- New applications start in `ApplicationCreated`.
+- `Archived` is terminal.
+- Invalid transitions are rejected by `ApplicationStateMachine.apply_transition`.
+- The source of truth for allowed transitions is `ALLOWED_TRANSITIONS`.

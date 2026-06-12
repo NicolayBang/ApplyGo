@@ -11,6 +11,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from applypilot.domain.state_machine.states import ApplicationState
+
 
 # ---------------------------------------------------------------------------
 # Job schemas
@@ -48,7 +50,7 @@ class ApplicationCreate(BaseModel):
 class ApplicationRead(BaseModel):
     id: uuid.UUID
     job_id: uuid.UUID
-    state: str
+    state: ApplicationState
     automation_mode: str
     fit_score: int | None = None
     confidence: str | None = None
@@ -64,7 +66,7 @@ class ApplicationRead(BaseModel):
 
 
 class ApplicationStateUpdate(BaseModel):
-    state: str
+    state: ApplicationState
     actor: str = "system"
     payload: dict | None = None
 
