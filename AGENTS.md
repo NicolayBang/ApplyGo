@@ -113,6 +113,22 @@ Must follow approved architecture and contracts.
 
 ---
 
+## Virtual Team Routing
+
+Virtual personas advise only.
+
+Humans own final decisions.
+
+Use `docs/team/dick.md` for DevOps, repo workflow, PR process, environments, CI/CD, governance, and architecture drift.
+
+Use `docs/team/architect.md` for system architecture, domain modeling, state machines, event flows, data model alignment, architecture drift, and technical tradeoff review.
+
+Use `docs/team/vanessa-brand-designer.md` for logo, branding, color, typography, visual identity, and marketing visuals.
+
+Copilot / Codex may implement scoped code, test, and documentation changes only when asked. It must not invent architecture and must follow approved architecture and contracts.
+
+---
+
 ## Human Authority
 
 Nicolay and Francis are the final authority.
@@ -175,7 +191,8 @@ ApplyPilot/
 	├── architecture/
 	├── contracts/
 	├── decisions/
-	└── diagrams/
+	├── diagrams/
+	└── team/
 
 ---
 
@@ -210,6 +227,57 @@ ApplyPilot/
 
 ---
 
+## Repository Naming Convention
+
+Use this convention for new work only. Do not rename existing branches, commits, or PRs.
+
+### Tickets
+
+Format:
+
+`M<milestone>-APP-###`
+
+Example:
+
+`M1-APP-002` - Add Cloud Development Environment
+
+Tickets are for planning and traceability.
+
+### Branches
+
+Format:
+
+`feature/M<milestone>-<short-description>`
+`docs/M<milestone>-<short-description>`
+`fix/M<milestone>-<short-description>`
+
+Examples:
+
+`feature/M1-codespaces-support`
+`feature/M1-state-machine-foundation`
+`docs/M1-virtual-team-personas`
+
+Branches should be readable at a glance and show the roadmap milestone.
+
+### Commits
+
+Use Conventional Commits.
+
+Examples:
+
+`feat(devops): add codespaces support`
+`docs: add virtual team persona routing`
+`fix(db): correct migration ordering`
+
+Commits describe the actual change.
+
+### Transition Rule
+
+Existing APP-001 and APP-002 branch names remain unchanged.
+Apply this convention only to future work.
+
+---
+
 ## Engineering Rules
 
 - Prefer simplicity over cleverness.
@@ -236,3 +304,66 @@ ApplyPilot/
 - If code, models, states, or workflow behavior conflict with the locked architecture PDF, stop and flag architecture drift.
 - Do not resolve architecture drift silently.
 - Resolve drift only by aligning code to the PDF or creating an approved ADR.
+
+---
+
+## PR and Merge Process
+
+Default rule:
+
+- Do not push directly to main.
+- Use a branch + PR for all changes that affect repository history.
+
+Exceptions:
+
+- Direct main progression is allowed only when explicitly approved by humans.
+
+Governance-only changes:
+
+- Still use a PR when possible, even if low risk.
+- If GitHub cannot open a PR because there is no head/base diff, do not create fake changes just to force a PR.
+- Treat the work as closed with push evidence and human signoff.
+
+Dick / DevOps persona should enforce this process and flag uncertainty before merge.
+
+---
+
+## Dev Environment
+
+- Local Docker and GitHub Codespaces are both supported.
+- `docker-compose.yml` is the shared source of truth.
+- No machine-specific setup should be required.
+- Environment changes must be documented.
+
+---
+
+## Repository Naming Convention
+
+Rules:
+
+- Do not rename existing branches or commits.
+- Existing APP-001 and APP-002 history remains unchanged.
+- Apply the new convention only to future work.
+
+Ticket names use milestone + ticket ID:
+
+`M1-APP-002 - Add Cloud Development Environment`
+
+Branch names use milestone + short description:
+
+- `feature/M1-codespaces-support`
+- `feature/M1-policy-engine`
+- `docs/M1-devops-guide`
+- `fix/M1-migration-ordering`
+
+Commits use Conventional Commits:
+
+- `feat(devops): add codespaces support`
+- `docs: define repository naming conventions`
+- `fix(db): correct migration ordering`
+
+Purpose:
+
+- Tickets are for planning and traceability.
+- Branches are for readable development workflow.
+- Commits describe the actual change.

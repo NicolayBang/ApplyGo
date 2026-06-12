@@ -33,3 +33,4 @@ Thumbs.db
 *.log
 *.sqlite3
 alembic.ini.backup
+*.egg-info/
