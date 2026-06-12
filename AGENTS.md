@@ -25,6 +25,24 @@ If implementation, documentation, or agent output conflicts with the architectur
 
 ---
 
+## Architecture Governance
+
+- Architecture diagrams must reflect implemented behavior.
+- Documentation must not describe functionality that does not exist.
+- When implementation and documentation disagree, investigate and reconcile before merge.
+- Future-state architecture is allowed but must be clearly labeled:
+  - Future Architecture
+  - Planned
+  - Not Implemented
+- Source-of-truth hierarchy for implemented behavior:
+  1. Implemented code
+  2. Architecture decision records and architecture documentation
+  3. Diagrams
+- Diagrams are explanatory artifacts, not authoritative specifications.
+- Pull requests that modify architecture-related code should review associated diagrams for drift.
+
+---
+
 ## Core Architecture Rules
 
 - Workflow owns state.
