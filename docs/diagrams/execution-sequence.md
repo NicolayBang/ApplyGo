@@ -1,36 +1,29 @@
-# Policy and Execution Sequence
+# State Transition Validation Sequence
 
 ```mermaid
 sequenceDiagram
-    participant A as Action Request
-    participant P as Policy Engine
-    participant L as Event Log
-    participant E as Executor Contract
-    participant W as Worker
-    participant T as Tracker/State Machine
+    participant Caller as API/Service Caller
+    participant Machine as ApplicationStateMachine
+    participant Rules as ALLOWED_TRANSITIONS
+    participant Tracker as Application Tracker
+    participant Log as Event Log
 
-    A->>P: Evaluate(request, mode, context)
-    P->>L: policy_decision_logged
-    alt decision == allow
-        P->>E: Invoke(request)
-        E->>L: executor_attempt_logged
-        alt mode == dry_run
-            E-->>W: Plan only (no side effect)
-            W-->>E: planned
-        else mode == execute
-            E->>W: Perform action
-            W-->>E: completed/failed
-        end
-        E->>L: executor_result_logged
-        E->>T: update_state
-        T->>L: state_updated
-    else decision == deny/review
-        P->>T: transition blocked_by_policy or review_needed
-        T->>L: state_updated
+    Caller->>Machine: apply_transition(current, target)
+    Machine->>Rules: can_transition(current, target)
+    Rules-->>Machine: allowed or denied
+
+    alt transition allowed
+        Machine-->>Caller: target state
+        Caller->>Tracker: persist state update
+        Tracker->>Log: application.state_changed
+    else transition denied
+        Machine-->>Caller: InvalidStateTransitionError
+        Caller-->>Caller: keep current state
     end
 ```
 
 ## Invariants
-- Policy decision is logged before any executor call.
-- Dry-run and execute use identical command shape.
-- Idempotency key is required for executor actions.
+- Callers must validate transitions through the state machine boundary.
+- Invalid transitions do not mutate application state.
+- Persisted state changes must emit an append-only event log entry.
+- Policy and executor flows remain separate contracts layered around this transition boundary.
