@@ -28,6 +28,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from applypilot.db.base import Base
+from applypilot.domain.state_machine import ApplicationState
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +86,11 @@ class Application(Base):
     )
 
     # Workflow
-    state: Mapped[str] = mapped_column(String(64), default="discovered", nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(64),
+        default=ApplicationState.APPLICATION_CREATED.value,
+        nullable=False,
+    )
     automation_mode: Mapped[str] = mapped_column(String(32), default="manual", nullable=False)
 
     # Scoring / explanation (confidence and explanation schema from locked plan)
