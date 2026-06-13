@@ -1,0 +1,230 @@
+const demoAudit = {
+  application: {
+    id: "5f2c4a50-8f75-4d38-a40f-15fd5f8f27d4",
+    job_id: "77b2ac60-06b2-4f6f-9a42-9a02d2e18424",
+    state: "ApplicationCreated",
+    automation_mode: "manual",
+    created_at: "2026-06-13T16:12:00Z",
+    updated_at: "2026-06-13T16:24:00Z",
+  },
+  events: [
+    {
+      event_type: "application.created",
+      actor: "system",
+      to_state: "ApplicationCreated",
+      payload: { automation_mode: "manual" },
+      created_at: "2026-06-13T16:12:00Z",
+    },
+    {
+      event_type: "policy_decision_logged",
+      actor: "policy",
+      payload: { decision: "allow", action_type: "send_follow_up_email" },
+      created_at: "2026-06-13T16:18:00Z",
+    },
+    {
+      event_type: "executor_attempt_logged",
+      actor: "worker",
+      payload: { execution_mode: "dry_run", idempotency_key: "dry-run-001" },
+      created_at: "2026-06-13T16:20:00Z",
+    },
+    {
+      event_type: "executor_result_logged",
+      actor: "worker",
+      payload: { status: "planned" },
+      created_at: "2026-06-13T16:20:01Z",
+    },
+  ],
+  policy_decisions: [
+    {
+      id: "6a7f2bd6-cd99-4892-afef-5d3a28a64a7a",
+      action_type: "send_follow_up_email",
+      mode: "dry_run",
+      decision: "allow",
+      allowed: true,
+      reasons: ["Dry-run mode may plan the action but must not create side effects."],
+      created_at: "2026-06-13T16:18:00Z",
+    },
+  ],
+  executor_actions: [
+    {
+      id: "bbf58d5c-2dc5-411c-bd43-0c48f0d0256b",
+      action_type: "send_follow_up_email",
+      execution_mode: "dry_run",
+      status: "planned",
+      idempotency_key: "dry-run-001",
+      result: { action_type: "send_follow_up_email" },
+      created_at: "2026-06-13T16:20:00Z",
+      completed_at: "2026-06-13T16:20:01Z",
+    },
+  ],
+};
+
+const elements = {
+  form: document.querySelector("#audit-form"),
+  apiBase: document.querySelector("#api-base"),
+  applicationId: document.querySelector("#application-id"),
+  demoButton: document.querySelector("#demo-button"),
+  statusPill: document.querySelector("#status-pill"),
+  statusMessage: document.querySelector("#status-message"),
+  applicationSummary: document.querySelector("#application-summary"),
+  policyList: document.querySelector("#policy-list"),
+  executorList: document.querySelector("#executor-list"),
+  timeline: document.querySelector("#timeline"),
+  eventCount: document.querySelector("#event-count"),
+};
+
+function formatDate(value) {
+  if (!value) return "Not recorded";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function safeJson(value) {
+  return escapeHtml(JSON.stringify(value || {}));
+}
+
+function setStatus(type, label, message) {
+  elements.statusPill.className = `status-pill ${type || ""}`.trim();
+  elements.statusPill.textContent = label;
+  elements.statusMessage.textContent = message;
+}
+
+function renderSummary(application) {
+  const rows = [
+    ["Application", application.id],
+    ["Job", application.job_id],
+    ["State", application.state],
+    ["Mode", application.automation_mode],
+    ["Created", formatDate(application.created_at)],
+    ["Updated", formatDate(application.updated_at)],
+  ];
+
+  elements.applicationSummary.innerHTML = rows
+    .map(
+      ([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
+    )
+    .join("");
+}
+
+function badge(value) {
+  const normalized = String(value || "unknown").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  return `<span class="badge ${normalized}">${escapeHtml(value || "unknown")}</span>`;
+}
+
+function renderPolicy(decisions) {
+  if (!decisions.length) {
+    elements.policyList.innerHTML = '<p class="empty">No policy decisions recorded.</p>';
+    return;
+  }
+
+  elements.policyList.innerHTML = decisions
+    .map(
+      (decision) => `
+        <div class="compact-item">
+          <strong>${escapeHtml(decision.action_type)}</strong>
+          ${badge(decision.decision)}
+          <div class="meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderExecutor(actions) {
+  if (!actions.length) {
+    elements.executorList.innerHTML = '<p class="empty">No executor actions recorded.</p>';
+    return;
+  }
+
+  elements.executorList.innerHTML = actions
+    .map(
+      (action) => `
+        <div class="compact-item">
+          <strong>${escapeHtml(action.action_type)}</strong>
+          ${badge(action.status)}
+          <div class="meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderTimeline(events) {
+  elements.eventCount.textContent = `${events.length} ${events.length === 1 ? "event" : "events"}`;
+
+  if (!events.length) {
+    elements.timeline.innerHTML = '<li class="empty">No audit events recorded.</li>';
+    return;
+  }
+
+  elements.timeline.innerHTML = events
+    .map(
+      (event) => `
+        <li>
+          <div class="event-time">${escapeHtml(formatDate(event.created_at))}</div>
+          <div class="event-body">
+            <strong>${escapeHtml(event.event_type)}</strong>
+            <div class="meta">Actor: ${escapeHtml(event.actor || "system")}</div>
+            <div class="meta">${safeJson(event.payload)}</div>
+          </div>
+        </li>
+      `,
+    )
+    .join("");
+}
+
+function renderAudit(data) {
+  renderSummary(data.application);
+  renderPolicy(data.policy_decisions || []);
+  renderExecutor(data.executor_actions || []);
+  renderTimeline(data.events || []);
+}
+
+async function loadAudit() {
+  const apiBase = elements.apiBase.value.replace(/\/$/, "");
+  const applicationId = elements.applicationId.value.trim();
+
+  if (!applicationId) {
+    renderAudit(demoAudit);
+    setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
+    return;
+  }
+
+  setStatus("loading", "Loading", "Fetching audit summary from the backend.");
+
+  try {
+    const response = await fetch(`${apiBase}/applications/${applicationId}/audit`);
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    renderAudit(await response.json());
+    setStatus("", "Live data", "Audit summary loaded from the backend.");
+  } catch (error) {
+    renderAudit(demoAudit);
+    setStatus("error", "Fallback", `${error.message}. Showing demo data for review.`);
+  }
+}
+
+elements.form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  loadAudit();
+});
+
+elements.demoButton.addEventListener("click", () => {
+  elements.applicationId.value = "";
+  renderAudit(demoAudit);
+  setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
+});
+
+renderAudit(demoAudit);
