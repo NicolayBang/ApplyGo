@@ -292,7 +292,7 @@ class EventLogEntry(Base):
     )
     application_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("applications.id", ondelete="CASCADE"),
+        ForeignKey("applications.id"),
         nullable=False,
     )
     event_type: Mapped[str] = mapped_column(String(128), nullable=False)

@@ -12,6 +12,7 @@ from applypilot.domain.executor.contracts import ExecutionMode
 
 
 class ExecutorDryRunRequest(BaseModel):
+    policy_decision_id: uuid.UUID
     action_type: str
     idempotency_key: str = Field(min_length=1)
     payload: dict[str, Any] = Field(default_factory=dict)

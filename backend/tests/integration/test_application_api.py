@@ -151,6 +151,12 @@ class FakeTracker:
         )
         return record
 
+    def get_policy_decision(self, policy_decision_id):
+        for decision in self.policy_decisions:
+            if decision.id == policy_decision_id:
+                return decision
+        return None
+
     def record_executor_result(self, request, result, actor="worker"):
         application_id = uuid.UUID(request.application_id)
         if application_id != self.application_id:
@@ -186,6 +192,7 @@ class FakeTracker:
                     "action_type": record.action_type,
                     "execution_mode": record.execution_mode,
                     "idempotency_key": record.idempotency_key,
+                    "policy_decision_id": request.payload.get("policy_decision_id"),
                 },
                 created_at=datetime.now(tz=UTC),
             )
@@ -364,10 +371,20 @@ def test_policy_decision_returns_404_when_application_missing() -> None:
 def test_executor_dry_run_is_persisted_and_audited() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {"confidence": "high"},
+        },
+    )
 
     response = client.post(
         f"/applications/{tracker.application_id}/executor-actions/dry-run",
         json={
+            "policy_decision_id": policy_response.json()["id"],
             "action_type": "send_follow_up_email",
             "idempotency_key": "dry-run-001",
             "payload": {"template": "follow_up"},
@@ -389,13 +406,24 @@ def test_executor_dry_run_is_persisted_and_audited() -> None:
         "executor_result_logged",
     ]
     assert events[-2]["payload"]["idempotency_key"] == "dry-run-001"
+    assert events[-2]["payload"]["policy_decision_id"] == policy_response.json()["id"]
     assert events[-1]["payload"]["status"] == "planned"
 
 
 def test_executor_dry_run_reuses_idempotent_result() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {"confidence": "high"},
+        },
+    )
     payload = {
+        "policy_decision_id": policy_response.json()["id"],
         "action_type": "send_follow_up_email",
         "idempotency_key": "dry-run-001",
         "payload": {"template": "follow_up"},
@@ -425,9 +453,27 @@ def test_executor_dry_run_returns_404_when_application_missing() -> None:
     response = client.post(
         f"/applications/{uuid.uuid4()}/executor-actions/dry-run",
         json={
+            "policy_decision_id": uuid.uuid4().hex,
             "action_type": "send_follow_up_email",
             "idempotency_key": "dry-run-001",
         },
     )
 
     assert response.status_code == 404
+
+
+def test_executor_dry_run_requires_recorded_policy_decision() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json={
+            "policy_decision_id": str(uuid.uuid4()),
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-001",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "policy decision is required" in response.json()["detail"]

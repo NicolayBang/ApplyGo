@@ -183,12 +183,27 @@ def dry_run_executor_action(
             detail=f"Application {application_id} not found",
         )
 
+    policy_decision = unit.tracker.get_policy_decision(request.policy_decision_id)
+    if policy_decision is None or policy_decision.application_id != application_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A recorded policy decision is required before executor dry-run",
+        )
+    if not policy_decision.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Policy decision {policy_decision.id} does not allow execution",
+        )
+
     executor_request = ExecutorRequest(
         action_type=request.action_type,
         mode=ExecutionMode.DRY_RUN,
         application_id=str(application_id),
         idempotency_key=request.idempotency_key,
-        payload=request.payload,
+        payload={
+            **request.payload,
+            "policy_decision_id": str(request.policy_decision_id),
+        },
     )
     result = StubExecutor().dispatch(executor_request)
 
