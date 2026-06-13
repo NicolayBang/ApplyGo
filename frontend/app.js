@@ -200,6 +200,7 @@ function renderAudit(data) {
 async function fetchJson(url, options) {
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     ...options,
   });
 
@@ -211,13 +212,63 @@ async function fetchJson(url, options) {
   return response.json();
 }
 
+function normalizeApiBase(value) {
+  let normalized = String(value || "").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (!/^https?:\/\//i.test(normalized)) {
+    normalized = `https://${normalized}`;
+  }
+
+  normalized = normalized.replace(/\/+$/, "");
+  normalized = normalized.replace(/\/health$/i, "");
+  return normalized;
+}
+
 function apiBase() {
-  return elements.apiBase.value.replace(/\/$/, "");
+  return normalizeApiBase(elements.apiBase.value);
+}
+
+function inferApiBaseFromBrowser() {
+  const { protocol, hostname, port } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return `${protocol}//${hostname}:8000`;
+  }
+
+  // Served directly from the backend port (8000) — same origin, no CORS needed.
+  const codespacesBackend = hostname.match(/^(.*)-8000\.app\.github\.dev$/);
+  if (codespacesBackend) {
+    return `${protocol}//${hostname}`;
+  }
+
+  // Served from a different forwarded port — point to the 8000 backend.
+  const codespacesMatch = hostname.match(/^(.*)-\d+\.app\.github\.dev$/);
+  if (codespacesMatch) {
+    return `${protocol}//${codespacesMatch[1]}-8000.app.github.dev`;
+  }
+
+  return elements.apiBase.value;
+}
+
+function initializeApiBase() {
+  const defaultLocalValue = "http://localhost:8000";
+  const currentValue = elements.apiBase.value.trim();
+
+  if (currentValue && currentValue !== defaultLocalValue) {
+    return;
+  }
+
+  elements.apiBase.value = normalizeApiBase(inferApiBaseFromBrowser());
 }
 
 async function createManualApplication() {
   const title = elements.jobTitle.value.trim();
   const company = elements.jobCompany.value.trim();
+  const base = apiBase();
 
   if (!title || !company) {
     setStatus("error", "Missing info", "Role title and company are required.");
@@ -227,7 +278,9 @@ async function createManualApplication() {
   setStatus("loading", "Creating", "Creating job and application records.");
 
   try {
-    const job = await fetchJson(`${apiBase()}/jobs`, {
+    elements.apiBase.value = base;
+
+    const job = await fetchJson(`${base}/jobs`, {
       method: "POST",
       body: JSON.stringify({
         title,
@@ -238,7 +291,7 @@ async function createManualApplication() {
       }),
     });
 
-    const application = await fetchJson(`${apiBase()}/applications`, {
+    const application = await fetchJson(`${base}/applications`, {
       method: "POST",
       body: JSON.stringify({
         job_id: job.id,
@@ -252,7 +305,7 @@ async function createManualApplication() {
   } catch (error) {
     const hint =
       error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
-        ? " Is the backend running? Start with: uvicorn applypilot.main:app --reload"
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Create failed", `${error.message}.${hint}`);
   }
@@ -260,6 +313,8 @@ async function createManualApplication() {
 
 async function loadAudit() {
   const applicationId = elements.applicationId.value.trim();
+  const base = apiBase();
+  elements.apiBase.value = base;
 
   if (!applicationId) {
     renderAudit(demoAudit);
@@ -275,13 +330,13 @@ async function loadAudit() {
   setStatus("loading", "Loading", "Fetching audit summary from the backend.");
 
   try {
-    renderAudit(await fetchJson(`${apiBase()}/applications/${applicationId}/audit`));
+    renderAudit(await fetchJson(`${base}/applications/${applicationId}/audit`));
     setStatus("", "Live data", "Audit summary loaded from the backend.");
   } catch (error) {
     renderAudit(demoAudit);
     const hint =
       error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
-        ? " Is the backend running? Start with: uvicorn applypilot.main:app --reload"
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Fallback", `${error.message}.${hint} Showing demo data for review.`);
   }
@@ -303,4 +358,9 @@ elements.demoButton.addEventListener("click", () => {
   setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
 });
 
+elements.apiBase.addEventListener("blur", () => {
+  elements.apiBase.value = normalizeApiBase(elements.apiBase.value);
+});
+
+initializeApiBase();
 renderAudit(demoAudit);
