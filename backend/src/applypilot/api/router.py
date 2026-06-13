@@ -13,6 +13,8 @@ from applypilot.domain.applications.models import (
     JobCreate,
     JobRead,
 )
+from applypilot.domain.policy import AutomationMode, PolicyContext, PolicyEngine, PolicyRequest
+from applypilot.domain.policy.schemas import PolicyDecisionRead, PolicyEvaluationRequest
 from applypilot.domain.state_machine import InvalidStateTransitionError
 
 router = APIRouter()
@@ -106,6 +108,58 @@ def update_application_state(
     unit.commit()
     unit.refresh(application)
     return application
+
+
+@router.post(
+    "/applications/{application_id}/policy-decisions",
+    response_model=PolicyDecisionRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["applications"],
+)
+def evaluate_application_policy(
+    application_id: UUID,
+    request: PolicyEvaluationRequest,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Evaluate and persist a policy decision before executor dispatch."""
+    application = unit.tracker.get_application(application_id)
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Application {application_id} not found",
+        )
+
+    try:
+        mode = request.mode or AutomationMode(application.automation_mode)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown automation mode: {application.automation_mode}",
+        ) from exc
+
+    policy_request = PolicyRequest(
+        application_id=application_id,
+        current_state=application.state,
+        requested_action=request.requested_action,
+        worker=request.worker,
+        context=PolicyContext(
+            confidence=request.context.confidence,
+            reasons=request.context.reasons,
+            risks=request.context.risks,
+            missing_data=request.context.missing_data,
+            red_flags=request.context.red_flags,
+        ),
+        mode=mode,
+    )
+    decision = PolicyEngine().evaluate(policy_request)
+    record = unit.tracker.record_policy_decision(
+        request=policy_request,
+        decision=decision,
+        actor=request.actor,
+    )
+    unit.commit()
+    unit.refresh(record)
+    return record
 
 
 @router.get(
