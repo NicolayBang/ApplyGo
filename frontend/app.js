@@ -81,6 +81,7 @@ const elements = {
   jobCompany: document.querySelector("#job-company"),
   jobLocation: document.querySelector("#job-location"),
   jobUrl: document.querySelector("#job-url"),
+  jobDescription: document.querySelector("#job-description"),
   remoteOk: document.querySelector("#remote-ok"),
   scoreButton: document.querySelector("#score-button"),
   policyButton: document.querySelector("#policy-button"),
@@ -89,6 +90,7 @@ const elements = {
   statusPill: document.querySelector("#status-pill"),
   statusMessage: document.querySelector("#status-message"),
   applicationSummary: document.querySelector("#application-summary"),
+  scoreList: document.querySelector("#score-list"),
   policyList: document.querySelector("#policy-list"),
   executorList: document.querySelector("#executor-list"),
   timeline: document.querySelector("#timeline"),
@@ -143,6 +145,32 @@ function renderSummary(application) {
     .map(
       ([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
     )
+    .join("");
+}
+
+function renderScoreDetails(application) {
+  if (!application.fit_score && !application.confidence && !application.recommendation) {
+    elements.scoreList.innerHTML = '<p class="empty">No score recorded.</p>';
+    return;
+  }
+
+  const groups = [
+    ["Reasons", application.score_reasons || []],
+    ["Risks", application.score_risks || []],
+    ["Missing data", application.missing_data || []],
+    ["Red flags", application.red_flags || []],
+  ];
+
+  elements.scoreList.innerHTML = groups
+    .map(([label, values]) => {
+      const content = values.length ? values.join(", ") : "None";
+      return `
+        <div class="compact-item">
+          <strong>${escapeHtml(label)}</strong>
+          <div class="meta">${escapeHtml(content)}</div>
+        </div>
+      `;
+    })
     .join("");
 }
 
@@ -216,6 +244,7 @@ function renderTimeline(events) {
 function renderAudit(data) {
   currentAudit = data;
   renderSummary(data.application);
+  renderScoreDetails(data.application);
   renderPolicy(data.policy_decisions || []);
   renderExecutor(data.executor_actions || []);
   renderTimeline(data.events || []);
@@ -311,6 +340,7 @@ async function createManualApplication() {
         company,
         location: elements.jobLocation.value.trim() || null,
         source_url: elements.jobUrl.value.trim() || null,
+        raw_text: elements.jobDescription.value.trim() || null,
         remote_ok: elements.remoteOk.checked,
       }),
     });
