@@ -64,6 +64,16 @@ Open `frontend/index.html` in a browser (file:// or a local HTTP server both wor
 
 The dashboard will display the application record, policy decisions, executor actions, and full audit timeline fetched from the backend.
 
+## Manual intake
+
+With the backend running, the dashboard can create a manual application directly:
+
+1. Fill in role title and company.
+2. Optionally add location, job URL, and remote preference.
+3. Click **Create**.
+
+The dashboard calls `POST /jobs`, then `POST /applications`, copies the new application ID into the audit controls, and loads `GET /applications/{application_id}/audit`.
+
 ## API endpoint
 
 The dashboard fetches audit data from:

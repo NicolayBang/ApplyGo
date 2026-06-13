@@ -61,8 +61,14 @@ const demoAudit = {
 
 const elements = {
   form: document.querySelector("#audit-form"),
+  intakeForm: document.querySelector("#intake-form"),
   apiBase: document.querySelector("#api-base"),
   applicationId: document.querySelector("#application-id"),
+  jobTitle: document.querySelector("#job-title"),
+  jobCompany: document.querySelector("#job-company"),
+  jobLocation: document.querySelector("#job-location"),
+  jobUrl: document.querySelector("#job-url"),
+  remoteOk: document.querySelector("#remote-ok"),
   demoButton: document.querySelector("#demo-button"),
   statusPill: document.querySelector("#status-pill"),
   statusMessage: document.querySelector("#status-message"),
@@ -191,8 +197,68 @@ function renderAudit(data) {
   renderTimeline(data.events || []);
 }
 
+async function fetchJson(url, options) {
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Backend returned ${response.status}${detail ? ": " + detail : ""}`);
+  }
+
+  return response.json();
+}
+
+function apiBase() {
+  return elements.apiBase.value.replace(/\/$/, "");
+}
+
+async function createManualApplication() {
+  const title = elements.jobTitle.value.trim();
+  const company = elements.jobCompany.value.trim();
+
+  if (!title || !company) {
+    setStatus("error", "Missing info", "Role title and company are required.");
+    return;
+  }
+
+  setStatus("loading", "Creating", "Creating job and application records.");
+
+  try {
+    const job = await fetchJson(`${apiBase()}/jobs`, {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        company,
+        location: elements.jobLocation.value.trim() || null,
+        source_url: elements.jobUrl.value.trim() || null,
+        remote_ok: elements.remoteOk.checked,
+      }),
+    });
+
+    const application = await fetchJson(`${apiBase()}/applications`, {
+      method: "POST",
+      body: JSON.stringify({
+        job_id: job.id,
+        automation_mode: "manual",
+      }),
+    });
+
+    elements.applicationId.value = application.id;
+    await loadAudit();
+    setStatus("", "Created", "Manual application created and audit trail loaded.");
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? " Is the backend running? Start with: uvicorn applypilot.main:app --reload"
+        : "";
+    setStatus("error", "Create failed", `${error.message}.${hint}`);
+  }
+}
+
 async function loadAudit() {
-  const apiBase = elements.apiBase.value.replace(/\/$/, "");
   const applicationId = elements.applicationId.value.trim();
 
   if (!applicationId) {
@@ -209,12 +275,7 @@ async function loadAudit() {
   setStatus("loading", "Loading", "Fetching audit summary from the backend.");
 
   try {
-    const response = await fetch(`${apiBase}/applications/${applicationId}/audit`);
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      throw new Error(`Backend returned ${response.status}${detail ? ": " + detail : ""}`);
-    }
-    renderAudit(await response.json());
+    renderAudit(await fetchJson(`${apiBase()}/applications/${applicationId}/audit`));
     setStatus("", "Live data", "Audit summary loaded from the backend.");
   } catch (error) {
     renderAudit(demoAudit);
@@ -229,6 +290,11 @@ async function loadAudit() {
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
   loadAudit();
+});
+
+elements.intakeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  createManualApplication();
 });
 
 elements.demoButton.addEventListener("click", () => {

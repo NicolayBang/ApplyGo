@@ -32,6 +32,36 @@
         <p id="status-message">Using local demo data until a backend application ID is provided.</p>
       </section>
 
+      <section class="panel intake-panel" aria-label="Manual job intake">
+        <div class="section-heading">
+          <h2>Manual intake</h2>
+          <span>Create application</span>
+        </div>
+        <form class="intake-form" id="intake-form">
+          <label>
+            <span>Role title</span>
+            <input id="job-title" type="text" placeholder="Platform Engineer" required />
+          </label>
+          <label>
+            <span>Company</span>
+            <input id="job-company" type="text" placeholder="ApplyPilot Demo Co." required />
+          </label>
+          <label>
+            <span>Location</span>
+            <input id="job-location" type="text" placeholder="Remote" />
+          </label>
+          <label>
+            <span>Job URL</span>
+            <input id="job-url" type="url" placeholder="https://example.com/job" />
+          </label>
+          <label class="checkbox-label">
+            <input id="remote-ok" type="checkbox" checked />
+            <span>Remote ok</span>
+          </label>
+          <button type="submit">Create</button>
+        </form>
+      </section>
+
       <section class="summary-grid" aria-label="Application summary">
         <article class="panel summary-panel">
           <h2>Application</h2>
