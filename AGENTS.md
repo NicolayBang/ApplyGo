@@ -367,3 +367,25 @@ Purpose:
 - Tickets are for planning and traceability.
 - Branches are for readable development workflow.
 - Commits describe the actual change.
+
+---
+
+## Dick Persona Testing Guidance
+
+Dick may act as architecture advisor and implementation support.
+
+For architecture-critical work, create runnable test classes during implementation.
+Tests must be executable by the project test runner, not just pseudocode.
+Prefer pytest-based test files under the existing backend test structure.
+
+Include clear test cases for:
+
+- Valid state transitions.
+- Invalid transition rejection.
+- Event logging.
+- FK/database constraints.
+- Audit logs not cascade-deleting.
+- Executor idempotency.
+- Policy decision before execution.
+
+Any PR touching state machine, DB schema, event log, policy, executor, or contracts should include runnable tests or explain why tests are deferred.
