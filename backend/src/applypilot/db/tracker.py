@@ -165,6 +165,13 @@ class Tracker:
         )
         return record
 
+    def get_policy_decision(
+        self,
+        policy_decision_id: uuid.UUID,
+    ) -> PolicyDecisionRecord | None:
+        """Return a previously recorded policy decision."""
+        return self._session.get(PolicyDecisionRecord, policy_decision_id)
+
     # ------------------------------------------------------------------
     # Executor actions
     # ------------------------------------------------------------------
@@ -215,6 +222,7 @@ class Tracker:
                 "action_type": action.action_type,
                 "execution_mode": action.execution_mode,
                 "idempotency_key": action.idempotency_key,
+                "policy_decision_id": request.payload.get("policy_decision_id"),
             },
         )
         self._append_event(
