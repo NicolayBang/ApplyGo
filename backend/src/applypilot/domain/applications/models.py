@@ -73,6 +73,10 @@ class ApplicationStateUpdate(BaseModel):
     payload: dict | None = None
 
 
+class ApplicationScoreRequest(BaseModel):
+    actor: str = "scoring"
+
+
 # ---------------------------------------------------------------------------
 # Confidence/explanation schema  (locked architecture sec. 8)
 # ---------------------------------------------------------------------------

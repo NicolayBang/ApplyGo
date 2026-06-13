@@ -11,12 +11,19 @@ from applypilot.domain.applications.models import (
     ApplicationAuditRead,
     ApplicationCreate,
     ApplicationRead,
+    ApplicationScoreRequest,
     ApplicationStateUpdate,
     EventLogRead,
     JobCreate,
     JobRead,
 )
-from applypilot.domain.policy import AutomationMode, PolicyContext, PolicyEngine, PolicyRequest
+from applypilot.domain.policy import (
+    AutomationMode,
+    ConfidenceLevel,
+    PolicyContext,
+    PolicyEngine,
+    PolicyRequest,
+)
 from applypilot.domain.policy.schemas import PolicyDecisionRead, PolicyEvaluationRequest
 from applypilot.domain.state_machine import InvalidStateTransitionError
 from applypilot.services.executor_stub import StubExecutor
@@ -115,6 +122,30 @@ def update_application_state(
 
 
 @router.post(
+    "/applications/{application_id}/score",
+    response_model=ApplicationRead,
+    tags=["applications"],
+)
+def score_application(
+    application_id: UUID,
+    request: ApplicationScoreRequest | None = None,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Record deterministic application scoring for downstream policy checks."""
+    try:
+        application = unit.tracker.score_application(
+            application_id=application_id,
+            actor=request.actor if request else "scoring",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    unit.commit()
+    unit.refresh(application)
+    return application
+
+
+@router.post(
     "/applications/{application_id}/policy-decisions",
     response_model=PolicyDecisionRead,
     status_code=status.HTTP_201_CREATED,
@@ -141,18 +172,13 @@ def evaluate_application_policy(
             detail=f"Unknown automation mode: {application.automation_mode}",
         ) from exc
 
+    context = _policy_context(request, application)
     policy_request = PolicyRequest(
         application_id=application_id,
         current_state=application.state,
         requested_action=request.requested_action,
         worker=request.worker,
-        context=PolicyContext(
-            confidence=request.context.confidence,
-            reasons=request.context.reasons,
-            risks=request.context.risks,
-            missing_data=request.context.missing_data,
-            red_flags=request.context.red_flags,
-        ),
+        context=context,
         mode=mode,
     )
     decision = PolicyEngine().evaluate(policy_request)
@@ -164,6 +190,38 @@ def evaluate_application_policy(
     unit.commit()
     unit.refresh(record)
     return record
+
+
+def _policy_context(request: PolicyEvaluationRequest, application: object) -> PolicyContext:
+    if request.context is not None:
+        return PolicyContext(
+            confidence=request.context.confidence,
+            reasons=request.context.reasons,
+            risks=request.context.risks,
+            missing_data=request.context.missing_data,
+            red_flags=request.context.red_flags,
+        )
+
+    confidence = getattr(application, "confidence", None) or ConfidenceLevel.LOW.value
+    try:
+        confidence_level = ConfidenceLevel(confidence)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown stored confidence level: {confidence}",
+        ) from exc
+
+    missing_data = list(getattr(application, "missing_data", None) or [])
+    if getattr(application, "fit_score", None) is None:
+        missing_data.append("application score")
+
+    return PolicyContext(
+        confidence=confidence_level,
+        reasons=list(getattr(application, "score_reasons", None) or []),
+        risks=list(getattr(application, "score_risks", None) or []),
+        missing_data=missing_data,
+        red_flags=list(getattr(application, "red_flags", None) or []),
+    )
 
 
 @router.post(

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from applypilot.db.models import Application, EventLogEntry, ExecutorAction, Job
 from applypilot.db.models import PolicyDecision as PolicyDecisionRecord
 from applypilot.domain.applications.models import ApplicationCreate, JobCreate
+from applypilot.domain.applications.scoring import ApplicationScorer, JobScoringInput
 from applypilot.domain.executor import ExecutorRequest, ExecutorResult
 from applypilot.domain.policy import PolicyDecision, PolicyRequest
 from applypilot.domain.state_machine import (
@@ -115,6 +116,54 @@ class Tracker:
             from_state=old_state.value,
             to_state=target_state.value,
             payload=payload,
+        )
+        return app
+
+    def score_application(
+        self,
+        application_id: uuid.UUID,
+        actor: str = "scoring",
+    ) -> Application:
+        """Calculate, persist, and audit deterministic application scoring."""
+        app = self._session.get(Application, application_id)
+        if app is None:
+            raise ValueError(f"Application {application_id} not found")
+
+        job = app.job
+        result = ApplicationScorer().score(
+            JobScoringInput(
+                title=job.title,
+                company=job.company,
+                location=job.location,
+                source_url=job.source_url,
+                raw_text=job.raw_text,
+                remote_ok=job.remote_ok,
+            )
+        )
+
+        app.fit_score = result.fit_score
+        app.confidence = result.confidence
+        app.recommendation = result.recommendation
+        app.score_reasons = result.reasons
+        app.score_risks = result.risks
+        app.missing_data = result.missing_data
+        app.red_flags = result.red_flags
+        app.updated_at = datetime.now(tz=timezone.utc)
+        self._session.flush()
+
+        self._append_event(
+            application_id=application_id,
+            event_type="application.scored",
+            actor=actor,
+            payload={
+                "fit_score": result.fit_score,
+                "confidence": result.confidence,
+                "recommendation": result.recommendation,
+                "reasons": result.reasons,
+                "risks": result.risks,
+                "missing_data": result.missing_data,
+                "red_flags": result.red_flags,
+            },
         )
         return app
 
