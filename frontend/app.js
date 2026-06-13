@@ -69,6 +69,8 @@ const elements = {
   jobLocation: document.querySelector("#job-location"),
   jobUrl: document.querySelector("#job-url"),
   remoteOk: document.querySelector("#remote-ok"),
+  policyButton: document.querySelector("#policy-button"),
+  dryRunButton: document.querySelector("#dry-run-button"),
   demoButton: document.querySelector("#demo-button"),
   statusPill: document.querySelector("#status-pill"),
   statusMessage: document.querySelector("#status-message"),
@@ -78,6 +80,8 @@ const elements = {
   timeline: document.querySelector("#timeline"),
   eventCount: document.querySelector("#event-count"),
 };
+
+let currentAudit = demoAudit;
 
 function formatDate(value) {
   if (!value) return "Not recorded";
@@ -191,6 +195,7 @@ function renderTimeline(events) {
 }
 
 function renderAudit(data) {
+  currentAudit = data;
   renderSummary(data.application);
   renderPolicy(data.policy_decisions || []);
   renderExecutor(data.executor_actions || []);
@@ -311,8 +316,110 @@ async function createManualApplication() {
   }
 }
 
+function currentApplicationId() {
+  return elements.applicationId.value.trim();
+}
+
+function requireApplicationId() {
+  const applicationId = currentApplicationId();
+
+  if (!applicationId) {
+    setStatus("error", "Missing app", "Load or create an application first.");
+    return null;
+  }
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId)) {
+    setStatus("error", "Invalid ID", "Application ID must be a valid UUID.");
+    return null;
+  }
+
+  return applicationId;
+}
+
+function latestAllowedPolicyDecision() {
+  const decisions = currentAudit.policy_decisions || [];
+  return decisions
+    .filter((decision) => decision.allowed && decision.action_type === "send_follow_up_email")
+    .at(-1);
+}
+
+async function evaluatePolicy() {
+  const applicationId = requireApplicationId();
+  const base = apiBase();
+
+  if (!applicationId) return;
+
+  setStatus("loading", "Policy", "Evaluating dry-run follow-up policy.");
+
+  try {
+    elements.apiBase.value = base;
+    await fetchJson(`${base}/applications/${applicationId}/policy-decisions`, {
+      method: "POST",
+      body: JSON.stringify({
+        requested_action: "send_follow_up_email",
+        worker: "email",
+        mode: "dry_run",
+        context: {
+          confidence: "high",
+          reasons: ["Manual dashboard dry-run requested."],
+          risks: [],
+          missing_data: [],
+          red_flags: [],
+        },
+      }),
+    });
+    await loadAudit();
+    setStatus("", "Policy logged", "Policy decision recorded in the audit trail.");
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
+        : "";
+    setStatus("error", "Policy failed", `${error.message}.${hint}`);
+  }
+}
+
+async function dryRunFollowUp() {
+  const applicationId = requireApplicationId();
+  const base = apiBase();
+
+  if (!applicationId) return;
+
+  const decision = latestAllowedPolicyDecision();
+  if (!decision) {
+    setStatus("error", "Policy needed", "Evaluate an allowed policy decision before dry-run.");
+    return;
+  }
+
+  setStatus("loading", "Dry run", "Planning follow-up action with the executor stub.");
+
+  try {
+    elements.apiBase.value = base;
+    await fetchJson(`${base}/applications/${applicationId}/executor-actions/dry-run`, {
+      method: "POST",
+      body: JSON.stringify({
+        policy_decision_id: decision.id,
+        action_type: "send_follow_up_email",
+        idempotency_key: `dashboard-follow-up-${applicationId}`,
+        payload: {
+          source: "dashboard",
+          template: "manual_follow_up",
+        },
+      }),
+    });
+    await loadAudit();
+    setStatus("", "Dry-run logged", "Executor dry-run result recorded in the audit trail.");
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
+        : "";
+    setStatus("error", "Dry-run failed", `${error.message}.${hint}`);
+  }
+}
+
 async function loadAudit() {
-  const applicationId = elements.applicationId.value.trim();
+  const applicationId = currentApplicationId();
   const base = apiBase();
   elements.apiBase.value = base;
 
@@ -350,6 +457,14 @@ elements.form.addEventListener("submit", (event) => {
 elements.intakeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   createManualApplication();
+});
+
+elements.policyButton.addEventListener("click", () => {
+  evaluatePolicy();
+});
+
+elements.dryRunButton.addEventListener("click", () => {
+  dryRunFollowUp();
 });
 
 elements.demoButton.addEventListener("click", () => {

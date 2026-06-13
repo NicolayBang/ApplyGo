@@ -157,6 +157,10 @@ button[type="button"] {
   margin-top: 20px;
 }
 
+.workflow-panel {
+  margin-top: 16px;
+}
+
 .intake-form {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr 1.4fr auto auto;
@@ -175,6 +179,12 @@ button[type="button"] {
   width: 16px;
   height: 16px;
   padding: 0;
+}
+
+.workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .panel {
