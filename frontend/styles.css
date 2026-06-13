@@ -153,6 +153,30 @@ button[type="button"] {
   margin-top: 20px;
 }
 
+.intake-panel {
+  margin-top: 20px;
+}
+
+.intake-form {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1.4fr auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.checkbox-label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 42px;
+}
+
+.checkbox-label input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
 .panel {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -280,7 +304,8 @@ button[type="button"] {
 
 @media (max-width: 920px) {
   .toolbar,
-  .summary-grid {
+  .summary-grid,
+  .intake-form {
     grid-template-columns: 1fr;
   }
 
