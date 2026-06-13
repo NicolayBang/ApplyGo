@@ -157,6 +157,11 @@ class FakeTracker:
                 return decision
         return None
 
+    def get_policy_decisions(self, application_id):
+        if application_id != self.application_id:
+            return []
+        return self.policy_decisions
+
     def record_executor_result(self, request, result, actor="worker"):
         application_id = uuid.UUID(request.application_id)
         if application_id != self.application_id:
@@ -214,6 +219,11 @@ class FakeTracker:
             )
         )
         return record
+
+    def get_executor_actions(self, application_id):
+        if application_id != self.application_id:
+            return []
+        return self.executor_actions
 
     def get_events(self, application_id):
         if application_id != self.application_id:
@@ -477,3 +487,51 @@ def test_executor_dry_run_requires_recorded_policy_decision() -> None:
 
     assert response.status_code == 400
     assert "policy decision is required" in response.json()["detail"]
+
+
+def test_application_audit_summary_returns_application_events_policy_and_executor_records() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {"confidence": "high"},
+        },
+    )
+    executor_response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json={
+            "policy_decision_id": policy_response.json()["id"],
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-001",
+        },
+    )
+
+    response = client.get(f"/applications/{tracker.application_id}/audit")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["application"]["id"] == str(tracker.application_id)
+    assert [event["event_type"] for event in body["events"]] == [
+        "application.created",
+        "policy_decision_logged",
+        "executor_attempt_logged",
+        "executor_result_logged",
+    ]
+    assert body["policy_decisions"][0]["id"] == policy_response.json()["id"]
+    assert body["policy_decisions"][0]["allowed"] is True
+    assert body["executor_actions"][0]["id"] == executor_response.json()["id"]
+    assert body["executor_actions"][0]["status"] == "planned"
+
+
+def test_application_audit_summary_returns_404_when_application_missing() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.get(f"/applications/{uuid.uuid4()}/audit")
+
+    assert response.status_code == 404

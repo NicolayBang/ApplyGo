@@ -11,6 +11,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from applypilot.domain.executor.schemas import ExecutorActionRead
+from applypilot.domain.policy.schemas import PolicyDecisionRead
 from applypilot.domain.state_machine.states import ApplicationState
 
 
@@ -100,3 +102,10 @@ class EventLogRead(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ApplicationAuditRead(BaseModel):
+    application: ApplicationRead
+    events: list[EventLogRead]
+    policy_decisions: list[PolicyDecisionRead]
+    executor_actions: list[ExecutorActionRead]
