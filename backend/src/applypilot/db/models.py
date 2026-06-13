@@ -218,9 +218,11 @@ class PolicyDecision(Base):
     )
     action_type: Mapped[str] = mapped_column(String(64), nullable=False)
     mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    decision: Mapped[str] = mapped_column(String(16), default="review", nullable=False)
     allowed: Mapped[bool] = mapped_column(Boolean, nullable=False)
     reasons: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     risks: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    required_overrides: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

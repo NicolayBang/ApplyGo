@@ -12,7 +12,9 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from applypilot.db.models import Application, EventLogEntry, Job
+from applypilot.db.models import PolicyDecision as PolicyDecisionRecord
 from applypilot.domain.applications.models import ApplicationCreate, JobCreate
+from applypilot.domain.policy import PolicyDecision, PolicyRequest
 from applypilot.domain.state_machine import (
     ApplicationState,
     ApplicationStateMachine,
@@ -114,6 +116,53 @@ class Tracker:
             payload=payload,
         )
         return app
+
+    # ------------------------------------------------------------------
+    # Policy decisions
+    # ------------------------------------------------------------------
+
+    def record_policy_decision(
+        self,
+        request: PolicyRequest,
+        decision: PolicyDecision,
+        actor: str = "policy",
+    ) -> PolicyDecisionRecord:
+        """Persist a policy decision and append the required audit event."""
+        app = self._session.get(Application, request.application_id)
+        if app is None:
+            raise ValueError(f"Application {request.application_id} not found")
+
+        record = PolicyDecisionRecord(
+            id=decision.decision_id,
+            application_id=request.application_id,
+            action_type=request.requested_action,
+            mode=decision.mode.value,
+            decision=decision.decision.value,
+            allowed=decision.allowed,
+            reasons=decision.reasons,
+            risks=request.context.risks,
+            required_overrides=decision.required_overrides,
+        )
+        self._session.add(record)
+        self._session.flush()
+
+        self._append_event(
+            application_id=request.application_id,
+            event_type="policy_decision_logged",
+            actor=actor,
+            payload={
+                "decision_id": str(record.id),
+                "action_type": record.action_type,
+                "worker": request.worker.value,
+                "mode": record.mode,
+                "decision": record.decision,
+                "allowed": record.allowed,
+                "reasons": record.reasons or [],
+                "risks": record.risks or [],
+                "required_overrides": record.required_overrides or [],
+            },
+        )
+        return record
 
     # ------------------------------------------------------------------
     # Event log (append-only)
