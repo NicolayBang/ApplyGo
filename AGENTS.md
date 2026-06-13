@@ -389,3 +389,18 @@ Include clear test cases for:
 - Policy decision before execution.
 
 Any PR touching state machine, DB schema, event log, policy, executor, or contracts should include runnable tests or explain why tests are deferred.
+
+### Copilot Validation Delegation
+
+When required validation depends on GitHub-hosted services, Codespaces, CI, PostgreSQL, Redis, or another environment not running locally, Dick should default to requesting Copilot agent validation in the pull request.
+
+The request should be posted as a PR comment and include:
+
+- The exact commands to run.
+- The expected environment, such as Codespaces or GitHub Actions.
+- The specific migration, test suite, or quality gate being validated.
+- The confirmation expected from Copilot before merge.
+
+Do not rerun redundant local checks after GitHub CI or Copilot has already validated the same commands, unless the PR changed again, CI failed, or a human explicitly asks for local verification.
+
+For docs-only PRs, do not run backend tests unless the documentation change modifies executable examples, test policy, architecture-critical contracts, or migration instructions.
