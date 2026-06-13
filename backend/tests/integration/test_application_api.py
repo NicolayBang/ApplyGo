@@ -62,6 +62,7 @@ class FakeTracker:
             )
         ]
         self.policy_decisions = []
+        self.executor_actions = []
 
     def create_job(self, data):
         self.job.title = data.title
@@ -144,6 +145,63 @@ class FakeTracker:
                     "reasons": record.reasons,
                     "risks": record.risks,
                     "required_overrides": record.required_overrides,
+                },
+                created_at=datetime.now(tz=UTC),
+            )
+        )
+        return record
+
+    def record_executor_result(self, request, result, actor="worker"):
+        application_id = uuid.UUID(request.application_id)
+        if application_id != self.application_id:
+            raise ValueError(f"Application {application_id} not found")
+
+        for action in self.executor_actions:
+            if action.idempotency_key == request.idempotency_key:
+                return action
+
+        record = SimpleNamespace(
+            id=uuid.uuid4(),
+            application_id=application_id,
+            idempotency_key=request.idempotency_key,
+            action_type=request.action_type,
+            execution_mode=request.mode.value,
+            status=result.status,
+            payload=request.payload,
+            result=result.details,
+            created_at=datetime.now(tz=UTC),
+            completed_at=datetime.now(tz=UTC),
+        )
+        self.executor_actions.append(record)
+        self.events.append(
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                application_id=self.application_id,
+                event_type="executor_attempt_logged",
+                actor=actor,
+                from_state=None,
+                to_state=None,
+                payload={
+                    "executor_action_id": str(record.id),
+                    "action_type": record.action_type,
+                    "execution_mode": record.execution_mode,
+                    "idempotency_key": record.idempotency_key,
+                },
+                created_at=datetime.now(tz=UTC),
+            )
+        )
+        self.events.append(
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                application_id=self.application_id,
+                event_type="executor_result_logged",
+                actor=actor,
+                from_state=None,
+                to_state=None,
+                payload={
+                    "executor_action_id": str(record.id),
+                    "status": record.status,
+                    "result": record.result,
                 },
                 created_at=datetime.now(tz=UTC),
             )
@@ -297,6 +355,78 @@ def test_policy_decision_returns_404_when_application_missing() -> None:
             "requested_action": "send_follow_up_email",
             "worker": "email",
             "context": {"confidence": "high"},
+        },
+    )
+
+    assert response.status_code == 404
+
+
+def test_executor_dry_run_is_persisted_and_audited() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json={
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-001",
+            "payload": {"template": "follow_up"},
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["action_type"] == "send_follow_up_email"
+    assert body["execution_mode"] == "dry_run"
+    assert body["status"] == "planned"
+    assert body["result"]["idempotency_key"] == "dry-run-001"
+
+    events_response = client.get(f"/applications/{tracker.application_id}/events")
+    assert events_response.status_code == 200
+    events = events_response.json()
+    assert [event["event_type"] for event in events[-2:]] == [
+        "executor_attempt_logged",
+        "executor_result_logged",
+    ]
+    assert events[-2]["payload"]["idempotency_key"] == "dry-run-001"
+    assert events[-1]["payload"]["status"] == "planned"
+
+
+def test_executor_dry_run_reuses_idempotent_result() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+    payload = {
+        "action_type": "send_follow_up_email",
+        "idempotency_key": "dry-run-001",
+        "payload": {"template": "follow_up"},
+    }
+
+    first_response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json=payload,
+    )
+    event_count = len(tracker.events)
+    second_response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json=payload,
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert second_response.json()["id"] == first_response.json()["id"]
+    assert len(tracker.executor_actions) == 1
+    assert len(tracker.events) == event_count
+
+
+def test_executor_dry_run_returns_404_when_application_missing() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{uuid.uuid4()}/executor-actions/dry-run",
+        json={
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-001",
         },
     )
 
