@@ -3,12 +3,14 @@
 Validates that seed_demo_application() creates persisted records in PostgreSQL
 and that the /applications/{id}/audit endpoint returns a complete audit summary.
 
-Requires PostgreSQL (from docker-compose or Codespaces). Skipped automatically
-when the database is unreachable.
+Requires PostgreSQL with migrations already applied (alembic upgrade head).
+Skipped automatically at runtime when the database is unreachable.
 
 Run explicitly:
     docker compose up -d postgres
-    cd backend && python -m pytest tests/integration/test_seed_to_dashboard.py -v
+    cd backend
+    alembic upgrade head
+    python -m pytest tests/integration/test_seed_to_dashboard.py -v
 """
 
 from __future__ import annotations
@@ -19,48 +21,31 @@ from sqlalchemy.orm import sessionmaker
 
 from applypilot.config.settings import get_settings
 
-
-def _pg_available() -> bool:
-    """Check if PostgreSQL is reachable with the configured URL."""
-    try:
-        engine = create_engine(get_settings().database_url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
-pytestmark = pytest.mark.skipif(
-    not _pg_available(),
-    reason="PostgreSQL not available (start with: docker compose up -d postgres)",
-)
+# Short timeout (2s) so pytest collection never hangs when PG is absent.
+_CONNECT_TIMEOUT = 2
 
 
 @pytest.fixture()
 def db_session():
-    """Create a fresh schema in PG using SQLAlchemy metadata and yield a session.
+    """Connect to PostgreSQL and yield a session; skip if PG is unreachable.
 
-    Uses a transaction that is rolled back after the test to avoid side-effects.
+    Assumes migrations have already been applied via `alembic upgrade head`.
+    Does NOT create tables itself — this validates the real migration path.
     """
-    from applypilot.db.base import Base
-    from applypilot.db.models import (  # noqa: F401 – ensure models registered
-        Application,
-        EventLogEntry,
-        ExecutorAction,
-        Job,
-        PolicyDecision,
-    )
-
     settings = get_settings()
-    engine = create_engine(settings.database_url, future=True)
+    engine = create_engine(
+        settings.database_url,
+        future=True,
+        connect_args={"connect_timeout": _CONNECT_TIMEOUT},
+    )
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        engine.dispose()
+        pytest.skip(f"PostgreSQL not available (start with: docker compose up -d postgres): {exc}")
 
-    # Create all tables (idempotent if they already exist from alembic)
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-    session = Session()
+    session = sessionmaker(bind=engine, autoflush=False, autocommit=False)()
     try:
         yield session
     finally:
