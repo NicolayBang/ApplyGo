@@ -6,6 +6,16 @@ The current implementation is dependency-free static HTML/CSS/JavaScript so the 
 
 Open `index.html` in a browser to review the dashboard.
 
+To review the dashboard with real backend data, run the database migrations against a local
+or Codespaces database, then seed a demo audit trail:
+
+```bash
+cd backend
+python -m applypilot.dev.demo_seed
+```
+
+Copy the printed application ID into the dashboard.
+
 The dashboard can:
 
 - Load `GET /applications/{application_id}/audit` from a running backend.
