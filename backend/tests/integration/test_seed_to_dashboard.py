@@ -93,7 +93,7 @@ def test_seed_creates_records_and_audit_api_returns_summary(db_session) -> None:
     assert application.state == "ApplicationCreated"
 
     events = tracker.get_events(result.application_id)
-    assert len(events) >= 3  # created + policy + executor attempt + executor result
+    assert len(events) >= 4  # created + policy + executor attempt + executor result
     event_types = [e.event_type for e in events]
     assert "application.created" in event_types
     assert "policy_decision_logged" in event_types
