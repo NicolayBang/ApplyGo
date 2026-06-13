@@ -201,18 +201,28 @@ async function loadAudit() {
     return;
   }
 
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId)) {
+    setStatus("error", "Invalid ID", "Application ID must be a valid UUID. Run demo_seed to get one.");
+    return;
+  }
+
   setStatus("loading", "Loading", "Fetching audit summary from the backend.");
 
   try {
     const response = await fetch(`${apiBase}/applications/${applicationId}/audit`);
     if (!response.ok) {
-      throw new Error(`Backend returned ${response.status}`);
+      const detail = await response.text().catch(() => "");
+      throw new Error(`Backend returned ${response.status}${detail ? ": " + detail : ""}`);
     }
     renderAudit(await response.json());
     setStatus("", "Live data", "Audit summary loaded from the backend.");
   } catch (error) {
     renderAudit(demoAudit);
-    setStatus("error", "Fallback", `${error.message}. Showing demo data for review.`);
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? " Is the backend running? Start with: uvicorn applypilot.main:app --reload"
+        : "";
+    setStatus("error", "Fallback", `${error.message}.${hint} Showing demo data for review.`);
   }
 }
 
