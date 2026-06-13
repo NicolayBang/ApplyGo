@@ -59,11 +59,11 @@ jobs:
       - name: Lint backend
         run: python -m ruff check .
 
+      - name: Run database migrations
+        run: python -m alembic upgrade head
+
       - name: Run backend tests
         run: python -m pytest
-
-      - name: Validate database migrations
-        run: python -m alembic upgrade head
 
       - name: Smoke import FastAPI app
         run: python -c "from applypilot.main import app; assert app.title == 'ApplyPilot'"
