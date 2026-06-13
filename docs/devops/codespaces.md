@@ -73,6 +73,41 @@ curl -s http://127.0.0.1:8000/health
 ```
 Expected response contains `"status": "ok"`.
 
+## DB-Backed Validation Workflow
+
+Use this workflow when a change touches migrations, database-backed tracker behavior, demo seed data, the audit endpoint, or dashboard validation.
+
+Start shared services from the repository root:
+
+```bash
+docker compose up -d postgres redis
+```
+
+Run backend validation from `backend/`:
+
+```bash
+cd backend
+python -m pip install -e ".[dev]"
+python -m ruff check .
+python -m alembic upgrade head
+python -m pytest
+python -m compileall src tests alembic scripts
+python -m scripts.validate_seed_to_dashboard
+```
+
+For the focused seed-to-dashboard check:
+
+```bash
+cd backend
+python -m alembic upgrade head
+python -m pytest tests/integration/test_seed_to_dashboard.py -v
+python -m scripts.validate_seed_to_dashboard
+```
+
+The DB-backed seed-to-dashboard test skips when PostgreSQL is unavailable. In Codespaces and CI, PostgreSQL should be running and the test should execute against a migrated schema.
+
+CI runs `python -m alembic upgrade head` before `python -m pytest` so database-backed tests validate the real migration path instead of creating tables directly.
+
 ## Usage Reminder
 Stop Codespaces when done to avoid unnecessary usage and cost:
 - Stop containers with `docker compose down`.
