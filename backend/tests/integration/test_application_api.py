@@ -71,6 +71,8 @@ class FakeTracker:
         self.job.title = data.title
         self.job.company = data.company
         self.job.location = data.location
+        self.job.source_url = data.source_url
+        self.job.raw_text = data.raw_text
         self.job.remote_ok = data.remote_ok
         return self.job
 
@@ -300,6 +302,8 @@ def test_create_job_returns_created_job() -> None:
             "title": "Backend Developer",
             "company": "ApplyPilot",
             "location": "Remote",
+            "source_url": "https://example.com/jobs/backend-developer",
+            "raw_text": "Build reliable backend APIs with Python, FastAPI, and PostgreSQL.",
             "remote_ok": True,
         },
     )
@@ -308,6 +312,8 @@ def test_create_job_returns_created_job() -> None:
     body = response.json()
     assert body["title"] == "Backend Developer"
     assert body["company"] == "ApplyPilot"
+    assert body["source_url"] == "https://example.com/jobs/backend-developer"
+    assert body["raw_text"] == "Build reliable backend APIs with Python, FastAPI, and PostgreSQL."
 
 
 def test_application_flow_creates_lists_transitions_and_returns_events() -> None:

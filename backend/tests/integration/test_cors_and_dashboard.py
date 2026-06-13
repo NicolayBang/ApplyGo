@@ -39,3 +39,15 @@ def test_cors_headers_present_on_audit_endpoint() -> None:
     assert response.status_code == 200
     assert response.headers.get("access-control-allow-origin") == FRONTEND_ORIGIN
     assert response.headers.get("access-control-allow-credentials") == "true"
+
+
+def test_dashboard_manual_intake_collects_job_description() -> None:
+    """The static dashboard includes raw job text intake for scoring."""
+    index_response = client.get("/ui/index.html")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert script_response.status_code == 200
+    assert 'id="job-description"' in index_response.text
+    assert "jobDescription" in script_response.text
+    assert "raw_text" in script_response.text
