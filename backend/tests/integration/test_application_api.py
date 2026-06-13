@@ -22,8 +22,11 @@ class FakeTracker:
         self.created_at = datetime.now(tz=UTC)
         self.job = SimpleNamespace(
             id=self.job_id,
-            source_url=None,
-            raw_text=None,
+            source_url="https://example.com/jobs/backend-developer",
+            raw_text=(
+                "Build Python API services with FastAPI, PostgreSQL, automation, "
+                "and platform data workflows for a remote team."
+            ),
             title="Backend Developer",
             company="ApplyPilot",
             location="Remote",
@@ -105,6 +108,43 @@ class FakeTracker:
                 from_state=old_state,
                 to_state=new_state,
                 payload=payload or {},
+                created_at=datetime.now(tz=UTC),
+            )
+        )
+        return self.application
+
+    def score_application(self, application_id, actor="scoring"):
+        if application_id != self.application_id:
+            raise ValueError(f"Application {application_id} not found")
+
+        self.application.fit_score = 87
+        self.application.confidence = "high"
+        self.application.recommendation = "recommended"
+        self.application.score_reasons = [
+            "Role title is available for review.",
+            "Relevant technical keywords were found.",
+        ]
+        self.application.score_risks = []
+        self.application.missing_data = []
+        self.application.red_flags = []
+        self.application.updated_at = datetime.now(tz=UTC)
+        self.events.append(
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                application_id=self.application_id,
+                event_type="application.scored",
+                actor=actor,
+                from_state=None,
+                to_state=None,
+                payload={
+                    "fit_score": self.application.fit_score,
+                    "confidence": self.application.confidence,
+                    "recommendation": self.application.recommendation,
+                    "reasons": self.application.score_reasons,
+                    "risks": self.application.score_risks,
+                    "missing_data": self.application.missing_data,
+                    "red_flags": self.application.red_flags,
+                },
                 created_at=datetime.now(tz=UTC),
             )
         )
@@ -328,6 +368,38 @@ def test_invalid_state_transition_returns_400() -> None:
     assert "Invalid transition" in response.json()["detail"]
 
 
+def test_application_score_is_persisted_and_audited() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/score",
+        json={"actor": "user"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["fit_score"] == 87
+    assert body["confidence"] == "high"
+    assert body["recommendation"] == "recommended"
+
+    events_response = client.get(f"/applications/{tracker.application_id}/events")
+    assert events_response.status_code == 200
+    events = events_response.json()
+    assert events[-1]["event_type"] == "application.scored"
+    assert events[-1]["actor"] == "user"
+    assert events[-1]["payload"]["fit_score"] == 87
+
+
+def test_application_score_returns_404_when_application_missing() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(f"/applications/{uuid.uuid4()}/score")
+
+    assert response.status_code == 404
+
+
 def test_policy_decision_is_evaluated_persisted_and_audited() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)
@@ -360,6 +432,28 @@ def test_policy_decision_is_evaluated_persisted_and_audited() -> None:
     assert events[-1]["event_type"] == "policy_decision_logged"
     assert events[-1]["actor"] == "policy"
     assert events[-1]["payload"]["decision"] == "review"
+
+
+def test_policy_decision_uses_stored_application_score_when_context_is_omitted() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+    score_response = client.post(f"/applications/{tracker.application_id}/score")
+    assert score_response.status_code == 200
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["decision"] == "allow"
+    assert body["allowed"] is True
+    assert tracker.policy_decisions[0].risks == []
 
 
 def test_policy_decision_returns_404_when_application_missing() -> None:

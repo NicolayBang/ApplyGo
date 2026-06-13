@@ -26,7 +26,7 @@ class PolicyContextInput(BaseModel):
 class PolicyEvaluationRequest(BaseModel):
     requested_action: str
     worker: WorkerType
-    context: PolicyContextInput
+    context: PolicyContextInput | None = None
     mode: AutomationMode | None = None
     actor: str = "policy"
 

@@ -4,6 +4,13 @@ const demoAudit = {
     job_id: "77b2ac60-06b2-4f6f-9a42-9a02d2e18424",
     state: "ApplicationCreated",
     automation_mode: "manual",
+    fit_score: 86,
+    confidence: "high",
+    recommendation: "recommended",
+    score_reasons: ["Role title is available for review.", "Relevant technical keywords were found."],
+    score_risks: [],
+    missing_data: [],
+    red_flags: [],
     created_at: "2026-06-13T16:12:00Z",
     updated_at: "2026-06-13T16:24:00Z",
   },
@@ -14,6 +21,12 @@ const demoAudit = {
       to_state: "ApplicationCreated",
       payload: { automation_mode: "manual" },
       created_at: "2026-06-13T16:12:00Z",
+    },
+    {
+      event_type: "application.scored",
+      actor: "scoring",
+      payload: { fit_score: 86, confidence: "high", recommendation: "recommended" },
+      created_at: "2026-06-13T16:16:00Z",
     },
     {
       event_type: "policy_decision_logged",
@@ -69,6 +82,7 @@ const elements = {
   jobLocation: document.querySelector("#job-location"),
   jobUrl: document.querySelector("#job-url"),
   remoteOk: document.querySelector("#remote-ok"),
+  scoreButton: document.querySelector("#score-button"),
   policyButton: document.querySelector("#policy-button"),
   dryRunButton: document.querySelector("#dry-run-button"),
   demoButton: document.querySelector("#demo-button"),
@@ -116,6 +130,11 @@ function renderSummary(application) {
     ["Job", application.job_id],
     ["State", application.state],
     ["Mode", application.automation_mode],
+    ["Fit score", application.fit_score],
+    ["Confidence", application.confidence],
+    ["Recommendation", application.recommendation],
+    ["Missing data", (application.missing_data || []).join(", ")],
+    ["Red flags", (application.red_flags || []).join(", ")],
     ["Created", formatDate(application.created_at)],
     ["Updated", formatDate(application.updated_at)],
   ];
@@ -343,6 +362,47 @@ function latestAllowedPolicyDecision() {
     .at(-1);
 }
 
+function policyContextFromApplication() {
+  const application = currentAudit.application || {};
+
+  if (!application.confidence) {
+    return null;
+  }
+
+  return {
+    confidence: application.confidence,
+    reasons: application.score_reasons || [],
+    risks: application.score_risks || [],
+    missing_data: application.missing_data || [],
+    red_flags: application.red_flags || [],
+  };
+}
+
+async function scoreApplication() {
+  const applicationId = requireApplicationId();
+  const base = apiBase();
+
+  if (!applicationId) return;
+
+  setStatus("loading", "Scoring", "Scoring application using deterministic job data.");
+
+  try {
+    elements.apiBase.value = base;
+    await fetchJson(`${base}/applications/${applicationId}/score`, {
+      method: "POST",
+      body: JSON.stringify({ actor: "user" }),
+    });
+    await loadAudit();
+    setStatus("", "Scored", "Application score recorded in the audit trail.");
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
+        : "";
+    setStatus("error", "Score failed", `${error.message}.${hint}`);
+  }
+}
+
 async function evaluatePolicy() {
   const applicationId = requireApplicationId();
   const base = apiBase();
@@ -359,13 +419,7 @@ async function evaluatePolicy() {
         requested_action: "send_follow_up_email",
         worker: "email",
         mode: "dry_run",
-        context: {
-          confidence: "high",
-          reasons: ["Manual dashboard dry-run requested."],
-          risks: [],
-          missing_data: [],
-          red_flags: [],
-        },
+        context: policyContextFromApplication(),
       }),
     });
     await loadAudit();
@@ -457,6 +511,10 @@ elements.form.addEventListener("submit", (event) => {
 elements.intakeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   createManualApplication();
+});
+
+elements.scoreButton.addEventListener("click", () => {
+  scoreApplication();
 });
 
 elements.policyButton.addEventListener("click", () => {
