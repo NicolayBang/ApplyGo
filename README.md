@@ -64,6 +64,20 @@ pip install -e .
 uvicorn applypilot.main:app --reload
 ```
 
+## Validation
+
+For DB-backed validation in Codespaces or local Docker, use `docs/devops/codespaces.md`.
+
+The full M1 validation path runs migrations, backend tests, and the seed-to-dashboard check:
+
+```powershell
+docker compose up -d postgres redis
+cd backend
+python -m alembic upgrade head
+python -m pytest
+python -m scripts.validate_seed_to_dashboard
+```
+
 ## Definition of done for milestone 1
 
 - Create an application record
