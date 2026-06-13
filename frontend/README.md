@@ -1,13 +1,16 @@
-# Frontend Placeholder
+# ApplyPilot Frontend
 
-The dashboard UI is intentionally deferred as a full application until after the milestone-1 control plane foundation is in place.
+This folder contains the milestone-1 audit dashboard scaffold.
 
-This folder exists to reserve the future frontend boundary described in the locked architecture:
+The current implementation is dependency-free static HTML/CSS/JavaScript so the UI can be reviewed without introducing a frontend build system before the product surface stabilizes.
 
-- review queue
-- audit visibility
-- dry-run inspection
-- manual overrides
-- tracker state view
+Open `index.html` in a browser to review the dashboard.
 
-When milestone 1 backend primitives are stable, this folder can be replaced with a Next.js app without changing the repository layout.
+The dashboard can:
+
+- Load `GET /applications/{application_id}/audit` from a running backend.
+- Show local demo audit data when no application ID is provided.
+- Display the application record, event log, policy decisions, and executor dry-run actions.
+- Show basic loading, fallback, and empty states.
+
+Future iterations can replace this with a framework app without changing the repository boundary.

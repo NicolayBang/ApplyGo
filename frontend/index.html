@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ApplyPilot Audit Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="toolbar" aria-label="Audit dashboard controls">
+        <div>
+          <p class="eyebrow">ApplyPilot</p>
+          <h1>Application audit dashboard</h1>
+        </div>
+        <form class="controls" id="audit-form">
+          <label>
+            <span>API base</span>
+            <input id="api-base" type="url" value="http://localhost:8000" />
+          </label>
+          <label>
+            <span>Application ID</span>
+            <input id="application-id" type="text" placeholder="Paste UUID" />
+          </label>
+          <button type="submit">Load audit</button>
+          <button type="button" id="demo-button">Demo data</button>
+        </form>
+      </section>
+
+      <section class="status-row" aria-live="polite">
+        <div class="status-pill" id="status-pill">Demo mode</div>
+        <p id="status-message">Using local demo data until a backend application ID is provided.</p>
+      </section>
+
+      <section class="summary-grid" aria-label="Application summary">
+        <article class="panel summary-panel">
+          <h2>Application</h2>
+          <dl class="summary-list" id="application-summary"></dl>
+        </article>
+        <article class="panel">
+          <h2>Policy decisions</h2>
+          <div class="compact-list" id="policy-list"></div>
+        </article>
+        <article class="panel">
+          <h2>Executor actions</h2>
+          <div class="compact-list" id="executor-list"></div>
+        </article>
+      </section>
+
+      <section class="panel timeline-panel" aria-label="Audit timeline">
+        <div class="section-heading">
+          <h2>Audit timeline</h2>
+          <span id="event-count">0 events</span>
+        </div>
+        <ol class="timeline" id="timeline"></ol>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
