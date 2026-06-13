@@ -74,6 +74,16 @@ With the backend running, the dashboard can create a manual application directly
 
 The dashboard calls `POST /jobs`, then `POST /applications`, copies the new application ID into the audit controls, and loads `GET /applications/{application_id}/audit`.
 
+## Workflow actions
+
+With an application loaded, the dashboard can continue the M1 dry-run workflow:
+
+1. Click **Evaluate policy** to call `POST /applications/{application_id}/policy-decisions`.
+2. Click **Dry-run follow-up** to call `POST /applications/{application_id}/executor-actions/dry-run`.
+3. The audit panel reloads and shows the policy decision plus executor attempt/result events.
+
+The dry-run action requires an allowed policy decision. If no allowed decision exists, the dashboard asks for policy evaluation first.
+
 ## API endpoint
 
 The dashboard fetches audit data from:
