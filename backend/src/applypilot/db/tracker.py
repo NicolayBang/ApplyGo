@@ -11,9 +11,10 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from applypilot.db.models import Application, EventLogEntry, Job
+from applypilot.db.models import Application, EventLogEntry, ExecutorAction, Job
 from applypilot.db.models import PolicyDecision as PolicyDecisionRecord
 from applypilot.domain.applications.models import ApplicationCreate, JobCreate
+from applypilot.domain.executor import ExecutorRequest, ExecutorResult
 from applypilot.domain.policy import PolicyDecision, PolicyRequest
 from applypilot.domain.state_machine import (
     ApplicationState,
@@ -163,6 +164,70 @@ class Tracker:
             },
         )
         return record
+
+    # ------------------------------------------------------------------
+    # Executor actions
+    # ------------------------------------------------------------------
+
+    def record_executor_result(
+        self,
+        request: ExecutorRequest,
+        result: ExecutorResult,
+        actor: str = "worker",
+    ) -> ExecutorAction:
+        """Persist a dry-run executor action and append attempt/result audit events."""
+        application_id = uuid.UUID(request.application_id)
+        app = self._session.get(Application, application_id)
+        if app is None:
+            raise ValueError(f"Application {application_id} not found")
+
+        existing = (
+            self._session.query(ExecutorAction)
+            .filter(ExecutorAction.idempotency_key == request.idempotency_key)
+            .one_or_none()
+        )
+        if existing is not None:
+            if existing.application_id != application_id:
+                raise ValueError(
+                    f"Idempotency key {request.idempotency_key} belongs to another application"
+                )
+            return existing
+
+        action = ExecutorAction(
+            application_id=application_id,
+            idempotency_key=request.idempotency_key,
+            action_type=request.action_type,
+            execution_mode=request.mode.value,
+            status=result.status,
+            payload=request.payload,
+            result=result.details,
+            completed_at=datetime.now(tz=timezone.utc),
+        )
+        self._session.add(action)
+        self._session.flush()
+
+        self._append_event(
+            application_id=application_id,
+            event_type="executor_attempt_logged",
+            actor=actor,
+            payload={
+                "executor_action_id": str(action.id),
+                "action_type": action.action_type,
+                "execution_mode": action.execution_mode,
+                "idempotency_key": action.idempotency_key,
+            },
+        )
+        self._append_event(
+            application_id=application_id,
+            event_type="executor_result_logged",
+            actor=actor,
+            payload={
+                "executor_action_id": str(action.id),
+                "status": action.status,
+                "result": action.result or {},
+            },
+        )
+        return action
 
     # ------------------------------------------------------------------
     # Event log (append-only)

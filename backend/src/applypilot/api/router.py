@@ -5,6 +5,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from applypilot.db.dependencies import TrackerUnitOfWork, get_tracker_unit
+from applypilot.domain.executor import ExecutionMode, ExecutorRequest
+from applypilot.domain.executor.schemas import ExecutorActionRead, ExecutorDryRunRequest
 from applypilot.domain.applications.models import (
     ApplicationCreate,
     ApplicationRead,
@@ -16,6 +18,7 @@ from applypilot.domain.applications.models import (
 from applypilot.domain.policy import AutomationMode, PolicyContext, PolicyEngine, PolicyRequest
 from applypilot.domain.policy.schemas import PolicyDecisionRead, PolicyEvaluationRequest
 from applypilot.domain.state_machine import InvalidStateTransitionError
+from applypilot.services.executor_stub import StubExecutor
 
 router = APIRouter()
 api_router = APIRouter()
@@ -157,6 +160,47 @@ def evaluate_application_policy(
         decision=decision,
         actor=request.actor,
     )
+    unit.commit()
+    unit.refresh(record)
+    return record
+
+
+@router.post(
+    "/applications/{application_id}/executor-actions/dry-run",
+    response_model=ExecutorActionRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["applications"],
+)
+def dry_run_executor_action(
+    application_id: UUID,
+    request: ExecutorDryRunRequest,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Plan an executor action without side effects and record audit events."""
+    if unit.tracker.get_application(application_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Application {application_id} not found",
+        )
+
+    executor_request = ExecutorRequest(
+        action_type=request.action_type,
+        mode=ExecutionMode.DRY_RUN,
+        application_id=str(application_id),
+        idempotency_key=request.idempotency_key,
+        payload=request.payload,
+    )
+    result = StubExecutor().dispatch(executor_request)
+
+    try:
+        record = unit.tracker.record_executor_result(
+            request=executor_request,
+            result=result,
+            actor=request.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     unit.commit()
     unit.refresh(record)
     return record
