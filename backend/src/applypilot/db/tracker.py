@@ -172,6 +172,15 @@ class Tracker:
         """Return a previously recorded policy decision."""
         return self._session.get(PolicyDecisionRecord, policy_decision_id)
 
+    def get_policy_decisions(self, application_id: uuid.UUID) -> list[PolicyDecisionRecord]:
+        """Return policy decisions recorded for an application."""
+        return (
+            self._session.query(PolicyDecisionRecord)
+            .filter(PolicyDecisionRecord.application_id == application_id)
+            .order_by(PolicyDecisionRecord.created_at.asc())
+            .all()
+        )
+
     # ------------------------------------------------------------------
     # Executor actions
     # ------------------------------------------------------------------
@@ -236,6 +245,15 @@ class Tracker:
             },
         )
         return action
+
+    def get_executor_actions(self, application_id: uuid.UUID) -> list[ExecutorAction]:
+        """Return executor actions recorded for an application."""
+        return (
+            self._session.query(ExecutorAction)
+            .filter(ExecutorAction.application_id == application_id)
+            .order_by(ExecutorAction.created_at.asc())
+            .all()
+        )
 
     # ------------------------------------------------------------------
     # Event log (append-only)

@@ -8,6 +8,7 @@ from applypilot.db.dependencies import TrackerUnitOfWork, get_tracker_unit
 from applypilot.domain.executor import ExecutionMode, ExecutorRequest
 from applypilot.domain.executor.schemas import ExecutorActionRead, ExecutorDryRunRequest
 from applypilot.domain.applications.models import (
+    ApplicationAuditRead,
     ApplicationCreate,
     ApplicationRead,
     ApplicationStateUpdate,
@@ -238,6 +239,31 @@ def list_application_events(
         )
 
     return unit.tracker.get_events(application_id)
+
+
+@router.get(
+    "/applications/{application_id}/audit",
+    response_model=ApplicationAuditRead,
+    tags=["applications"],
+)
+def get_application_audit_summary(
+    application_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> dict[str, object]:
+    """Return the complete audit summary for one application."""
+    application = unit.tracker.get_application(application_id)
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Application {application_id} not found",
+        )
+
+    return {
+        "application": application,
+        "events": unit.tracker.get_events(application_id),
+        "policy_decisions": unit.tracker.get_policy_decisions(application_id),
+        "executor_actions": unit.tracker.get_executor_actions(application_id),
+    }
 
 
 api_router.include_router(router)
