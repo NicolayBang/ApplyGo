@@ -546,6 +546,12 @@ def test_executor_dry_run_is_persisted_and_audited() -> None:
     assert body["execution_mode"] == "dry_run"
     assert body["status"] == "planned"
     assert body["result"]["idempotency_key"] == "dry-run-001"
+    assert body["result"]["side_effects"] is False
+    assert body["result"]["requires"] == [
+        "recorded_policy_decision",
+        "stable_idempotency_key",
+    ]
+    assert "Validate recorded policy decision." in body["result"]["planned_steps"]
 
     events_response = client.get(f"/applications/{tracker.application_id}/events")
     assert events_response.status_code == 200

@@ -29,7 +29,11 @@ Every executor-facing request uses the same payload shape. Only mode changes beh
   "worker": "email|browser|documents",
   "mode": "dry_run|execute",
   "status": "planned|completed|failed|blocked",
-  "result": {},
+  "result": {
+    "side_effects": false,
+    "requires": [],
+    "planned_steps": []
+  },
   "error_code": null,
   "error_message": null,
   "completed_at": "ISO-8601"
@@ -38,7 +42,7 @@ Every executor-facing request uses the same payload shape. Only mode changes beh
 
 ## Required Behaviors
 - Enforce idempotency via `idempotency_key` before side effects.
-- `dry_run` returns a plan-only result and no external side effects.
+- `dry_run` returns a plan-only result, lists required safeguards, and records no external side effects.
 - `execute` performs the approved action.
 - Log policy decision before call, and execution attempt/result after call.
 - Return previous result when idempotency conflict indicates prior completion.

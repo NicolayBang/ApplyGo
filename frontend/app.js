@@ -79,7 +79,17 @@ const demoAudit = {
       execution_mode: "dry_run",
       status: "planned",
       idempotency_key: "dry-run-001",
-      result: { action_type: "send_follow_up_email" },
+      result: {
+        action_type: "send_follow_up_email",
+        execution_mode: "dry_run",
+        side_effects: false,
+        planned_steps: [
+          "Validate recorded policy decision.",
+          "Prepare send_follow_up_email payload.",
+          "Record executor result in the audit trail.",
+        ],
+        requires: ["recorded_policy_decision", "stable_idempotency_key"],
+      },
       created_at: "2026-06-13T16:20:00Z",
       completed_at: "2026-06-13T16:20:01Z",
     },
@@ -317,15 +327,24 @@ function renderExecutor(actions) {
   }
 
   elements.executorList.innerHTML = actions
-    .map(
-      (action) => `
+    .map((action) => {
+      const result = action.result || {};
+      const sideEffects =
+        typeof result.side_effects === "boolean"
+          ? `<div class="meta"><strong>Side effects:</strong> ${result.side_effects ? "yes" : "no"}</div>`
+          : "";
+
+      return `
         <div class="compact-item">
           <strong>${escapeHtml(action.action_type)}</strong>
           ${badge(action.status)}
           <div class="meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
+          ${sideEffects}
+          ${compactMeta("Planned steps", result.planned_steps)}
+          ${compactMeta("Requires", result.requires)}
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 }
 
