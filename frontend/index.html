@@ -8,10 +8,34 @@
   </head>
   <body>
     <main class="shell">
+      <aside class="sidebar" aria-label="Dashboard navigation">
+        <div class="sidebar-brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>ApplyPilot</span>
+        </div>
+        <nav class="sidebar-nav" aria-label="Primary">
+          <a class="active" href="#audit-form">Dashboard</a>
+          <a href="#recent-applications-list">Applications</a>
+          <a href="#intake-form">Manual intake</a>
+          <a href="#review-summary">Review</a>
+          <a href="#timeline">Timeline</a>
+        </nav>
+        <div class="sidebar-footer">
+          <span>Dry-run safe</span>
+          <strong>No external side effects</strong>
+        </div>
+      </aside>
+
       <section class="toolbar" aria-label="Audit dashboard controls">
-        <div>
-          <p class="eyebrow">ApplyPilot</p>
-          <h1>Application audit dashboard</h1>
+        <div class="toolbar-title">
+          <div class="brand-lockup">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="wordmark">Apply<span>Pilot</span></span>
+          </div>
+          <div>
+            <p class="eyebrow">Guided workflow</p>
+            <h1>Application audit dashboard</h1>
+          </div>
         </div>
         <form class="controls" id="audit-form">
           <label>
