@@ -6,10 +6,12 @@ SQLAlchemy ORM models live in applypilot.db.models.
 
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from applypilot.domain.executor.schemas import ExecutorActionRead
 from applypilot.domain.policy.schemas import PolicyDecisionRead
@@ -30,6 +32,52 @@ class JobCreate(BaseModel):
     job_type: str | None = None
     ats_type: str | None = None
     salary_raw: str | None = None
+
+    @field_validator(
+        "title",
+        "company",
+        "location",
+        "job_type",
+        "ats_type",
+        "salary_raw",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_short_text(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        normalized = re.sub(r"\s+", " ", value).strip()
+        return normalized or None
+
+    @field_validator("raw_text", mode="before")
+    @classmethod
+    def _normalize_raw_text(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        normalized = value.replace("\r\n", "\n").replace("\r", "\n").strip()
+        return normalized or None
+
+    @field_validator("source_url", mode="before")
+    @classmethod
+    def _normalize_source_url(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+
+        normalized = value.strip()
+        if not normalized:
+            return None
+
+        parsed = urlparse(normalized)
+        if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("source_url must be a valid http or https URL")
+
+        return normalized
+
+    @model_validator(mode="after")
+    def _require_useful_intake(self) -> JobCreate:
+        if any([self.title, self.source_url, self.raw_text]):
+            return self
+        raise ValueError("job intake requires at least a title, source_url, or raw_text")
 
 
 class JobRead(JobCreate):
