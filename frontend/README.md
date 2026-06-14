@@ -62,7 +62,7 @@ Open `frontend/index.html` in a browser (file:// or a local HTTP server both wor
 2. Ensure "API base" is set to `http://localhost:8000`.
 3. Click **Load audit**.
 
-The dashboard will display the application record, policy decisions, executor actions, and full audit timeline fetched from the backend.
+The dashboard will display the application record, review readiness, policy decisions, executor actions, and full audit timeline fetched from the backend.
 
 ## Manual intake
 
@@ -90,10 +90,11 @@ Executor details include side-effect status, planned steps, and required safegua
 
 ## API endpoint
 
-The dashboard fetches audit data from:
+The dashboard fetches audit and review data from:
 
 ```
 GET /applications/{application_id}/audit
+GET /applications/{application_id}/review-summary
 ```
 
 Response shape:

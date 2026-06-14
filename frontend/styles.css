@@ -226,6 +226,33 @@ button:disabled {
   margin-top: 16px;
 }
 
+.review-panel {
+  margin-top: 16px;
+}
+
+.readiness-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.readiness-item {
+  min-height: 88px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.readiness-item strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.readiness-item .badge {
+  margin-bottom: 8px;
+}
+
 .intake-form {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr 1.4fr auto auto;
@@ -338,6 +365,7 @@ button:disabled {
 }
 
 .badge.deny,
+.badge.blocked,
 .badge.failed {
   color: var(--danger);
   background: #fee2e2;
@@ -345,7 +373,8 @@ button:disabled {
 
 .badge.planned,
 .badge.allow,
-.badge.completed {
+.badge.completed,
+.badge.ready {
   color: var(--ok);
   background: #dcfce7;
 }
@@ -401,6 +430,7 @@ button:disabled {
 @media (max-width: 920px) {
   .toolbar,
   .summary-grid,
+  .readiness-list,
   .recent-filters,
   .intake-form {
     grid-template-columns: 1fr;
