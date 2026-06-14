@@ -12,7 +12,8 @@ _From the thread: tracker listeners that check the status of submitted applicati
 - Drive transitions like `APPLIED → CONFIRMED → INTERVIEW / REJECTED` instead of leaving the tracker stale after submit.
 - Candidate signals: recruiter emails (ties directly into M7 email classification), ATS confirmation emails, ATS status pages.
 - Listeners **propose** transitions — they do not mutate state directly. State still changes only through the state machine.
-- Every status check + resulting transition gets logged to `application_events`.
+- Every status check + resulting transition gets logged to the audit event store. The current M1
+  table is `event_log`; `application_events` is proposed future vocabulary only.
 - Open questions for later:
   - Polling cadence and per-source rate limits.
   - Dedupe of repeated/duplicate status signals.
@@ -27,7 +28,9 @@ _From slinky07: highlight jobs that weren't successfully applied, and produce a 
   - Which step failed and why — reuse the existing full-auto fallback reasons: captcha, unknown field, login required, conflicting data, low confidence.
   - The packet we already generated (CV bullets, cover note, screening answers) so a human can copy/paste rather than redo work.
   - Remaining fields / what's left to complete.
-- Pull the failure reason from `executor_runs` + the event log — **read the audit trail, don't recompute it.**
+- Pull the failure reason from the executor record plus the event log — **read the audit trail,
+  don't recompute it.** The current M1 table is `executor_actions`; `executor_runs` is a proposed
+  future name only.
 - Make it exportable/printable so a person can knock out the application by hand quickly.
 
 ## 3. Keep this doc as the running parking lot
