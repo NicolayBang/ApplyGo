@@ -1,8 +1,8 @@
 # M3 Company Identity Decision Brief
 
-**Status:** Review brief  
-**Decision needed:** Approve, request changes, or defer the proposed M3 company identity direction.  
-**Decision owners:** Nicolay + Francis  
+**Status:** Review brief; Nicolay soft-approved direction pending Francis review
+**Decision needed:** Francis feedback and later implementation-timing confirmation.
+**Decision owners:** Nicolay + Francis
 **Related:** `ADR-0005-m3-company-identity.md`; `docs/contracts/m3-company-migration-contract.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`
 
 ## Plain-English Decision
@@ -13,6 +13,9 @@ Should ApplyPilot introduce first-class company records in M3 while preserving t
 This would move the project from "company as loose text on a job" toward "company as a reusable
 identity that jobs can reference." It does not approve implementing recruiter contacts, company
 merge tools, external enrichment, or removing the existing company text field.
+
+Nicolay is for this direction. Francis review is still pending, and the team should review the
+timing again before opening an implementation PR for the migration.
 
 ## Current State
 

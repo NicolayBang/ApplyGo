@@ -6,7 +6,17 @@
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
+| **Review state** | Nicolay soft-approved direction; pending Francis review |
 | **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
+
+## Review State
+
+Nicolay is aligned with the proposed M3 company identity direction, pending Francis review and
+feedback.
+
+This is not implementation approval. Before the migration is implemented, the team should review
+the ADR and migration contract again in the context of the active milestone and decide whether the
+timing is right.
 
 ## Context
 
