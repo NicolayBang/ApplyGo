@@ -16,7 +16,7 @@ manual intake -> parse/classify -> state progression -> scoring
 It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
-The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004`.
+The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005`.
 
 ## Provisioning Boundary
 
@@ -139,18 +139,22 @@ behavior is application-owned cascade; whether decisions must outlive an applica
 | Column | PostgreSQL type | Null | Default | Key / index |
 |---|---|---:|---|---|
 | `id` | `uuid` | no | supplied by ORM | PK |
+| `request_id` | `uuid` | no | generated at executor boundary | UNIQUE, `ix_executor_actions_request_id` |
 | `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_executor_actions_application_id` |
+| `worker` | `varchar(32)` | no | none | |
 | `idempotency_key` | `varchar(256)` | no | none | UNIQUE, `ix_executor_actions_idempotency_key` |
 | `action_type` | `varchar(64)` | no | none | |
 | `execution_mode` | `varchar(16)` | no | none | |
 | `status` | `varchar(32)` | no | `queued` | |
+| `requested_by` | `varchar(64)` | no | none | |
+| `requested_at` | `timestamptz` | no | generated at executor boundary | |
 | `payload` | `jsonb` | yes | none | |
 | `result` | `jsonb` | yes | none | |
 | `created_at` | `timestamptz` | no | `now()` | |
 | `completed_at` | `timestamptz` | yes | none | |
 
-The unique idempotency key is database-enforced. The dry-run endpoint verifies an allowed,
-application-owned policy decision before recording an action.
+The unique idempotency key and request ID are database-enforced. The dry-run endpoint verifies
+an allowed, application-owned policy decision before recording an action.
 
 ### `event_log`
 

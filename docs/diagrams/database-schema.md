@@ -55,10 +55,13 @@ erDiagram
     }
     EXECUTOR_ACTIONS {
         uuid id PK
+        uuid request_id UK
         uuid application_id FK
+        varchar worker
         varchar idempotency_key UK
         varchar execution_mode
         varchar status
+        varchar requested_by
     }
     EVENT_LOG {
         uuid id PK

@@ -265,11 +265,13 @@ def dry_run_executor_action(
             detail=f"Policy decision {policy_decision.id} does not allow execution",
         )
 
-    executor_request = ExecutorRequest(
+    executor_request = ExecutorRequest.create(
         action_type=request.action_type,
         mode=ExecutionMode.DRY_RUN,
         application_id=str(application_id),
+        worker=request.worker,
         idempotency_key=request.idempotency_key,
+        requested_by=request.actor,
         payload={
             **request.payload,
             "policy_decision_id": str(request.policy_decision_id),

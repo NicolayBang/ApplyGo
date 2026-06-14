@@ -81,6 +81,10 @@ def test_demo_seed_creates_application_policy_and_dry_run_executor_audit_records
     assert tracker.policy_request.mode == AutomationMode.DRY_RUN
     assert tracker.policy_decision.allowed is True
     assert tracker.executor_request.mode == ExecutionMode.DRY_RUN
+    assert tracker.executor_request.worker == "email"
+    assert tracker.executor_request.requested_by == "demo_seed"
+    assert tracker.executor_request.request_id is not None
+    assert tracker.executor_request.requested_at is not None
     assert tracker.executor_request.payload["policy_decision_id"] == str(tracker.policy_record.id)
     assert tracker.executor_request.idempotency_key == f"demo-seed-{tracker.application.id}"
     assert executor.dispatched_request == tracker.executor_request

@@ -196,11 +196,15 @@ Execution or dry-run records for approved worker actions.
 
 ```text
 id uuid PK
+request_id uuid unique not null
 application_id uuid FK -> applications.id on delete cascade
+worker varchar(32) not null
 idempotency_key varchar(256) unique not null
 action_type varchar(64) not null
 execution_mode varchar(16) not null
 status varchar(32) not null default queued
+requested_by varchar(64) not null
+requested_at timestamptz not null
 payload jsonb nullable
 result jsonb nullable
 created_at timestamptz not null
@@ -211,6 +215,7 @@ Indexes:
 
 ```text
 ix_executor_actions_application_id(application_id)
+ix_executor_actions_request_id(request_id)
 ix_executor_actions_idempotency_key(idempotency_key)
 ```
 

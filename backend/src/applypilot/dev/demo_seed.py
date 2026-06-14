@@ -72,11 +72,13 @@ def seed_demo_application(
         raise RuntimeError("Demo seed policy decision unexpectedly blocked executor dry-run.")
 
     policy_record = tracker.record_policy_decision(policy_request, policy_decision)
-    executor_request = ExecutorRequest(
+    executor_request = ExecutorRequest.create(
         action_type=policy_request.requested_action,
         mode=ExecutionMode.DRY_RUN,
         application_id=str(application.id),
+        worker=policy_request.worker.value,
         idempotency_key=f"demo-seed-{application.id}",
+        requested_by="demo_seed",
         payload={
             "policy_decision_id": str(policy_record.id),
             "template": "demo_follow_up",

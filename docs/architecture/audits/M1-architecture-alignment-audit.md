@@ -77,20 +77,22 @@ The core control-plane promise is intact:
 
 ## Gaps and Risks
 
-### Executor Contract Shape Drift
+### Executor Contract Shape Alignment
 
-The executor contract document describes a fuller request and response shape than the current dataclass implementation.
-
-Contract fields not yet represented directly in `ExecutorRequest` include:
+The executor contract document describes request and response metadata now represented in the
+dataclass implementation:
 
 - `request_id`
 - `worker`
 - `requested_by`
 - `requested_at`
 
-Assessment: acceptable for early M1, but this is the clearest contract drift.
+Assessment: resolved after the executor request metadata alignment PR. `ExecutorRequest`,
+`ExecutorResult`, API schemas, persisted executor actions, audit events, and tests now carry
+the contract metadata.
 
-Recommended follow-up: align the executor dataclasses, schemas, stored payloads, and tests with the contract before adding real worker implementations.
+Recommended follow-up: keep real worker implementations behind this contract and avoid adding
+side effects until policy and executor evidence remain visible in the dashboard.
 
 ### Submission Guard Location
 

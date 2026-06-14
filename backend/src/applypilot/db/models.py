@@ -249,15 +249,21 @@ class ExecutorAction(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    request_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, unique=True
+    )
     application_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("applications.id", ondelete="CASCADE"),
         nullable=False,
     )
+    worker: Mapped[str] = mapped_column(String(32), nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(256), nullable=False, unique=True)
     action_type: Mapped[str] = mapped_column(String(64), nullable=False)
     execution_mode: Mapped[str] = mapped_column(String(16), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="queued", nullable=False)
+    requested_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -271,6 +277,7 @@ class ExecutorAction(Base):
 
     __table_args__ = (
         Index("ix_executor_actions_application_id", "application_id"),
+        Index("ix_executor_actions_request_id", "request_id"),
         Index("ix_executor_actions_idempotency_key", "idempotency_key"),
     )
 
