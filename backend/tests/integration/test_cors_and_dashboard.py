@@ -98,6 +98,9 @@ def test_dashboard_exposes_state_progression_controls() -> None:
     assert "stateTransitions" in script_response.text
     assert "/applications/${applicationId}/state" in script_response.text
     assert "ReadyForReview" in script_response.text
+    assert "visibleStateTransitions" in script_response.text
+    assert "hasSubmissionExecutorEvidence" in script_response.text
+    assert "Dry-run before marking submitted." in script_response.text
     assert "Next states" in script_response.text
 
 

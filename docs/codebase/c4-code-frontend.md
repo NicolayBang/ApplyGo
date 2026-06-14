@@ -23,6 +23,7 @@
 - `demoAudit` supports offline review.
 - `stateTransitions` mirrors the backend transition graph for available controls.
 - `sampleJob` prefills a repeatable manual-intake demonstration.
+- `visibleStateTransitions()` hides submission until audit prerequisites are present.
 
 ### Rendering
 
@@ -47,7 +48,8 @@
 
 The dashboard validates UUIDs, tracks whether an application is loaded, disables actions
 whose prerequisites are missing, and requires an allowed recorded policy decision before
-offering the dry-run action.
+offering the dry-run action. It also requires matching policy and executor evidence before
+offering the `Submitted` state transition.
 
 ## API Contract
 
