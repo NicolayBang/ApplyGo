@@ -302,6 +302,32 @@ function compactMeta(label, values) {
   return `<div class="meta"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(items.join(", "))}</div>`;
 }
 
+function eventSummary(event) {
+  const payload = event.payload || {};
+
+  if (event.from_state || event.to_state) {
+    return `State change: ${event.from_state || "none"} -> ${event.to_state || "none"}`;
+  }
+
+  if (event.event_type === "application.scored") {
+    return `Score: ${payload.fit_score ?? "not recorded"} (${payload.confidence || "unknown confidence"}, ${payload.recommendation || "unknown recommendation"})`;
+  }
+
+  if (event.event_type === "policy_decision_logged") {
+    return `Policy decision: ${payload.decision || "unknown"} for ${payload.action_type || "unknown action"}`;
+  }
+
+  if (event.event_type === "executor_attempt_logged") {
+    return `Executor attempt: ${payload.execution_mode || "unknown mode"} (${payload.idempotency_key || "no idempotency key"})`;
+  }
+
+  if (event.event_type === "executor_result_logged") {
+    return `Executor result: ${payload.status || "unknown status"}`;
+  }
+
+  return "Audit event recorded.";
+}
+
 function renderPolicy(decisions) {
   if (!decisions.length) {
     elements.policyList.innerHTML = '<p class="empty">No policy decisions recorded.</p>';
@@ -368,6 +394,7 @@ function renderTimeline(events) {
           <div class="event-body">
             <strong>${escapeHtml(event.event_type)}</strong>
             <div class="meta">Actor: ${escapeHtml(event.actor || "system")}</div>
+            <div class="meta">${escapeHtml(eventSummary(event))}</div>
             <div class="meta">${safeJson(event.payload)}</div>
           </div>
         </li>

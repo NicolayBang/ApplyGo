@@ -91,3 +91,15 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "Side effects" in script_response.text
     assert "button:disabled" in style_response.text
     assert "clearStateActions" in script_response.text
+
+
+def test_dashboard_summarizes_audit_timeline_events() -> None:
+    """The static dashboard renders readable summaries for audit timeline events."""
+    script_response = client.get("/ui/app.js")
+
+    assert script_response.status_code == 200
+    assert "eventSummary" in script_response.text
+    assert "State change:" in script_response.text
+    assert "Policy decision:" in script_response.text
+    assert "Executor result:" in script_response.text
+    assert "application.scored" in script_response.text
