@@ -1,7 +1,7 @@
 """DB-backed integration test: seed → audit API (seed-to-dashboard flow).
 
 Validates that seed_demo_application() creates persisted records in PostgreSQL
-and that the /applications/{id}/audit endpoint returns a complete audit summary.
+and that the dashboard endpoints return complete audit and review summaries.
 
 Requires PostgreSQL with migrations already applied (alembic upgrade head).
 Skipped automatically at runtime when the database is unreachable.
@@ -124,6 +124,21 @@ def test_seed_creates_records_and_audit_api_returns_summary(db_session) -> None:
         assert len(body["executor_actions"]) == 1
         assert body["executor_actions"][0]["status"] == "planned"
         assert body["executor_actions"][0]["execution_mode"] == "dry_run"
+
+        review_response = client.get(f"/applications/{result.application_id}/review-summary")
+
+        assert review_response.status_code == 200
+        review_body = review_response.json()
+        assert review_body["application"]["id"] == str(result.application_id)
+        assert review_body["event_count"] >= 4
+        assert review_body["latest_policy_decision"]["id"] == str(result.policy_decision_id)
+        assert review_body["latest_policy_decision"]["allowed"] is True
+        assert review_body["latest_executor_action"]["id"] == str(result.executor_action_id)
+        assert review_body["latest_executor_action"]["status"] == "planned"
+        assert review_body["ready_for_policy"] is False
+        assert review_body["ready_for_dry_run"] is True
+        assert review_body["ready_for_submission"] is False
+        assert review_body["next_states"] == ["Draft"]
     finally:
         app.dependency_overrides.pop(get_tracker_unit, None)
 
