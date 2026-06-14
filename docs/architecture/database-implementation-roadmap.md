@@ -37,8 +37,9 @@ ApplyPilot already uses PostgreSQL. The current database is not merely mock data
 - SQLAlchemy writes persisted jobs, applications, policy decisions, executor actions, and events.
 - The demo seed and seed-to-dashboard validator operate against PostgreSQL when it is running.
 
-However, Compose currently starts only an empty PostgreSQL engine. It does not automatically run
-Alembic, and it has no one-shot migration or seed container.
+Compose now includes PostgreSQL/Redis health checks, a one-shot Alembic migration service, and an
+optional profile-gated demo seed/validation service. Developers may still run Alembic directly from
+`backend/` when they need manual control.
 
 The repository does not contain the PostgreSQL image binary or a shared database volume. Docker
 pulls `postgres:16`; each developer creates a local volume; Alembic reproduces the schema. A custom
@@ -49,7 +50,7 @@ PostgreSQL image is not needed for normal team sharing.
 | Status | Milestone | Database shape |
 |---|---|---|
 | **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0007` |
-| **NEXT** | M1 hardening | Add reproducible migration startup |
+| **DONE** | M1 hardening | Reproducible migration startup |
 | **FUTURE** | M3 | Normalize companies and job ownership |
 | **FUTURE** | M5 | Versioned application packets and reusable answers |
 | **FUTURE** | M7 | Contacts, recruiter threads, and individual messages |
@@ -102,7 +103,6 @@ manual intake
 - `jobs.company` is a nullable string, not a normalized company foreign key.
 - `documents` and `email_threads` are M1 placeholders with one application owner.
 - Retry, backoff, and rate-limit fields are not present.
-- Compose does not have a health check, migration service, or seed service.
 
 These are known boundaries, not evidence that the current schema is fake.
 
@@ -146,25 +146,18 @@ records. Do not add soft-delete columns or detached audit records in M1.
 
 ### 3. PostgreSQL startup and migration ownership
 
-**Status:** NEXT
+**Status:** DONE
 
 Today the operator runs:
 
 ```bash
 docker compose up -d postgres redis
-cd backend
-python -m alembic upgrade head
+docker compose run --rm migrate
 ```
 
-A separate operational PR may add:
-
-- a PostgreSQL health check
-- a small Python backend image used as a migration runner
-- a one-shot `migrate` Compose service
-- an optional, explicitly invoked demo `seed` service
-
-That service should wait for healthy PostgreSQL, run `alembic upgrade head`, and exit. It should
-not bundle the FastAPI deployment or publish a custom PostgreSQL image.
+The migration service waits for healthy PostgreSQL, runs `alembic upgrade head`, and exits. The
+optional `seed` service is profile-gated under `demo` and runs the seed-to-dashboard validation.
+Neither service publishes a custom PostgreSQL image or bundles a FastAPI deployment.
 
 ### 4. Real PostgreSQL validation
 
@@ -485,7 +478,7 @@ Do not add `companies`, packet substates, recruiter entities, or executor retrie
 
 **Branch:** `feature/M1-compose-migration-runner`
 
-This may proceed separately from schema hardening:
+Implemented separately from schema hardening:
 
 1. Add a small supported-Python backend Dockerfile.
 2. Add the PostgreSQL health check.
@@ -523,8 +516,8 @@ The developer runs:
 git pull
 cp .env.example .env
 docker compose up -d postgres redis
+docker compose run --rm migrate
 cd backend
-python -m alembic upgrade head
 python -m scripts.validate_seed_to_dashboard
 ```
 

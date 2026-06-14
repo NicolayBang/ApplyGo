@@ -21,7 +21,13 @@ The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006
 ## Provisioning Boundary
 
 `docker compose up -d postgres` starts an empty PostgreSQL server and a local named volume.
-It does not create ApplyPilot tables. The schema is created and upgraded by running:
+The schema is created and upgraded by running the one-shot migration service:
+
+```bash
+docker compose run --rm migrate
+```
+
+Developers may also run Alembic directly from `backend/`:
 
 ```bash
 cd backend
@@ -191,5 +197,4 @@ The current dry-run does not automatically advance application state after execu
 
 ## Open Database Decisions
 
-- Decide whether Compose should gain a one-shot migration service; today migration is manual.
 - Approve or reject the normalized future model through ADR-0002 before adding tables.

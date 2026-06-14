@@ -20,8 +20,7 @@ after the migration chain is applied:
 
 ```bash
 docker compose up -d postgres
-cd backend
-python -m alembic upgrade head
+docker compose run --rm migrate
 ```
 
 The Docker image and local named volume are not repository artifacts. Teammates reproduce the

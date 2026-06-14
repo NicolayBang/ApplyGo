@@ -28,7 +28,8 @@ In both cases, `docker-compose.yml` remains the source of truth.
 Start services:
 ```bash
 cd /workspaces/ApplyPilot
-docker compose up -d
+docker compose up -d postgres redis
+docker compose run --rm migrate
 ```
 
 Stop services:
@@ -43,6 +44,14 @@ Compose usage is unchanged between local and Codespaces:
 cd /workspaces/ApplyPilot
 docker compose up -d
 docker compose ps
+```
+
+`docker compose up -d` also starts the one-shot `migrate` service. For a narrower workflow, start
+only shared services and run migrations explicitly:
+
+```bash
+docker compose up -d postgres redis
+docker compose run --rm migrate
 ```
 
 ## Verification Checklist
@@ -81,6 +90,7 @@ Start shared services from the repository root:
 
 ```bash
 docker compose up -d postgres redis
+docker compose run --rm migrate
 ```
 
 Run backend validation from `backend/`:
@@ -89,7 +99,6 @@ Run backend validation from `backend/`:
 cd backend
 python -m pip install -e ".[dev]"
 python -m ruff check .
-python -m alembic upgrade head
 python -m pytest
 python -m compileall src tests alembic scripts
 python -m scripts.validate_seed_to_dashboard
@@ -99,9 +108,15 @@ For the focused seed-to-dashboard check:
 
 ```bash
 cd backend
-python -m alembic upgrade head
 python -m pytest tests/integration/test_seed_to_dashboard.py -v
 python -m scripts.validate_seed_to_dashboard
+```
+
+To run the same demo seed and audit validation inside Compose:
+
+```bash
+cd /workspaces/ApplyPilot
+docker compose --profile demo run --rm seed
 ```
 
 The DB-backed seed-to-dashboard test skips when PostgreSQL is unavailable. In Codespaces and CI, PostgreSQL should be running and the test should execute against a migrated schema.

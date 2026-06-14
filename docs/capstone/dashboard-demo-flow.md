@@ -31,13 +31,13 @@ docker compose up -d postgres redis
 Run database migrations:
 
 ```bash
-cd backend
-python -m alembic upgrade head
+docker compose run --rm migrate
 ```
 
 Start the backend:
 
 ```bash
+cd backend
 python -m uvicorn applypilot.main:app --host 0.0.0.0 --port 8000
 ```
 

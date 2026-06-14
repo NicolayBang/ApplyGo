@@ -54,7 +54,8 @@ Guarantees in place today:
 - `jobs.company` is a nullable string, not a normalized company foreign key.
 - `documents` and `email_threads` are single-application-owner placeholders.
 - No retry / backoff / rate-limit fields exist.
-- Compose has no health check, migration service, or seed service.
+- Compose has health checks, a one-shot migration service, and an optional demo seed service;
+  production deployment automation remains out of scope.
 
 These are deliberate scope boundaries for the M1 spine, not evidence of an incorrect schema.
 
@@ -127,7 +128,7 @@ erDiagram
 | Phase | Milestone | Scope | Status |
 |-------|-----------|-------|--------|
 | **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0007` | **DONE** |
-| **0.5** | M1 hardening | Reproducible migration startup | **NEXT** |
+| **0.5** | M1 hardening | Reproducible migration startup | **DONE** |
 | **1** | M3 | Normalize `companies`; `jobs.company_id` FK; preserve source company text for provenance | **FUTURE — contract D required first** |
 | **2** | M5 | `documents`, `document_versions`, `application_documents`, `answer_library`, `application_answers` (the document↔application M—N) | **FUTURE — contract G required first** |
 | **3** | M7 | `contacts`, `threads`, `messages`, `thread_applications`, `threads.conversation_state` (the thread↔application M—N) | **FUTURE — contract H required first** |
@@ -154,7 +155,7 @@ Do not pull M3, M5, M7, or executor hardening into an M1 hardening migration.
 ### Decisions still required before M1 hardening (Phase 0.5)
 
 Policy/executor retention is resolved for M1 by ADR-0004 and migration `0007`. Reproducible
-migration startup still needs an implementation PR.
+migration startup is implemented through the Compose `migrate` service.
 
 ---
 
