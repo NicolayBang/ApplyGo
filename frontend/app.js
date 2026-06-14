@@ -333,33 +333,61 @@ function renderSummary(application) {
   const nextStates = visibleStateTransitions(application)
     .map((transition) => transition.state)
     .join(", ");
-  const rows = [
-    ["Application", application.id],
-    ["Job", application.job_id],
-    ["Role", job.title],
-    ["Company", job.company],
+  const overviewRows = [
     ["Location", job.location],
     ["Remote", job.remote_ok ? "Yes" : null],
     ["Job type", job.job_type],
-    ["ATS", job.ats_type],
     ["Salary", job.salary_raw],
     ["State", application.state],
     ["Next states", nextStates || "None"],
     ["Mode", application.automation_mode],
-    ["Fit score", scoreDisplay(application)],
     ["Confidence", application.confidence],
-    ["Recommendation", recommendationDisplay(application.recommendation)],
     ["Missing data", (application.missing_data || []).join(", ")],
     ["Red flags", (application.red_flags || []).join(", ")],
     ["Created", formatDate(application.created_at)],
     ["Updated", formatDate(application.updated_at)],
   ];
+  const technicalRows = [
+    ["Application", application.id],
+    ["Job", application.job_id],
+    ["ATS", job.ats_type],
+  ];
 
-  elements.applicationSummary.innerHTML = rows
-    .map(
-      ([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
-    )
-    .join("");
+  elements.applicationSummary.innerHTML = `
+    <div class="application-hero">
+      <div class="avatar-tile">${escapeHtml(initials(job.company || job.title || "AP"))}</div>
+      <div>
+        <strong>${escapeHtml(job.title || "Untitled role")}</strong>
+        <span>${escapeHtml(job.company || "Unknown company")}</span>
+        <div class="hero-meta">${escapeHtml(summaryMeta(job))}</div>
+      </div>
+    </div>
+    <div class="summary-signal-row">
+      <div>
+        <span>Fit score</span>
+        <strong>${escapeHtml(scoreDisplay(application) || "Not recorded")}</strong>
+      </div>
+      <div>
+        <span>Status</span>
+        ${badge(application.state)}
+      </div>
+    </div>
+    <div class="summary-signal-row">
+      <div>
+        <span>Recommendation</span>
+        ${badge(recommendationDisplay(application.recommendation) || "Not recorded")}
+      </div>
+      <div>
+        <span>Next state</span>
+        <strong>${escapeHtml(nextStates || "None")}</strong>
+      </div>
+    </div>
+    ${detailRows(overviewRows)}
+    <details class="technical-details">
+      <summary>Technical identifiers</summary>
+      ${detailRows(technicalRows)}
+    </details>
+  `;
 }
 
 function scoreDisplay(application) {
@@ -372,6 +400,33 @@ function scoreDisplay(application) {
 
 function recommendationDisplay(value) {
   return String(value || "").replace(/_/g, " ");
+}
+
+function initials(value) {
+  return String(value || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+}
+
+function summaryMeta(job) {
+  return [job.location, job.job_type, job.salary_raw].filter(Boolean).join(" - ") || "Details pending";
+}
+
+function detailRows(rows) {
+  return `
+    <dl class="detail-list">
+      ${rows
+        .map(
+          ([label, value]) =>
+            `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
+        )
+        .join("")}
+    </dl>
+  `;
 }
 
 function clearStateActions() {
@@ -583,17 +638,29 @@ function renderScoreDetails(application) {
     ["Red flags", application.red_flags || []],
   ];
 
-  elements.scoreList.innerHTML = groups
-    .map(([label, values]) => {
-      const content = values.length ? values.join(", ") : "None";
-      return `
-        <div class="compact-item">
-          <strong>${escapeHtml(label)}</strong>
-          <div class="meta">${escapeHtml(content)}</div>
-        </div>
-      `;
-    })
-    .join("");
+  elements.scoreList.innerHTML = `
+    <div class="score-hero">
+      <div class="score-value">
+        <strong>${escapeHtml(application.fit_score || "-")}</strong>
+        <span>/100</span>
+      </div>
+      <div>
+        ${badge(recommendationDisplay(application.recommendation) || "No recommendation")}
+        <div class="meta">${escapeHtml(application.confidence || "unknown")} confidence</div>
+      </div>
+    </div>
+    ${groups
+      .map(([label, values]) => {
+        const content = values.length ? values.join(", ") : "None";
+        return `
+          <div class="compact-item evidence-item ${values.length ? "has-evidence" : "empty-evidence"}">
+            <strong>${escapeHtml(label)}</strong>
+            <div class="meta">${escapeHtml(content)}</div>
+          </div>
+        `;
+      })
+      .join("")}
+  `;
 }
 
 function badge(value) {
@@ -643,10 +710,12 @@ function renderPolicy(decisions) {
   elements.policyList.innerHTML = decisions
     .map(
       (decision) => `
-        <div class="compact-item">
-          <strong>${escapeHtml(decision.action_type)}</strong>
-          ${badge(decision.decision)}
-          <div class="meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
+        <div class="compact-item stage-card">
+          <div class="stage-card-header">
+            <strong>${escapeHtml(decision.action_type)}</strong>
+            ${badge(decision.decision)}
+          </div>
+          <div class="stage-meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
           ${compactMeta("Reasons", decision.reasons)}
           ${compactMeta("Risks", decision.risks)}
           ${compactMeta("Required overrides", decision.required_overrides)}
@@ -667,14 +736,16 @@ function renderExecutor(actions) {
       const result = action.result || {};
       const sideEffects =
         typeof result.side_effects === "boolean"
-          ? `<div class="meta"><strong>Side effects:</strong> ${result.side_effects ? "yes" : "no"}</div>`
+          ? `<div class="side-effect-banner ${result.side_effects ? "warning" : "safe"}"><strong>Side effects:</strong> ${result.side_effects ? "yes" : "no"}${result.side_effects ? "" : " - dry-run only"}</div>`
           : "";
 
       return `
-        <div class="compact-item">
-          <strong>${escapeHtml(action.action_type)}</strong>
-          ${badge(action.status)}
-          <div class="meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
+        <div class="compact-item stage-card">
+          <div class="stage-card-header">
+            <strong>${escapeHtml(action.action_type)}</strong>
+            ${badge(action.status)}
+          </div>
+          <div class="stage-meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
           ${sideEffects}
           ${compactMeta("Planned steps", result.planned_steps)}
           ${compactMeta("Requires", result.requires)}
