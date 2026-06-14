@@ -427,6 +427,53 @@ Low-risk documentation auto-merge exception:
 - If any criterion is unclear, Derek must stop and ask for human instruction before merging.
 - For all non-low-risk PRs, Derek cannot merge pull requests unless a human explicitly instructs him to merge that PR.
 
+### Auto-Merge Mode
+
+Auto-Merge Mode is an explicit, temporary operating mode. It is inactive by default and starts only
+when a human says to enable Auto-Merge Mode, defines the scope, and defines the stop condition.
+
+The activation must include:
+
+- the maximum number of PRs or an exact ending condition;
+- the allowed risk level;
+- whether Copilot or another remote agent review is required;
+- whether Codex may merge after validation or must ask first.
+
+If any activation detail is missing, Derek/Codex must ask before merging anything.
+
+Auto-Merge Mode may merge a PR only when all of the following are true:
+
+- the PR is inside the human-approved scope and remaining merge window;
+- the changed files match the approved risk level;
+- GitHub CI has completed successfully on the current head commit;
+- the PR is mergeable and has no unresolved review feedback, requested changes, or conflicts;
+- local validation appropriate to the change has passed, or remote validation has been requested and
+  reviewed when local validation is not enough;
+- Copilot or another remote agent has provided the requested review/validation when the activation
+  requires it;
+- the PR body or comments record what was validated and why any tests were not required;
+- Codex has reviewed any remote-agent changes before merging.
+
+Auto-Merge Mode must not merge a PR without fresh human instruction when the PR touches:
+
+- application code;
+- tests;
+- Alembic migrations or database schema behavior;
+- contracts that authorize implementation;
+- architecture authority or approved ADRs;
+- `AGENTS.md` or `CLAUDE.md`;
+- CI/workflow files;
+- security-sensitive files;
+- secrets, credentials, or deployment permissions.
+
+Copilot review prompts in Auto-Merge Mode must be narrow and auditable. They must name the exact PR,
+files or behavior in scope, expected validation, reference documents, and what Copilot must not
+change. Copilot results are advisory until Codex reviews them.
+
+When the Auto-Merge Mode stop condition is reached, Derek/Codex must stop auto-merging, clean up any
+finished branches when safe, report the merged PRs and any issues encountered, and return to normal
+human-confirmed merge behavior.
+
 ---
 
 ## Dev Environment
