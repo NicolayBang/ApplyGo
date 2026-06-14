@@ -34,3 +34,6 @@ Thumbs.db
 *.sqlite3
 alembic.ini.backup
 *.egg-info/
+
+# Claude Code local instructions
+CLAUDE.local.md

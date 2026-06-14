@@ -98,7 +98,7 @@ Owns:
 
 Does not approve or perform merges unless explicitly instructed by a human.
 
-### Copilot / Codex
+### Claude Code / Copilot / Codex
 
 Owns:
 
@@ -110,6 +110,15 @@ Owns:
 Must not invent architecture.
 
 Must follow approved architecture and contracts.
+
+---
+
+## AI Instruction Files
+
+- `AGENTS.md` is the canonical repository-wide instruction file.
+- `CLAUDE.md` is a committed Claude Code adapter that imports `AGENTS.md`.
+- Do not duplicate repository rules in `CLAUDE.md`; update `AGENTS.md` instead.
+- `CLAUDE.local.md` is reserved for machine- or user-specific Claude Code preferences and is ignored by Git.
 
 ---
 
@@ -182,6 +191,7 @@ Implement in this order:
 
 ApplyPilot/
 ├── AGENTS.md
+├── CLAUDE.md
 ├── README.md
 ├── .env.example
 ├── docker-compose.yml
@@ -190,6 +200,7 @@ ApplyPilot/
 └── docs/
 	├── architecture/
 	├── contracts/
+	├── codebase/
 	├── decisions/
 	├── diagrams/
 	└── team/
