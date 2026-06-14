@@ -44,6 +44,7 @@ Useful reviewer entry points:
 - `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
 - `docs/architecture/database-implementation-roadmap.md`: done/next/future PostgreSQL plan and contract readiness
 - `docs/contracts/database-schema-contract.md`: exact M1 PostgreSQL table and constraint contract
+- `docs/diagrams/README.md`: diagram index and diagram authority reminder
 - `docs/diagrams/database-schema.md`: separate implemented and planned ER views
 - `docs/devops/codespaces.md`: Codespaces and DB-backed validation workflow
 - `docs/architecture/locked-plan.md`: architecture authority and M1 scope
