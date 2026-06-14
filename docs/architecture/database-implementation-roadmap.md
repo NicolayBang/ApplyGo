@@ -33,7 +33,7 @@ For exact implemented columns and constraints, use
 ApplyPilot already uses PostgreSQL. The current database is not merely mock data:
 
 - Compose starts a real `postgres:16` server.
-- Alembic migrations `0001` through `0006` create and harden the real M1 tables.
+- Alembic migrations `0001` through `0007` create and harden the real M1 tables.
 - SQLAlchemy writes persisted jobs, applications, policy decisions, executor actions, and events.
 - The demo seed and seed-to-dashboard validator operate against PostgreSQL when it is running.
 
@@ -48,8 +48,8 @@ PostgreSQL image is not needed for normal team sharing.
 
 | Status | Milestone | Database shape |
 |---|---|---|
-| **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0006` |
-| **NEXT** | M1 hardening | Review proposed retention policy and add reproducible migration startup |
+| **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0007` |
+| **NEXT** | M1 hardening | Add reproducible migration startup |
 | **FUTURE** | M3 | Normalize companies and job ownership |
 | **FUTURE** | M5 | Versioned application packets and reusable answers |
 | **FUTURE** | M7 | Contacts, recruiter threads, and individual messages |
@@ -95,10 +95,10 @@ manual intake
 - The ORM does not delete or orphan-delete events when an application is removed.
 - Migration `0004` aligns the application state default with `ApplicationCreated`.
 - Migration `0006` enforces stable M1 value sets with named PostgreSQL `CHECK` constraints.
+- Migration `0007` preserves policy decisions and executor actions by removing application delete cascade.
 
 ### Current limitations
 
-- `policy_decisions` and `executor_actions` still cascade with application deletion.
 - `jobs.company` is a nullable string, not a normalized company foreign key.
 - `documents` and `email_threads` are M1 placeholders with one application owner.
 - Retry, backoff, and rate-limit fields are not present.
@@ -130,10 +130,9 @@ Nullable scoring outputs remain application-owned until their vocabulary stabili
 
 ### 2. Policy and executor retention
 
-**Status:** PROPOSED IN ADR-0004
+**Status:** DONE BY ADR-0004 AND MIGRATION `0007`
 
-Current event rows are preserved, but policy decisions and executor actions are deleted with their
-application. That weakens the long-term audit story.
+Event rows, policy decisions, and executor actions are retained as audit-bearing records.
 
 Choose one application deletion policy:
 
@@ -142,9 +141,8 @@ Choose one application deletion policy:
 2. **Soft-delete applications:** add deletion metadata and exclude deleted rows from normal reads.
 3. **Retain detached audit records:** make selected foreign keys nullable and preserve snapshots.
 
-Proposed M1 direction: restrict physical deletion and preserve events, policy decisions, and
-executor records. Do not add soft-delete columns or detached audit records in M1. The proposed
-decision artifact is `docs/decisions/ADR-0004-m1-audit-retention.md`.
+M1 direction: restrict physical deletion and preserve events, policy decisions, and executor
+records. Do not add soft-delete columns or detached audit records in M1.
 
 ### 3. PostgreSQL startup and migration ownership
 

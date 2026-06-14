@@ -123,10 +123,10 @@ class Application(Base):
         back_populates="application", cascade="all, delete-orphan"
     )
     policy_decisions: Mapped[list[PolicyDecision]] = relationship(
-        back_populates="application", cascade="all, delete-orphan"
+        back_populates="application", passive_deletes="all"
     )
     executor_actions: Mapped[list[ExecutorAction]] = relationship(
-        back_populates="application", cascade="all, delete-orphan"
+        back_populates="application", passive_deletes="all"
     )
     events: Mapped[list[EventLogEntry]] = relationship(
         back_populates="application", passive_deletes="all"
@@ -232,7 +232,7 @@ class PolicyDecision(Base):
     )
     application_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("applications.id", ondelete="CASCADE"),
+        ForeignKey("applications.id"),
         nullable=False,
     )
     action_type: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -282,7 +282,7 @@ class ExecutorAction(Base):
     )
     application_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("applications.id", ondelete="CASCADE"),
+        ForeignKey("applications.id"),
         nullable=False,
     )
     worker: Mapped[str] = mapped_column(String(32), nullable=False)

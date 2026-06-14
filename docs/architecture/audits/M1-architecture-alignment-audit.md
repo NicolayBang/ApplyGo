@@ -108,11 +108,14 @@ Approved + allowed policy decision + matching executor result -> Submitted
 
 ### Policy and Executor Retention
 
-Event logs survive application deletion, but `policy_decisions` and `executor_actions` still cascade with applications.
+Event logs, policy decisions, and executor actions survive application deletion at the database
+foreign-key layer.
 
-Assessment: this is not hidden drift because it is documented as an open database decision. It should be resolved before delete/archive behavior becomes user-facing or compliance-sensitive.
+Assessment: resolved for M1 by ADR-0004 and migration `0007`. Physical deletion is restricted while
+audit-bearing records reference an application.
 
-Recommended follow-up: decide whether policy and executor records are operational children or durable audit records.
+Recommended follow-up: keep long-term retention, privacy redaction, and archive behavior explicit
+before delete/archive behavior becomes user-facing or compliance-sensitive.
 
 ### PostgreSQL-Backed Validation
 

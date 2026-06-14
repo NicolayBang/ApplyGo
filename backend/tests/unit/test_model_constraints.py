@@ -30,15 +30,24 @@ def check_constraint_names(model: type) -> set[str]:
 def test_application_owned_records_cascade_with_application() -> None:
     assert application_fk_ondelete(Document) == "CASCADE"
     assert application_fk_ondelete(EmailThread) == "CASCADE"
-    assert application_fk_ondelete(PolicyDecision) == "CASCADE"
-    assert application_fk_ondelete(ExecutorAction) == "CASCADE"
 
 
-def test_event_log_does_not_cascade_delete_with_application() -> None:
+def test_audit_records_do_not_cascade_delete_with_application() -> None:
     assert application_fk_ondelete(EventLogEntry) is None
+    assert application_fk_ondelete(PolicyDecision) is None
+    assert application_fk_ondelete(ExecutorAction) is None
+
     assert "delete" not in Application.events.property.cascade
     assert "delete-orphan" not in Application.events.property.cascade
     assert Application.events.property.passive_deletes == "all"
+
+    assert "delete" not in Application.policy_decisions.property.cascade
+    assert "delete-orphan" not in Application.policy_decisions.property.cascade
+    assert Application.policy_decisions.property.passive_deletes == "all"
+
+    assert "delete" not in Application.executor_actions.property.cascade
+    assert "delete-orphan" not in Application.executor_actions.property.cascade
+    assert Application.executor_actions.property.passive_deletes == "all"
 
 
 def test_application_state_default_matches_state_machine() -> None:

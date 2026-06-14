@@ -17,7 +17,7 @@
 ## Status
 
 **Proposed.** This revision aligns the canonical-data-model decision with the database as actually
-implemented at M1 (real PostgreSQL, migrations `0001` through `0006`) and with the PostgreSQL Implementation
+implemented at M1 (real PostgreSQL, migrations `0001` through `0007`) and with the PostgreSQL Implementation
 Roadmap. It corrects two over-eager positions in the initial ADR-0002 draft: pre-adding unused
 executor retry columns, and treating table renames / sub-state splits as immediate M1 work. Both are
 now deferred to the milestone and contract that actually need them.
@@ -28,7 +28,7 @@ now deferred to the milestone and contract that actually need them.
 
 ### What is already implemented (M1 — DONE)
 
-The M1 database is real, not mock data. Compose runs `postgres:16`; Alembic revisions `0001` through `0006`
+The M1 database is real, not mock data. Compose runs `postgres:16`; Alembic revisions `0001` through `0007`
 create a seven-table aggregate; SQLAlchemy persists real rows; the demo seed and the
 seed-to-dashboard validator run against PostgreSQL.
 
@@ -45,12 +45,12 @@ Guarantees in place today:
 - `event_log` has **no** delete cascade from `applications`, and the ORM does not orphan-delete events.
 - Migration `0004` aligns the application state default with `ApplicationCreated`.
 - Migration `0006` enforces stable M1 values with named PostgreSQL `CHECK` constraints.
+- Migration `0007` removes application delete cascade from policy decisions and executor actions.
 - Implemented M1 states: `ApplicationCreated`, `Draft`, `ReadyForReview`, `Approved`, `Submitted`,
   `Rejected`, `Archived`.
 
 ### Known M1 boundaries (intentional, not drift)
 
-- `policy_decisions` and `executor_actions` still cascade on application deletion.
 - `jobs.company` is a nullable string, not a normalized company foreign key.
 - `documents` and `email_threads` are single-application-owner placeholders.
 - No retry / backoff / rate-limit fields exist.
@@ -126,8 +126,8 @@ erDiagram
 
 | Phase | Milestone | Scope | Status |
 |-------|-----------|-------|--------|
-| **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0006` | **DONE** |
-| **0.5** | M1 hardening | Policy/executor retention; reproducible migration startup | **NEXT — retention proposed in ADR-0004** |
+| **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0007` | **DONE** |
+| **0.5** | M1 hardening | Reproducible migration startup | **NEXT** |
 | **1** | M3 | Normalize `companies`; `jobs.company_id` FK; preserve source company text for provenance | **FUTURE — contract D required first** |
 | **2** | M5 | `documents`, `document_versions`, `application_documents`, `answer_library`, `application_answers` (the document↔application M—N) | **FUTURE — contract G required first** |
 | **3** | M7 | `contacts`, `threads`, `messages`, `thread_applications`, `threads.conversation_state` (the thread↔application M—N) | **FUTURE — contract H required first** |
@@ -153,10 +153,8 @@ Do not pull M3, M5, M7, or executor hardening into an M1 hardening migration.
 
 ### Decisions still required before M1 hardening (Phase 0.5)
 
-- **Policy/executor retention** — `policy_decisions` and `executor_actions` currently cascade on
-  application deletion, which weakens audit. ADR-0004 proposes restrictive physical deletion for M1
-  and preserving events, policy decisions, and executor records. Implementation still requires a
-  dedicated migration and tests.
+Policy/executor retention is resolved for M1 by ADR-0004 and migration `0007`. Reproducible
+migration startup still needs an implementation PR.
 
 ---
 

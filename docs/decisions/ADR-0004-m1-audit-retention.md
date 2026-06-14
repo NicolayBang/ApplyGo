@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed |
+| **Status** | Approved |
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
@@ -11,16 +11,16 @@
 ## Context
 
 ApplyPilot's core promise is governed automation with auditability. For M1, the event log already
-survives application deletion at the database and ORM relationship layers. However,
-`policy_decisions` and `executor_actions` still use `ON DELETE CASCADE` from `applications`.
+survived application deletion at the database and ORM relationship layers. Before migration `0007`,
+`policy_decisions` and `executor_actions` still used `ON DELETE CASCADE` from `applications`.
 
 That means a future physical application delete could remove the proof that an action was permitted,
 attempted, and recorded. Even if no delete API exists today, the schema should not encode a deletion
 rule that conflicts with the architecture principle that important decisions and executions must be
 auditable.
 
-This ADR decides the M1 retention contract before any migration changes foreign keys or ORM
-relationships.
+This ADR decides the M1 retention contract implemented by migration
+`0007_retain_policy_and_executor_audit.py`.
 
 ## Decision
 
@@ -48,7 +48,7 @@ belongs to later document and recruiter-communication contracts.
 
 ## Implementation Target
 
-The next implementation PR should add one reversible Alembic migration that:
+Migration `0007` adds one reversible Alembic migration that:
 
 1. Drops the existing `ON DELETE CASCADE` foreign keys from `policy_decisions.application_id` and
    `executor_actions.application_id`.
@@ -62,6 +62,13 @@ The matching SQLAlchemy model update should:
 2. Remove delete/delete-orphan cascade from `Application.executor_actions`.
 3. Use passive deletes for retained audit-bearing relationships, consistent with `Application.events`.
 4. Keep `Application.documents` and `Application.email_threads` application-owned for M1.
+
+## Implementation
+
+Implemented by Alembic revision `0007_retain_policy_and_executor_audit.py`.
+
+The migration removes `ON DELETE CASCADE` from `policy_decisions.application_id` and
+`executor_actions.application_id`. Downgrade restores the previous cascade behavior.
 
 ## Validation Required
 

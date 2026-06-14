@@ -3,10 +3,10 @@
 ## Overview
 
 - **Name**: Alembic Migration Versions
-- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Six migrations establish the canonical application hub, policy decision outcomes, audit trail preservation, the M1 application state default, executor contract metadata, and M1 value checks.
+- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Seven migrations establish the canonical application hub, policy decision outcomes, audit trail preservation, the M1 application state default, executor contract metadata, M1 value checks, and M1 audit retention.
 - **Location**: `backend/alembic/versions/`
 - **Language**: Python (Alembic DDL)
-- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006`.
+- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007`.
 
 ---
 
@@ -130,6 +130,26 @@ Drops the M1 value-check constraints in reverse order.
 
 ---
 
+### 0007_retain_policy_and_executor_audit.py - Policy and Executor Audit Retention
+
+**Revision:** `0007` | **Depends on:** `0006`
+
+#### `upgrade() -> None`
+
+Removes `ON DELETE CASCADE` from:
+
+- `policy_decisions.application_id`
+- `executor_actions.application_id`
+
+These rows become retained audit-bearing records. PostgreSQL rejects physical application deletion
+while policy decisions or executor actions reference the application.
+
+#### `downgrade() -> None`
+
+Restores the previous cascade behavior for both foreign keys.
+
+---
+
 ## Dependencies
 
 ### Internal
@@ -156,7 +176,8 @@ stateDiagram-v2
     0003_preserve_event_log --> 0004_align_state_default
     0004_align_state_default --> 0005_executor_contract_metadata
     0005_executor_contract_metadata --> 0006_m1_value_checks
-    0006_m1_value_checks --> [*] : HEAD
+    0006_m1_value_checks --> 0007_audit_retention
+    0007_audit_retention --> [*] : HEAD
 ```
 
 ```mermaid
@@ -164,7 +185,7 @@ erDiagram
     jobs ||--o{ applications : "job_id CASCADE"
     applications ||--o{ documents : "CASCADE"
     applications ||--o{ email_threads : "CASCADE"
-    applications ||--o{ policy_decisions : "CASCADE"
-    applications ||--o{ executor_actions : "CASCADE"
+    applications ||--o{ policy_decisions : "NO CASCADE (retained)"
+    applications ||--o{ executor_actions : "NO CASCADE (retained)"
     applications ||--o{ event_log : "NO CASCADE (preserved)"
 ```
