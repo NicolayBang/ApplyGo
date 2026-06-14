@@ -113,6 +113,7 @@ def main() -> None:
     print(f"Policy decision ID: {result.policy_decision_id}")
     print(f"Executor action ID: {result.executor_action_id}")
     print(f"Dashboard API: /applications/{result.application_id}/audit")
+    print(f"Review API: /applications/{result.application_id}/review-summary")
 
 
 if __name__ == "__main__":

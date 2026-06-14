@@ -16,6 +16,7 @@ Usage:
 Expected output:
     - Demo seed creates an application with audit records.
     - The /applications/{id}/audit endpoint returns a complete audit summary.
+    - The /applications/{id}/review-summary endpoint returns reviewer readiness.
     - All assertions pass and the script exits 0.
 """
 
@@ -87,8 +88,8 @@ def main() -> int:
     finally:
         session.close()
 
-    # --- Step 3: Verify via audit API endpoint ---
-    print("\n[3/3] Verifying audit API endpoint...")
+    # --- Step 3: Verify via dashboard API endpoints ---
+    print("\n[3/3] Verifying dashboard API endpoints...")
     session = SessionLocal()
     try:
         def override_tracker_unit():
@@ -119,6 +120,20 @@ def main() -> int:
         assert len(body["executor_actions"]) == 1
         assert body["executor_actions"][0]["status"] == "planned"
         assert body["executor_actions"][0]["execution_mode"] == "dry_run"
+        review_response = client.get(f"/applications/{result.application_id}/review-summary")
+        assert review_response.status_code == 200, (
+            f"Expected 200, got {review_response.status_code}"
+        )
+        review_body = review_response.json()
+        assert review_body["application"]["id"] == str(result.application_id)
+        assert review_body["event_count"] >= 4
+        assert review_body["latest_policy_decision"]["id"] == str(result.policy_decision_id)
+        assert review_body["latest_policy_decision"]["allowed"] is True
+        assert review_body["latest_executor_action"]["id"] == str(result.executor_action_id)
+        assert review_body["latest_executor_action"]["status"] == "planned"
+        assert review_body["ready_for_dry_run"] is True
+        assert review_body["ready_for_submission"] is False
+        assert review_body["next_states"] == ["Draft"]
         print("  Audit API executor actions: 1 (planned, dry_run) ✓")
     finally:
         app.dependency_overrides.pop(get_tracker_unit, None)
@@ -128,6 +143,7 @@ def main() -> int:
     print("ALL VALIDATIONS PASSED ✓")
     print("=" * 60)
     print(f"\nDashboard API: GET /applications/{result.application_id}/audit")
+    print(f"Review API: GET /applications/{result.application_id}/review-summary")
     return 0
 
 
