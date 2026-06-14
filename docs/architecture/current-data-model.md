@@ -16,6 +16,7 @@ Current migrations:
 1. `0001_initial_schema.py`
 2. `0002_policy_decision_outcomes.py`
 3. `0003_preserve_event_log_on_application_delete.py`
+4. `0004_align_application_state_default.py`
 
 ## Core Shape
 
@@ -67,7 +68,7 @@ Canonical application hub.
 ```text
 id uuid PK
 job_id uuid FK -> jobs.id on delete cascade
-state varchar(64) not null
+state varchar(64) not null default ApplicationCreated
 automation_mode varchar(32) not null default manual
 fit_score integer nullable
 confidence varchar(16) nullable
@@ -208,6 +209,7 @@ Important rule:
 
 ```text
 event_log.application_id does not cascade on application delete
+Application.events also avoids ORM delete/delete-orphan cascade
 ```
 
 This preserves audit history. Consumers should treat the event log as append-only.
@@ -226,6 +228,7 @@ ix_event_log_created_at(created_at)
 - `applications` is the central aggregate for M1.
 - Job creation may deterministically enrich blank job metadata from manual intake.
 - Application state transitions go through the state machine.
+- New application rows default to `ApplicationCreated` at both ORM and database levels.
 - Application creation and state changes append event log records.
 - Policy decisions are persisted before executor actions.
 - Executor actions use a unique idempotency key.

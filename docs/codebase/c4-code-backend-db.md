@@ -37,7 +37,8 @@ rolls back on exceptions, and always closes its session.
 | `EventLogEntry` | `event_log` | Append-only audit event |
 
 Operational child records cascade with the application. The event log foreign key does not
-use database `ON DELETE CASCADE`, preserving the audit record at the schema boundary.
+use database `ON DELETE CASCADE`, and the ORM relationship avoids delete/delete-orphan
+cascade, preserving the audit record at both schema and ORM boundaries.
 
 ## `Tracker`
 
