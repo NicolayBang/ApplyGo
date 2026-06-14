@@ -124,6 +124,13 @@ button[type="button"] {
   background: #ffffff;
 }
 
+button:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--surface-alt);
+  cursor: not-allowed;
+}
+
 .status-row {
   display: flex;
   gap: 12px;
@@ -200,6 +207,12 @@ button[type="button"] {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.workflow-hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .state-actions {
