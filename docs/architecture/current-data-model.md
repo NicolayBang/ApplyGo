@@ -305,7 +305,7 @@ Application-enforced:
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
-| Normalized company/document/thread/answer model | Deferred | Company identity proposed in ADR-0005; broader model proposed in ADR-0002 |
+| Normalized company/document/thread/answer model | Deferred | Company identity proposed in ADR-0005; M3 migration contract proposed in `docs/contracts/m3-company-migration-contract.md`; broader model proposed in ADR-0002 |
 
 ## Current Non-Goals
 

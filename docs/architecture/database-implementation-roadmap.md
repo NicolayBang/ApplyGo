@@ -218,7 +218,7 @@ This should be split by milestone rather than written as one permanently specula
 
 ### C. Migration and compatibility contract
 
-**Status:** NEXT FOR ANY SCHEMA CHANGE
+**Status:** PROPOSED FOR M3 COMPANY IDENTITY
 
 Every migration plan must define:
 
@@ -234,6 +234,9 @@ Every migration plan must define:
 
 Table renames must use rename operations, not drop-and-recreate. Destructive column removal should
 happen only after the replacement is populated and consumers have switched.
+
+The proposed M3 company migration and compatibility boundary is recorded in
+`docs/contracts/m3-company-migration-contract.md`.
 
 ### D. Company identity and deduplication contract
 
@@ -429,7 +432,7 @@ M1 columns.
 
 ### J. API and data compatibility contract
 
-**Status:** NEXT FOR ANY NORMALIZING OR RENAMING MIGRATION
+**Status:** PROPOSED FOR M3 COMPANY IDENTITY
 
 Database normalization must not unexpectedly break the current API or dashboard. Before a migration,
 record:
@@ -444,6 +447,9 @@ record:
 
 For example, a future normalized company model may continue returning a `company` name string while
 the database stores `jobs.company_id`. The compatibility period and owner must be explicit.
+
+The proposed M3 company compatibility requirements are recorded in
+`docs/contracts/m3-company-migration-contract.md`.
 
 ## Proposed Implementation Sequence
 
