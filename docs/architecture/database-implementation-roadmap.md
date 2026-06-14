@@ -237,7 +237,7 @@ happen only after the replacement is populated and consumers have switched.
 
 ### D. Company identity and deduplication contract
 
-**Status:** FUTURE / REQUIRED BEFORE M3
+**Status:** PROPOSED IN ADR-0005
 
 The current `jobs.company` string is valid for M1. Before adding `companies`, decide:
 
