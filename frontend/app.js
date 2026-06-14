@@ -143,6 +143,11 @@ const elements = {
   jobDescription: document.querySelector("#job-description"),
   remoteOk: document.querySelector("#remote-ok"),
   sampleJobButton: document.querySelector("#sample-job-button"),
+  recentFiltersForm: document.querySelector("#recent-filters-form"),
+  recentStateFilter: document.querySelector("#recent-state-filter"),
+  recentRecommendationFilter: document.querySelector("#recent-recommendation-filter"),
+  recentCompanyFilter: document.querySelector("#recent-company-filter"),
+  recentSortFilter: document.querySelector("#recent-sort-filter"),
   recentApplicationsButton: document.querySelector("#recent-applications-button"),
   recentApplicationsList: document.querySelector("#recent-applications-list"),
   scoreButton: document.querySelector("#score-button"),
@@ -652,7 +657,7 @@ async function loadRecentApplications(options = {}) {
   }
 
   try {
-    renderRecentApplications(await fetchJson(`${base}/applications?limit=10`));
+    renderRecentApplications(await fetchJson(`${base}/applications?${recentApplicationQuery()}`));
     if (!options.quiet) {
       setStatus("", "Loaded", "Recent applications loaded.");
     }
@@ -663,6 +668,22 @@ async function loadRecentApplications(options = {}) {
         : "";
     setStatus("error", "Recent failed", `${error.message}.${hint}`);
   }
+}
+
+function recentApplicationQuery() {
+  const params = new URLSearchParams({ limit: "10" });
+  const state = elements.recentStateFilter.value;
+  const recommendation = elements.recentRecommendationFilter.value;
+  const company = elements.recentCompanyFilter.value.trim();
+  const [sortBy, sortDir] = elements.recentSortFilter.value.split(":");
+
+  if (state) params.set("state", state);
+  if (recommendation) params.set("recommendation", recommendation);
+  if (company) params.set("company", company);
+  params.set("sort_by", sortBy || "updated_at");
+  params.set("sort_dir", sortDir || "desc");
+
+  return params.toString();
 }
 
 function latestAllowedPolicyDecision() {
@@ -891,6 +912,15 @@ elements.sampleJobButton.addEventListener("click", () => {
 });
 
 elements.recentApplicationsButton.addEventListener("click", () => {
+  loadRecentApplications();
+});
+
+elements.recentFiltersForm.addEventListener("change", () => {
+  loadRecentApplications();
+});
+
+elements.recentFiltersForm.addEventListener("submit", (event) => {
+  event.preventDefault();
   loadRecentApplications();
 });
 

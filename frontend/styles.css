@@ -28,6 +28,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -89,6 +90,7 @@ label {
 }
 
 input,
+select,
 textarea {
   min-width: 0;
   border: 1px solid var(--line);
@@ -100,6 +102,11 @@ textarea {
 input {
   height: 42px;
   padding: 0 12px;
+}
+
+select {
+  height: 42px;
+  padding: 0 10px;
 }
 
 textarea {
@@ -182,6 +189,13 @@ button:disabled {
 .recent-applications-list {
   display: grid;
   gap: 10px;
+}
+
+.recent-filters {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(170px, 1fr) minmax(180px, 1fr) minmax(170px, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .recent-application {
@@ -387,6 +401,7 @@ button:disabled {
 @media (max-width: 920px) {
   .toolbar,
   .summary-grid,
+  .recent-filters,
   .intake-form {
     grid-template-columns: 1fr;
   }

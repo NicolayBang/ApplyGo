@@ -37,6 +37,44 @@
           <h2>Recent applications</h2>
           <button type="button" id="recent-applications-button">Load recent</button>
         </div>
+        <form class="recent-filters" id="recent-filters-form">
+          <label>
+            <span>State</span>
+            <select id="recent-state-filter">
+              <option value="">Any state</option>
+              <option value="ApplicationCreated">ApplicationCreated</option>
+              <option value="Draft">Draft</option>
+              <option value="ReadyForReview">ReadyForReview</option>
+              <option value="Approved">Approved</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </label>
+          <label>
+            <span>Recommendation</span>
+            <select id="recent-recommendation-filter">
+              <option value="">Any recommendation</option>
+              <option value="recommended">recommended</option>
+              <option value="needs_review">needs_review</option>
+              <option value="not_recommended">not_recommended</option>
+            </select>
+          </label>
+          <label>
+            <span>Company</span>
+            <input id="recent-company-filter" type="search" placeholder="Search company" />
+          </label>
+          <label>
+            <span>Sort</span>
+            <select id="recent-sort-filter">
+              <option value="updated_at:desc">Recently updated</option>
+              <option value="created_at:desc">Recently created</option>
+              <option value="fit_score:desc">Fit score high first</option>
+              <option value="fit_score:asc">Fit score low first</option>
+              <option value="state:asc">State A-Z</option>
+            </select>
+          </label>
+        </form>
         <div class="recent-applications-list" id="recent-applications-list">
           <p class="empty">No live applications loaded.</p>
         </div>
