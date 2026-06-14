@@ -1,13 +1,13 @@
 # M3 Company Migration Contract
 
-**Status:** Direction approved; implementation timing still gated
+**Status:** Approved direction; proposed 3NF amendment pending review; implementation timing gated
 
 **Scope:** Future M3 migration from `jobs.company` text to first-class company identity
 
 **Authority:** Approved M3 direction contract; does not authorize migration until timing is approved
 
-**Review state:** Nicolay and Francis approved M3 direction; later implementation timing review
-required
+**Review state:** Existing direction approved; 3NF completion amendment and later implementation
+timing require Nicolay and Francis approval
 
 **Related:** `docs/decisions/ADR-0005-m3-company-identity.md`,
 `docs/contracts/database-schema-contract.md`, `docs/architecture/database-implementation-roadmap.md`
@@ -16,9 +16,10 @@ This contract defines the safety boundary for the future M3 company identity mig
 implemented schema description. The current M1 source of truth remains `jobs.company` until an
 approved migration changes the database, ORM, API, dashboard, tests, and documentation together.
 
-Nicolay and Francis approved this direction for M3, but implementation remains gated. Before any
-schema migration starts, the team should explicitly confirm that the current milestone is ready for
-company identity work.
+Nicolay and Francis approved the existing direction for M3, but the proposed 3NF completion
+requirements in this revision are not yet approved and implementation remains gated. Before any
+schema migration starts, the team must approve this amendment and explicitly confirm that the
+current milestone is ready for company identity work.
 
 Do not implement yet unless the implementation PR is limited to deterministic company identity,
 preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder handling, and
@@ -44,8 +45,23 @@ companies
 jobs.company_id -> companies.id
 ```
 
-The migration must preserve `jobs.company` as source/provenance text until a later approved
-compatibility contract removes or renames it.
+The migration must preserve `jobs.company` as source/provenance text during backfill. The completed
+M3 shape must use required `jobs.company_id` for canonical identity and rename the legacy column to
+`jobs.company_source_text`.
+
+## Target Normal Form
+
+M3 company normalization targets a practical 3NF ownership boundary. This includes 1NF and 2NF;
+the retained atomic source text has a distinct provenance meaning rather than duplicating canonical
+company truth.
+
+- `companies` is the sole owner of canonical company name, domain, and normalized identity.
+- `jobs` stores `company_id` plus job-owned attributes and raw `company_source_text` provenance.
+- Canonical company reads join through `jobs.company_id`; source text is never canonical fallback.
+- Company-owned facts must not be copied onto `jobs`.
+- Materialized normalized keys are controlled company attributes calculated by one deterministic
+  normalization implementation. They are the only documented denormalization exception and exist
+  for matching and indexing.
 
 ## Backfill Rules
 
@@ -70,18 +86,23 @@ The implementation PR should use an add/backfill/constrain sequence:
 4. Backfill `jobs.company_id` from existing `jobs.company`.
 5. Add indexes and uniqueness constraints after backfill is valid.
 6. Verify every existing job has a company mapping.
-7. Make `jobs.company_id` non-null only after validation and human approval.
-8. Keep the existing `jobs.company` field available to API/dashboard consumers.
+7. Switch canonical reads and writes to the company relationship.
+8. Make `jobs.company_id` non-null after validation and human approval.
+9. Rename `jobs.company` to `jobs.company_source_text` after API/dashboard consumers no longer
+   depend on the database column name.
 
 ## API And Dashboard Compatibility
 
 During the compatibility period:
 
-- API responses must continue exposing a display company string for existing consumers.
+- API responses must continue exposing a display `company` string for existing consumers, projected
+  from `companies.name` after cutover.
 - Dashboard rows must keep showing company text without requiring frontend rewrites in the same PR.
-- New API fields for normalized company identity should be additive.
-- Write behavior must define whether incoming company text creates, reuses, or references a company.
-- Any deprecation or removal of `jobs.company` requires a later PR and explicit approval.
+- An additive `company_source_text` field may expose raw intake provenance where needed.
+- New writes must deterministically create or reuse a company and persist `company_id` in the same
+  transaction.
+- Compatibility may span multiple M3 migrations, but M3 is not complete while `jobs.company` remains
+  an ambiguous canonical-looking column.
 
 ## Validation Requirements
 
@@ -95,6 +116,11 @@ The implementation PR must include runnable validation for:
 - no-domain exact-name deduplication
 - API/dashboard compatibility for existing company display fields
 - PostgreSQL constraints and indexes
+- final non-null `jobs.company_id`
+- canonical API reads from `companies.name`
+- provenance preserved in `jobs.company_source_text`
+- rejection of writes that omit the resolved company relationship after cutover
+- absence of company-owned attributes on `jobs`
 - full backend pytest suite
 - seed-to-dashboard validation against PostgreSQL
 
@@ -107,7 +133,9 @@ An implementation PR is allowed only after the team explicitly confirms timing. 
 limited to:
 
 - deterministic company identity migration;
-- preserving `jobs.company`;
+- preserving legacy `jobs.company` values as provenance during migration;
+- establishing `companies` as the only canonical owner of company facts;
+- completing the cutover to required `jobs.company_id` and `jobs.company_source_text`;
 - explicit `Unknown Company` and `Confidential Company` placeholder handling;
 - no source-url domain assumptions;
 - PostgreSQL migration, backfill, and constraint validation;
@@ -119,10 +147,12 @@ Before this contract is implemented, Nicolay and Francis should confirm:
 
 - Backfill may create `Unknown Company` and `Confidential Company` rows.
 - The migration preserves original `jobs.company` text.
+- The completed M3 schema renames that provenance field to `company_source_text`.
 - No fuzzy matching, AI matching, or external enrichment runs during backfill.
 - API and dashboard compatibility for the existing company display field is required in the same
   implementation PR.
-- Making `jobs.company_id` non-null requires validation evidence and explicit human approval.
+- Making `jobs.company_id` non-null requires validation evidence and explicit human approval and is
+  required before M3 company normalization is complete.
 - Downgrade limits and backup expectations are documented in the implementation PR.
 
 ## Rollback Boundary
@@ -139,6 +169,6 @@ This contract does not approve:
 - company merge UI
 - fuzzy deduplication
 - external enrichment providers
-- removal of `jobs.company`
+- removal of company source provenance
 - M5 document packet tables
 - M7 recruiter communication tables

@@ -78,11 +78,12 @@ See `docs/contracts/database-schema-contract.md` for complete column and constra
 
 ## Future Data Model
 
-**Status: Approved M3 Direction plus Proposed Later Phases / Not Implemented**
+**Status: Approved M3 Base Direction with Proposed 3NF Amendment plus Later Phases / Not Implemented**
 
-The company portion records the approved M3 direction in ADR-0005, with implementation timing still
-gated. The M5/M7 portions record the proposed broader normalization direction in ADR-0002. This is
-not a description of the current database and does not authorize migrations.
+The company portion records the approved M3 base direction and proposed 3NF amendment in ADR-0005.
+The amendment and implementation timing remain gated. The M5/M7 portions record the proposed broader
+normalization direction in ADR-0002. This is not a description of the current database and does not
+authorize migrations.
 
 ```mermaid
 erDiagram
@@ -118,7 +119,7 @@ erDiagram
     JOBS {
         uuid id PK
         uuid company_id FK
-        varchar company
+        varchar company_source_text
     }
     APPLICATION_DOCUMENTS {
         uuid application_id PK,FK
@@ -134,9 +135,10 @@ erDiagram
 ## Phase Boundary
 
 - M1 keeps the current seven-table aggregate.
-- M3 company identity is an approved direction, but implementation timing remains gated.
-- M3 preserves `jobs.company` while adding `jobs.company_id`; neither `companies` nor
-  `jobs.company_id` is implemented yet.
+- M3 company identity has an approved base direction; the practical 3NF completion amendment and
+  implementation timing remain gated.
+- Proposed M3 completion requires `jobs.company_id`, canonical company facts only on `companies`,
+  and raw employer provenance in `jobs.company_source_text`; none is implemented yet.
 - M5 may introduce packet/document version and answer entities.
 - M7 may introduce contacts, messages, and many-to-many recruiter threads.
 - Executor retry/backoff and table naming changes require a separately approved migration.

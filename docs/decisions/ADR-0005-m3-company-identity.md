@@ -2,11 +2,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Approved |
+| **Status** | Approved direction; proposed 3NF amendment pending review |
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
-| **Review state** | Direction approved by Nicolay and Francis; implementation timing still gated |
+| **Review state** | Existing direction approved; proposed 3NF completion requirements require Nicolay and Francis approval; implementation timing still gated |
 | **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/decisions/ADR-0005-final-review.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
 
 ## Review State
@@ -14,13 +14,18 @@
 Nicolay and Francis have approved the proposed M3 company identity direction. This approval is
 direction-only and does not authorize implementation yet.
 
+This revision proposes a stronger M3 completion boundary: company identity must finish in practical
+third normal form (3NF), with one authoritative company record and no company-owned facts duplicated
+on `jobs`. Nicolay and Francis must approve this amendment before it becomes binding.
+
 The final review package is recorded in `docs/decisions/ADR-0005-final-review.md`. It summarizes
 the current project state, the recommended decision, remaining MVP work, and the sign-off options
 for Nicolay and Francis.
 
-Do not implement the migration yet unless the implementation PR is limited to deterministic company
-identity, preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder
-handling, and proves PostgreSQL migration plus API/dashboard compatibility.
+Do not implement the migration yet. If this amendment is approved, the implementation must be
+limited to deterministic company identity, preserve legacy source text during migration, avoid
+source-url domain assumptions, include placeholder handling, prove PostgreSQL migration plus
+API/dashboard compatibility, and complete the 3NF ownership cutover defined below.
 
 Before the migration is implemented, the team must review the ADR and migration contract again in the
 context of the active milestone and explicitly decide whether the timing is right.
@@ -39,8 +44,9 @@ table or `jobs.company_id`.
 
 ## Decision
 
-Adopt a first-class `companies` table in M3 while preserving the existing `jobs.company` string as
-source/provenance text during the compatibility period.
+Adopt a first-class `companies` table in M3 as the sole authority for canonical company identity.
+Preserve the existing `jobs.company` string as source/provenance text during migration, then rename
+it to `company_source_text` before M3 company normalization is considered complete.
 
 Proposed M3 company fields:
 
@@ -54,11 +60,40 @@ created_at timestamptz not null
 updated_at timestamptz not null
 ```
 
-Proposed `jobs` addition:
+Proposed M3 `jobs` shape after the compatibility cutover:
 
 ```text
-company_id uuid FK -> companies.id nullable during backfill, then non-null after validation if approved
+company_id uuid FK -> companies.id not null
+company_source_text varchar(256) nullable
 ```
+
+During backfill, `company_id` is temporarily nullable and the existing column remains named
+`company`. Temporary compatibility state is not the M3 target state.
+
+## Normalization Boundary
+
+The M3 target must satisfy a practical 3NF ownership boundary. Third normal form already includes
+the requirements of first and second normal form; preserving one atomic source-text attribute does
+not leave the relation "at 1NF" when that attribute has a distinct provenance meaning.
+
+```text
+companies.id -> name, normalized_name, domain, normalized_domain, created_at, updated_at
+jobs.id -> company_id, company_source_text, and other job-owned attributes
+jobs.company_id -> companies.id
+```
+
+- `companies` owns canonical name, domain, and normalized identity.
+- `jobs` owns the relationship to a company and the raw employer text captured from that job source.
+- `company_source_text` is provenance, not a fallback canonical company name.
+- Company-owned attributes such as canonical name, normalized name, domain, industry, website, or
+  enrichment metadata must not be duplicated onto `jobs`.
+- `normalized_name` and `normalized_domain` are controlled materialized identity keys on
+  `companies`; one normalization implementation must calculate them transactionally. They are the
+  only documented denormalization exception and exist for deterministic matching and indexes, not
+  as independent business truth.
+- A partial unique index enforces non-null `normalized_domain`.
+- A partial unique index enforces `normalized_name` only for rows whose `normalized_domain` is null,
+  matching the approved exact-name fallback without conflating domain-backed companies.
 
 Identity rules:
 
@@ -81,11 +116,15 @@ Identity rules:
 Compatibility rules:
 
 - Existing API/dashboard consumers may continue reading `jobs.company` as the display company text
-  during the transition.
+  only during the transition.
 - `jobs.company` must not be dropped in the same migration that adds `companies`.
 - Backfill should preserve the original source string in `jobs.company` even when `company_id` points
   to a normalized company row.
-- Any later removal or rename of `jobs.company` requires a separate compatibility contract.
+- After consumer cutover, the API `company` display value must be projected from `companies.name`.
+- Raw intake text must be exposed separately as `company_source_text` where needed.
+- A later M3 compatibility migration must rename `jobs.company` to `jobs.company_source_text`.
+- M3 company normalization is not complete until canonical reads and writes use `company_id`, the
+  legacy column has provenance-only semantics, and `company_id` is non-null.
 
 ## Implementation Target
 
@@ -99,8 +138,13 @@ The future M3 implementation PR should:
 6. Backfill `jobs.company_id`.
 7. Add indexes and constraints, including partial uniqueness for non-null `normalized_domain`.
 8. Validate every job has a company mapping.
-9. Make `jobs.company_id` non-null only if approved after validation.
-10. Preserve API/dashboard compatibility for existing `company` display fields.
+9. Switch canonical API/dashboard reads to `companies.name` while preserving the existing `company`
+   response field.
+10. Require all new job writes to resolve `company_id` in the same transaction while retaining raw
+    input as source text.
+11. Make `jobs.company_id` non-null after validation and human approval.
+12. Rename `jobs.company` to `jobs.company_source_text` in a compatibility migration after consumers
+    no longer depend on the database column name.
 
 This ADR does not authorize adding contacts, recruiter threads, document packets, answer libraries,
 or executor retry fields.
@@ -113,7 +157,10 @@ feedback is reviewed.
 When implementation is approved, the PR must stay inside these limits:
 
 - deterministic company identity only;
-- preserve `jobs.company` as source/provenance and dashboard/API display compatibility;
+- preserve legacy `jobs.company` data as provenance and dashboard/API display compatibility during
+  migration;
+- establish `companies` as the only canonical owner of company facts;
+- finish M3 with required `jobs.company_id` and provenance-only `jobs.company_source_text`;
 - no source-url domain assumptions for employer identity;
 - explicit placeholder handling for unknown and confidential company values;
 - PostgreSQL migration and backfill validation;
@@ -130,6 +177,11 @@ The implementation PR must prove:
 - Jobs with the same normalized non-null domain map to the same company.
 - Jobs without domains deduplicate only by exact `normalized_name`.
 - API/dashboard responses remain compatible for current `company` display fields.
+- Canonical company display values are read from `companies.name` after cutover.
+- New writes persist a required company relationship and never treat source text as canonical truth.
+- No company-owned attribute is duplicated onto `jobs`.
+- The final M3 schema exposes `company_source_text` rather than an ambiguous canonical-looking
+  `jobs.company` column.
 - `python -m pytest` passes.
 - The PostgreSQL-backed seed-to-dashboard validation passes.
 
@@ -142,11 +194,13 @@ Before implementing this ADR, Nicolay and Francis should confirm:
 
 - `companies` should be introduced in M3 before document packet or recruiter-thread normalization.
 - `jobs.company` remains as source/provenance text during the compatibility period.
+- `companies` is the sole authority for canonical company facts.
 - Domain-based deduplication is acceptable only when `normalized_domain` is non-null.
 - Name-only deduplication is exact on `normalized_name`; fuzzy matching stays out of the migration.
 - `Unknown Company` and `Confidential Company` are acceptable deterministic fallback rows.
-- `jobs.company_id` starts nullable for backfill and becomes non-null only after validation and
-  human approval.
+- `jobs.company_id` starts nullable for backfill and becomes non-null after validation and human
+  approval; non-null is required for M3 completion.
+- `jobs.company` is renamed to `jobs.company_source_text` after API/dashboard cutover.
 - The implementation PR must include PostgreSQL-backed migration, backfill, API/dashboard
   compatibility, and seed-to-dashboard validation.
 
@@ -163,14 +217,14 @@ Costs:
 
 - Some duplicate companies may remain until a deliberate merge workflow exists.
 - Domain normalization must be conservative to avoid false ownership.
-- The model temporarily carries both `jobs.company` and `jobs.company_id`.
+- The model temporarily carries both `jobs.company` and `jobs.company_id`; the final M3 shape uses
+  required `jobs.company_id` plus provenance-only `jobs.company_source_text`.
 
 Not decided here:
 
 - Contact identity and company employment history.
 - Company merge UI or admin workflow.
 - External enrichment providers.
-- Removing or renaming `jobs.company`.
 - Multi-tenant company privacy boundaries.
 
 ## Supersedes
