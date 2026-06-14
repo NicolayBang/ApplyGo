@@ -2,17 +2,17 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed |
+| **Status** | Approved |
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
-| **Review state** | Final review requested from Nicolay and Francis |
+| **Review state** | Direction approved by Nicolay and Francis; implementation timing still gated |
 | **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/decisions/ADR-0005-final-review.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
 
 ## Review State
 
-Nicolay has approved the proposed M3 company identity direction, pending Francis review and
-feedback. This approval is direction-only and does not authorize implementation yet.
+Nicolay and Francis have approved the proposed M3 company identity direction. This approval is
+direction-only and does not authorize implementation yet.
 
 The final review package is recorded in `docs/decisions/ADR-0005-final-review.md`. It summarizes
 the current project state, the recommended decision, remaining MVP work, and the sign-off options
@@ -22,8 +22,8 @@ Do not implement the migration yet unless the implementation PR is limited to de
 identity, preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder
 handling, and proves PostgreSQL migration plus API/dashboard compatibility.
 
-Before the migration is implemented, the team should review the ADR and migration contract again in
-the context of the active milestone and decide whether the timing is right.
+Before the migration is implemented, the team must review the ADR and migration contract again in the
+context of the active milestone and explicitly decide whether the timing is right.
 
 ## Context
 
@@ -138,7 +138,7 @@ validation.
 
 ## Approval Checklist
 
-Before changing this ADR from Proposed to Approved, Nicolay and Francis should confirm:
+Before implementing this ADR, Nicolay and Francis should confirm:
 
 - `companies` should be introduced in M3 before document packet or recruiter-thread normalization.
 - `jobs.company` remains as source/provenance text during the compatibility period.

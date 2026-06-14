@@ -153,8 +153,7 @@ The skipped test is the existing PostgreSQL-backed seed-to-dashboard test when l
 
 ## Candidate Future Implementation PR
 
-Once Francis review is complete and the team explicitly confirms implementation timing, the next
-logical implementation PR would be:
+Once the team explicitly confirms implementation timing, the next logical implementation PR would be:
 
 ```text
 feat(db): implement approved M3 company identity migration
@@ -162,13 +161,13 @@ feat(db): implement approved M3 company identity migration
 
 Goal:
 
-- Add the `companies` table and `jobs.company_id` only after Francis review, explicit timing
-  approval, and approval of the proposed M3 company identity and migration contracts.
+- Add the `companies` table and `jobs.company_id` only after explicit timing approval and approval
+  of the proposed M3 company identity and migration contracts.
 - Preserve `jobs.company` as source/provenance text during the compatibility period.
 - Include PostgreSQL-backed migration, backfill, API/dashboard compatibility, and seed-to-dashboard
   validation.
 
-Do not start this implementation while Francis review is pending or before the proposed M3
-contracts are explicitly approved for implementation.
+Do not start this implementation before the proposed M3 contracts are reviewed in the context of the
+active milestone and explicitly approved for implementation.
 
 This would move ApplyPilot beyond the M1 platform spine only after the required human approval gate.

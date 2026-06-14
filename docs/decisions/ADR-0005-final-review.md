@@ -1,16 +1,18 @@
 # ADR-0005 Final Review: M3 Company Identity
 
-**Status:** Final review package
+**Status:** Direction approved; implementation timing still gated
 
 **Date:** 2026-06-14
 
 **Decision owners:** Nicolay + Francis
 
+**Sign-off:** Nicolay approved; Francis approved
+
 **Related:** `ADR-0005-m3-company-identity.md`; `m3-company-identity-decision-brief.md`; `docs/contracts/m3-company-migration-contract.md`; `docs/capstone/mvp-status.md`
 
 ## Recommended Decision
 
-Approve the ADR-0005 direction for M3, but do not implement the migration yet.
+ADR-0005 direction is approved for M3, but the migration must not be implemented yet.
 
 The decision should authorize the design direction only:
 
@@ -20,8 +22,8 @@ The decision should authorize the design direction only:
 - use deterministic placeholder rows for `Unknown Company` and `Confidential Company`;
 - require PostgreSQL migration, API compatibility, dashboard compatibility, and seed-to-dashboard validation before merge.
 
-Implementation should remain blocked until Francis feedback is reviewed and the team explicitly
-confirms that M3 company identity is the right next schema change.
+Implementation remains blocked until the team explicitly confirms that M3 company identity is the
+right next schema change.
 
 ## Project Summary So Far
 
@@ -53,7 +55,7 @@ company text while adding normalized identity in a separate, reviewable migratio
 
 ## Review Position
 
-The ADR is ready for final human review because:
+The ADR was approved for direction because:
 
 - the M1 schema is already real PostgreSQL, not throwaway mock state;
 - the current dashboard and API still depend on a displayable company string;
@@ -61,7 +63,7 @@ The ADR is ready for final human review because:
 - risky behavior is excluded: fuzzy matching, AI matching, external enrichment, and source-url employer inference;
 - the migration is gated by PostgreSQL-backed evidence rather than documentation alone.
 
-The ADR should remain unimplemented until the team confirms timing. If M1 MVP work needs more
+The ADR remains unimplemented until the team confirms timing. If M1 MVP work needs more
 dashboard polish or workflow completion first, ADR-0005 can stay approved in direction while the
 migration waits.
 
@@ -89,15 +91,16 @@ Nicolay and Francis should confirm:
 - Should the implementation PR make `jobs.company_id` non-null immediately, or only after a validation PR proves the backfill?
 - Is the required validation list strong enough for a schema migration that affects API and dashboard compatibility?
 
-## Sign-Off Options
+## Sign-Off Record
 
-**Approve direction:** ADR-0005 may move toward Approved after both human reviewers agree, but
-implementation still waits for explicit timing approval.
+**Approved direction:** Nicolay and Francis approved ADR-0005 as the M3 company identity direction.
+Implementation still waits for explicit timing approval.
 
-**Approve with changes:** Update identity rules, placeholder handling, validation, or compatibility
-requirements before marking the ADR approved.
+**Implementation gate:** Before opening a migration PR, the team must confirm timing and preserve the
+implementation limits from ADR-0005 and the M3 company migration contract.
 
-**Defer:** Keep M1 company text only and revisit normalized company identity after the MVP demo.
+**Allowed future change:** If timing or validation concerns change, update the ADR or migration
+contract before implementation starts.
 
 ## Non-Goals For This Decision
 

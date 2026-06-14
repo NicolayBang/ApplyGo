@@ -50,8 +50,7 @@ Use `docs/capstone/dashboard-demo-flow.md` for the step-by-step runbook.
 
 The next architecture-safe direction is to keep implementation contract-first:
 
-- collect Francis feedback on the proposed M3 company identity and migration contracts;
-- treat Nicolay's current position as direction approval, not implementation approval;
+- treat ADR-0005 as approved direction, not implementation approval;
 - review timing again before adding the `companies` schema, ORM/API compatibility, migration, and
   PostgreSQL-backed tests;
 - keep external side effects behind policy checks, dry-run behavior, and human oversight.
