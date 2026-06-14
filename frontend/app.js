@@ -209,6 +209,9 @@ function updateWorkflowReadiness() {
 
 function renderSummary(application) {
   const job = application.job || {};
+  const nextStates = (stateTransitions[application.state] || [])
+    .map((transition) => transition.state)
+    .join(", ");
   const rows = [
     ["Application", application.id],
     ["Job", application.job_id],
@@ -220,6 +223,7 @@ function renderSummary(application) {
     ["ATS", job.ats_type],
     ["Salary", job.salary_raw],
     ["State", application.state],
+    ["Next states", nextStates || "None"],
     ["Mode", application.automation_mode],
     ["Fit score", application.fit_score],
     ["Confidence", application.confidence],

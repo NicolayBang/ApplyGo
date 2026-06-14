@@ -67,6 +67,7 @@ def test_dashboard_exposes_state_progression_controls() -> None:
     assert "stateTransitions" in script_response.text
     assert "/applications/${applicationId}/state" in script_response.text
     assert "ReadyForReview" in script_response.text
+    assert "Next states" in script_response.text
 
 
 def test_dashboard_exposes_demo_readiness_guards() -> None:
