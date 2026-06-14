@@ -159,6 +159,30 @@ stop and verify before modifying the repository.
 
 ---
 
+## Experiment Mode
+
+Experiment Mode is opt-in. Use it only when a human explicitly says `go in experiment mode`,
+`use experiment mode`, or gives an equivalent instruction.
+
+When Experiment Mode is active, the agent should divide the work into clear parallel tracks:
+
+- Codex owns the main implementation thread, architecture interpretation, final integration,
+  and final recommendation.
+- Copilot or another GitHub agent may be asked to handle bounded support work such as running
+  validation in Codespaces, checking CI output, finding stale references, reviewing docs for
+  consistency, or adding narrow missing tests.
+- Each delegated task must name the exact branch or PR, the files or behavior in scope, the
+  commands or checks to run, the expected result, and what must not be changed.
+- Delegated tasks must be small enough to review quickly and must not require the other agent to
+  invent architecture, change product direction, handle secrets, design migrations alone, perform
+  broad refactors, or merge pull requests unless a human explicitly allows it.
+- Results from delegated agents are advisory until reviewed and reconciled by Codex or a human.
+
+Experiment Mode does not override architecture authority, human final decision-making, PR
+discipline, testing requirements, security boundaries, or merge rules.
+
+---
+
 ## Virtual Team Routing
 
 Virtual personas advise only.
