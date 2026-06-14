@@ -300,7 +300,7 @@ Application-enforced:
 | ORM event delete cascade conflicts with append-only rule | Resolved by #47 | Database FK does not cascade; ORM relationship uses passive deletes |
 | Event contract vocabulary differs from implementation | Resolved by #48 | Contract uses `id`, `event_type`, and implemented event names |
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
-| Policy/executor records cascade with application | Open | Decide whether operational audit must outlive application deletion |
+| Policy/executor records cascade with application | Proposed in ADR-0004 | Restrict physical deletion for M1 audit-bearing records |
 | PostgreSQL schema creation is manual | Open | Compose starts PostgreSQL; developers run Alembic separately |
 | Normalized company/document/thread/answer model | Deferred | Proposed in ADR-0002; not approved or implemented |
 
