@@ -86,7 +86,7 @@ Owns:
 
 Does not implement code.
 
-### Dick — DevOps / Governance Reviewer
+### Derek — DevOps / Governance Reviewer
 
 Owns:
 
@@ -159,13 +159,37 @@ stop and verify before modifying the repository.
 
 ---
 
+## Experiment Mode
+
+Experiment Mode is opt-in. Use it only when a human explicitly says `go in experiment mode`,
+`use experiment mode`, or gives an equivalent instruction.
+
+When Experiment Mode is active, the agent should divide the work into clear parallel tracks:
+
+- Codex owns the main implementation thread, architecture interpretation, final integration,
+  and final recommendation.
+- Copilot or another GitHub agent may be asked to handle bounded support work such as running
+  validation in Codespaces, checking CI output, finding stale references, reviewing docs for
+  consistency, or adding narrow missing tests.
+- Each delegated task must name the exact branch or PR, the files or behavior in scope, the
+  commands or checks to run, the expected result, and what must not be changed.
+- Delegated tasks must be small enough to review quickly and must not require the other agent to
+  invent architecture, change product direction, handle secrets, design migrations alone, perform
+  broad refactors, or merge pull requests unless a human explicitly allows it.
+- Results from delegated agents are advisory until reviewed and reconciled by Codex or a human.
+
+Experiment Mode does not override architecture authority, human final decision-making, PR
+discipline, testing requirements, security boundaries, or merge rules.
+
+---
+
 ## Virtual Team Routing
 
 Virtual personas advise only.
 
 Humans own final decisions.
 
-Use `docs/team/dick.md` for DevOps, repo workflow, PR process, environments, CI/CD, governance, and architecture drift.
+Use `docs/team/derek.md` for DevOps, repo workflow, PR process, environments, CI/CD, governance, and architecture drift.
 
 Use `docs/team/architect.md` for system architecture, domain modeling, state machines, event flows, data model alignment, architecture drift, and technical tradeoff review.
 
@@ -372,18 +396,18 @@ Governance-only changes:
 - If GitHub cannot open a PR because there is no head/base diff, do not create fake changes just to force a PR.
 - Treat the work as closed with push evidence and human signoff.
 
-Dick / DevOps persona should enforce this process and flag uncertainty before merge.
+Derek / DevOps persona should enforce this process and flag uncertainty before merge.
 
 Low-risk documentation auto-merge exception:
 
-- Dick may mark ready and merge a docs-only pull request without additional human instruction when all of the following are true:
+- Derek may mark ready and merge a docs-only pull request without additional human instruction when all of the following are true:
   - the PR changes only low-risk documentation files such as `README.md`, `docs/**/*.md`, or other non-authoritative Markdown reference pages;
   - the PR does not modify application code, tests, migrations, contracts, architecture authority, `AGENTS.md`, `CLAUDE.md`, CI/workflow files, security-sensitive files, or executable examples;
   - GitHub CI has completed successfully;
   - the PR is mergeable, up to date enough for GitHub to merge, and has no unresolved review feedback or requested changes;
   - the PR body or comments explain why tests were not required, when applicable.
-- If any criterion is unclear, Dick must stop and ask for human instruction before merging.
-- For all non-low-risk PRs, Dick cannot merge pull requests unless a human explicitly instructs him to merge that PR.
+- If any criterion is unclear, Derek must stop and ask for human instruction before merging.
+- For all non-low-risk PRs, Derek cannot merge pull requests unless a human explicitly instructs him to merge that PR.
 
 ---
 
@@ -429,9 +453,9 @@ Purpose:
 
 ---
 
-## Dick Persona Testing Guidance
+## Derek Persona Testing Guidance
 
-Dick may act as architecture advisor and implementation support.
+Derek may act as architecture advisor and implementation support.
 
 For architecture-critical work, create runnable test classes during implementation.
 Tests must be executable by the project test runner, not just pseudocode.
@@ -451,7 +475,7 @@ Any PR touching state machine, DB schema, event log, policy, executor, or contra
 
 ### Copilot Validation Delegation
 
-When required validation depends on GitHub-hosted services, Codespaces, CI, PostgreSQL, Redis, or another environment not running locally, Dick should default to requesting Copilot agent validation in the pull request.
+When required validation depends on GitHub-hosted services, Codespaces, CI, PostgreSQL, Redis, or another environment not running locally, Derek should default to requesting Copilot agent validation in the pull request.
 
 The request should be posted as a PR comment and include:
 
