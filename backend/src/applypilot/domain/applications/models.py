@@ -162,3 +162,14 @@ class ApplicationAuditRead(BaseModel):
     events: list[EventLogRead]
     policy_decisions: list[PolicyDecisionRead]
     executor_actions: list[ExecutorActionRead]
+
+
+class ApplicationReviewSummaryRead(BaseModel):
+    application: ApplicationRead
+    latest_policy_decision: PolicyDecisionRead | None = None
+    latest_executor_action: ExecutorActionRead | None = None
+    event_count: int
+    next_states: list[str]
+    ready_for_policy: bool
+    ready_for_dry_run: bool
+    ready_for_submission: bool
