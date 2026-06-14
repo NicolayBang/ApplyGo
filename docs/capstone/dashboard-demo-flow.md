@@ -7,7 +7,7 @@
 This guide demonstrates the implemented M1 platform spine:
 
 ```text
-manual intake -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
+manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
 ```
 
 The demo uses the current backend, PostgreSQL, and the static dashboard served by FastAPI at `/ui`.
@@ -66,6 +66,7 @@ In Codespaces, open the forwarded port `8000` URL and add `/ui/`.
 The dashboard should show:
 
 - manual intake form
+- parsed job metadata in the application summary
 - workflow actions
 - application summary
 - score details
@@ -101,7 +102,10 @@ Expected result:
 - status message says the application was created
 - application ID field is populated
 - application summary loads with state `ApplicationCreated`
+- application summary shows parsed/classified job metadata, including remote marker, job type, ATS, and salary when inferred
 - audit timeline includes `application.created`
+
+The current parser/classifier is deterministic. It fills missing job metadata from the manual intake fields and does not call an LLM.
 
 ### 2. Progress Workflow State
 

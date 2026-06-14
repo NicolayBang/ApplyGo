@@ -33,7 +33,7 @@ No Gmail, browser automation, LLM integration, or business logic is implemented 
 The current dashboard demo flow is:
 
 ```text
-manual intake -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
+manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
 ```
 
 Useful reviewer entry points:
@@ -95,6 +95,7 @@ python -m scripts.validate_seed_to_dashboard
 ## Definition of done for milestone 1
 
 - Create an application record
+- Parse and classify basic job metadata
 - Transition through states
 - Log every event
 - Evaluate policy
