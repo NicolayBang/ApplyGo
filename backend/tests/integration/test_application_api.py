@@ -930,6 +930,84 @@ def test_application_audit_summary_returns_application_events_policy_and_executo
     assert body["executor_actions"][0]["status"] == "planned"
 
 
+def test_application_review_summary_returns_compact_readiness_view() -> None:
+    tracker = FakeTracker()
+    tracker.application.state = "Approved"
+    client = make_client(tracker)
+
+    score_response = client.post(f"/applications/{tracker.application_id}/score")
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+        },
+    )
+    executor_response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json={
+            "policy_decision_id": policy_response.json()["id"],
+            "worker": "email",
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-001",
+        },
+    )
+
+    response = client.get(f"/applications/{tracker.application_id}/review-summary")
+
+    assert score_response.status_code == 200
+    assert policy_response.status_code == 201
+    assert executor_response.status_code == 201
+    assert response.status_code == 200
+    body = response.json()
+    assert body["application"]["id"] == str(tracker.application_id)
+    assert body["latest_policy_decision"]["id"] == policy_response.json()["id"]
+    assert body["latest_executor_action"]["id"] == executor_response.json()["id"]
+    assert body["event_count"] == len(tracker.events)
+    assert body["next_states"] == ["Submitted", "Rejected"]
+    assert body["ready_for_policy"] is True
+    assert body["ready_for_dry_run"] is True
+    assert body["ready_for_submission"] is True
+
+
+def test_application_review_summary_hides_submitted_until_executor_evidence_exists() -> None:
+    tracker = FakeTracker()
+    tracker.application.state = "Approved"
+    client = make_client(tracker)
+
+    score_response = client.post(f"/applications/{tracker.application_id}/score")
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+        },
+    )
+
+    response = client.get(f"/applications/{tracker.application_id}/review-summary")
+
+    assert score_response.status_code == 200
+    assert policy_response.status_code == 201
+    assert response.status_code == 200
+    body = response.json()
+    assert body["latest_executor_action"] is None
+    assert body["next_states"] == ["Rejected"]
+    assert body["ready_for_policy"] is True
+    assert body["ready_for_dry_run"] is True
+    assert body["ready_for_submission"] is False
+
+
+def test_application_review_summary_returns_404_when_application_missing() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.get(f"/applications/{uuid.uuid4()}/review-summary")
+
+    assert response.status_code == 404
+
+
 def test_application_audit_summary_returns_404_when_application_missing() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)

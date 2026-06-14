@@ -12,6 +12,7 @@ from applypilot.domain.applications.models import (
     ApplicationAuditRead,
     ApplicationCreate,
     ApplicationRead,
+    ApplicationReviewSummaryRead,
     ApplicationScoreRequest,
     ApplicationStateUpdate,
     EventLogRead,
@@ -355,6 +356,79 @@ def get_application_audit_summary(
         "policy_decisions": unit.tracker.get_policy_decisions(application_id),
         "executor_actions": unit.tracker.get_executor_actions(application_id),
     }
+
+
+@router.get(
+    "/applications/{application_id}/review-summary",
+    response_model=ApplicationReviewSummaryRead,
+    tags=["applications"],
+)
+def get_application_review_summary(
+    application_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> dict[str, object]:
+    """Return a compact reviewer-facing application summary."""
+    application = unit.tracker.get_application(application_id)
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Application {application_id} not found",
+        )
+
+    policy_decisions = unit.tracker.get_policy_decisions(application_id)
+    executor_actions = unit.tracker.get_executor_actions(application_id)
+    events = unit.tracker.get_events(application_id)
+    latest_policy_decision = policy_decisions[-1] if policy_decisions else None
+    latest_executor_action = executor_actions[-1] if executor_actions else None
+    allowed_policy_ids = {
+        str(decision.id)
+        for decision in policy_decisions
+        if decision.allowed
+    }
+    has_submission_evidence = any(
+        (action.payload or {}).get("policy_decision_id") in allowed_policy_ids
+        and bool(action.result)
+        for action in executor_actions
+    )
+
+    return {
+        "application": application,
+        "latest_policy_decision": latest_policy_decision,
+        "latest_executor_action": latest_executor_action,
+        "event_count": len(events),
+        "next_states": _next_states(application.state, has_submission_evidence),
+        "ready_for_policy": bool(application.confidence),
+        "ready_for_dry_run": bool(latest_policy_decision and latest_policy_decision.allowed),
+        "ready_for_submission": (
+            application.state == ApplicationState.APPROVED.value and has_submission_evidence
+        ),
+    }
+
+
+def _next_states(state_value: str, has_submission_evidence: bool) -> list[str]:
+    transitions = {
+        ApplicationState.APPLICATION_CREATED.value: [ApplicationState.DRAFT.value],
+        ApplicationState.DRAFT.value: [
+            ApplicationState.READY_FOR_REVIEW.value,
+            ApplicationState.ARCHIVED.value,
+        ],
+        ApplicationState.READY_FOR_REVIEW.value: [
+            ApplicationState.APPROVED.value,
+            ApplicationState.REJECTED.value,
+            ApplicationState.DRAFT.value,
+        ],
+        ApplicationState.APPROVED.value: [
+            ApplicationState.SUBMITTED.value,
+            ApplicationState.REJECTED.value,
+        ],
+        ApplicationState.SUBMITTED.value: [ApplicationState.ARCHIVED.value],
+        ApplicationState.REJECTED.value: [ApplicationState.ARCHIVED.value],
+        ApplicationState.ARCHIVED.value: [],
+    }
+    next_states = transitions.get(state_value, [])
+    if state_value == ApplicationState.APPROVED.value and not has_submission_evidence:
+        return [state for state in next_states if state != ApplicationState.SUBMITTED.value]
+    return next_states
 
 
 api_router.include_router(router)
