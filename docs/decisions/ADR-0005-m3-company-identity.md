@@ -6,13 +6,17 @@
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
-| **Review state** | Nicolay approved M3 direction; pending Francis review |
-| **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
+| **Review state** | Final review requested from Nicolay and Francis |
+| **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/decisions/ADR-0005-final-review.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
 
 ## Review State
 
 Nicolay has approved the proposed M3 company identity direction, pending Francis review and
 feedback. This approval is direction-only and does not authorize implementation yet.
+
+The final review package is recorded in `docs/decisions/ADR-0005-final-review.md`. It summarizes
+the current project state, the recommended decision, remaining MVP work, and the sign-off options
+for Nicolay and Francis.
 
 Do not implement the migration yet unless the implementation PR is limited to deterministic company
 identity, preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder

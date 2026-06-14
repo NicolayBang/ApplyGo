@@ -54,3 +54,4 @@ Authority order:
 
 ## Review Briefs
 - `m3-company-identity-decision-brief.md` (Review brief)
+- `ADR-0005-final-review.md` (Final review package)
