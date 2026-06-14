@@ -80,11 +80,22 @@ def test_dashboard_can_load_recent_applications() -> None:
     assert style_response.status_code == 200
     assert script_response.status_code == 200
     assert 'id="recent-applications-button"' in index_response.text
+    assert 'id="recent-filters-form"' in index_response.text
+    assert 'id="recent-state-filter"' in index_response.text
+    assert 'id="recent-recommendation-filter"' in index_response.text
+    assert 'id="recent-company-filter"' in index_response.text
+    assert 'id="recent-sort-filter"' in index_response.text
     assert 'id="recent-applications-list"' in index_response.text
     assert "loadRecentApplications" in script_response.text
-    assert "/applications?limit=10" in script_response.text
+    assert "recentApplicationQuery" in script_response.text
+    assert "URLSearchParams" in script_response.text
+    assert "sort_by" in script_response.text
+    assert "sort_dir" in script_response.text
+    assert "recommendation" in script_response.text
+    assert "company" in script_response.text
     assert "data-application-id" in script_response.text
     assert "recent-application" in style_response.text
+    assert "recent-filters" in style_response.text
 
 
 def test_dashboard_exposes_state_progression_controls() -> None:
