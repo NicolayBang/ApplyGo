@@ -68,6 +68,9 @@ def test_dashboard_can_prefill_sample_job_for_demo() -> None:
     assert "loadSampleJob" in script_response.text
     assert "Backend Platform Engineer" in script_response.text
     assert "ApplyPilot Demo Co." in script_response.text
+    assert "https://jobs.lever.co/applypilot/backend-platform-engineer" in script_response.text
+    assert "full-time remote role" in script_response.text
+    assert "salary range of $95,000 - $125,000" in script_response.text
 
 
 def test_dashboard_can_load_recent_applications() -> None:
@@ -128,6 +131,11 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "updateWorkflowReadiness" in script_response.text
     assert "Score the application before evaluating policy." in script_response.text
     assert "Evaluate policy before dry-run." in script_response.text
+    assert "Policy requires review before dry-run:" in script_response.text
+    assert "Create or load an application before dry-run." in script_response.text
+    assert "Plan the approved follow-up action without side effects." in script_response.text
+    assert "dryRunBlockReason" in script_response.text
+    assert "policyDecisionDetail" in script_response.text
     assert "fit_score" in script_response.text
     assert "recommendation" in script_response.text
     assert "compactMeta" in script_response.text
