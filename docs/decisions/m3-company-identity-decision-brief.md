@@ -1,7 +1,7 @@
 # M3 Company Identity Decision Brief
 
-**Status:** Review brief; Nicolay approved M3 direction pending Francis review
-**Decision needed:** Francis feedback and later implementation-timing confirmation.
+**Status:** Direction approved; implementation timing still gated
+**Decision needed:** Later implementation-timing confirmation.
 **Decision owners:** Nicolay + Francis
 **Related:** `ADR-0005-m3-company-identity.md`; `docs/contracts/m3-company-migration-contract.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`
 
@@ -14,8 +14,8 @@ This would move the project from "company as loose text on a job" toward "compan
 identity that jobs can reference." It does not approve implementing recruiter contacts, company
 merge tools, external enrichment, or removing the existing company text field.
 
-Nicolay approved this M3 direction. Francis review is still pending, and the team should review the
-timing again before opening an implementation PR for the migration.
+Nicolay and Francis approved this M3 direction. The team should review the timing again before
+opening an implementation PR for the migration.
 
 Do not implement yet unless the implementation PR is limited to deterministic company identity,
 preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder handling, and

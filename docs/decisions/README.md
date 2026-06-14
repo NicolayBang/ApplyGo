@@ -50,7 +50,8 @@ Authority order:
 - `ADR-0002-canonical-data-model.md` (Proposed)
 - `ADR-0003-m1-database-value-checks.md` (Approved)
 - `ADR-0004-m1-audit-retention.md` (Approved)
-- `ADR-0005-m3-company-identity.md` (Proposed)
+- `ADR-0005-m3-company-identity.md` (Approved; implementation timing gated)
 
 ## Review Briefs
 - `m3-company-identity-decision-brief.md` (Review brief)
+- `ADR-0005-final-review.md` (Direction approved; implementation timing gated)

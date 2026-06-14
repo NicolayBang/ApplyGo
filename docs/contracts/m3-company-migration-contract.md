@@ -1,13 +1,13 @@
 # M3 Company Migration Contract
 
-**Status:** Proposed
+**Status:** Direction approved; implementation timing still gated
 
 **Scope:** Future M3 migration from `jobs.company` text to first-class company identity
 
-**Authority:** Proposed implementation contract; does not authorize migration until approved
+**Authority:** Approved M3 direction contract; does not authorize migration until timing is approved
 
-**Review state:** Nicolay approved M3 direction; pending Francis review and later implementation
-timing review
+**Review state:** Nicolay and Francis approved M3 direction; later implementation timing review
+required
 
 **Related:** `docs/decisions/ADR-0005-m3-company-identity.md`,
 `docs/contracts/database-schema-contract.md`, `docs/architecture/database-implementation-roadmap.md`
@@ -16,9 +16,9 @@ This contract defines the safety boundary for the future M3 company identity mig
 implemented schema description. The current M1 source of truth remains `jobs.company` until an
 approved migration changes the database, ORM, API, dashboard, tests, and documentation together.
 
-Nicolay approved this direction for M3, but implementation remains gated. Before any schema
-migration starts, Francis feedback should be reviewed and the team should explicitly confirm that
-the current milestone is ready for company identity work.
+Nicolay and Francis approved this direction for M3, but implementation remains gated. Before any
+schema migration starts, the team should explicitly confirm that the current milestone is ready for
+company identity work.
 
 Do not implement yet unless the implementation PR is limited to deterministic company identity,
 preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder handling, and
@@ -103,8 +103,8 @@ PR.
 
 ## Implementation Entry Conditions
 
-An implementation PR is allowed only after Francis review is considered and the team explicitly
-confirms timing. That PR must remain limited to:
+An implementation PR is allowed only after the team explicitly confirms timing. That PR must remain
+limited to:
 
 - deterministic company identity migration;
 - preserving `jobs.company`;
@@ -115,7 +115,7 @@ confirms timing. That PR must remain limited to:
 
 ## Approval Checklist
 
-Before this contract is treated as approved for implementation, Nicolay and Francis should confirm:
+Before this contract is implemented, Nicolay and Francis should confirm:
 
 - Backfill may create `Unknown Company` and `Confidential Company` rows.
 - The migration preserves original `jobs.company` text.

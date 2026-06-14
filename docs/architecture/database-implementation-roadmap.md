@@ -238,16 +238,16 @@ happen only after the replacement is populated and consumers have switched.
 The proposed M3 company migration and compatibility boundary is recorded in
 `docs/contracts/m3-company-migration-contract.md`.
 
-Current review state: Nicolay has approved the M3 company identity direction, pending Francis
-review. This is direction-only and does not approve schema implementation. Before any migration
-starts, the team must confirm that the active milestone is ready for company identity work.
+Current review state: Nicolay and Francis have approved the M3 company identity direction. This is
+direction-only and does not approve schema implementation. Before any migration starts, the team
+must confirm that the active milestone is ready for company identity work.
 
 ### D. Company identity and deduplication contract
 
 **Status:** PROPOSED IN ADR-0005
 
-The current `jobs.company` string is valid for M1. Before adding `companies`, confirm Francis
-feedback and implementation timing for:
+The current `jobs.company` string is valid for M1. Before adding `companies`, confirm
+implementation timing for:
 
 - company identity key
 - normalization of whitespace, case, punctuation, and legal suffixes
