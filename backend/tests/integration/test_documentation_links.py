@@ -14,6 +14,7 @@ def test_root_readme_reviewer_entry_points_exist() -> None:
         "docs/capstone/README.md",
         "docs/capstone/mvp-status.md",
         "docs/capstone/dashboard-demo-flow.md",
+        "docs/capstone/m1-demo-review-checklist.md",
         "docs/architecture/current-data-model.md",
         "docs/architecture/database-implementation-roadmap.md",
         "docs/contracts/database-schema-contract.md",
