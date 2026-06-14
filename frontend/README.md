@@ -86,6 +86,8 @@ With an application loaded, the dashboard can continue the M1 dry-run workflow:
 
 The dry-run action requires an allowed policy decision. If no allowed decision exists, the dashboard asks for policy evaluation first.
 
+Executor details include side-effect status, planned steps, and required safeguards so reviewers can inspect what would happen without triggering external automation.
+
 ## API endpoint
 
 The dashboard fetches audit data from:
@@ -101,7 +103,17 @@ Response shape:
   "application": { "id": "...", "state": "...", ... },
   "events": [ { "event_type": "...", ... } ],
   "policy_decisions": [ { "action_type": "...", "allowed": true, ... } ],
-  "executor_actions": [ { "action_type": "...", "status": "planned", ... } ]
+  "executor_actions": [
+    {
+      "action_type": "...",
+      "status": "planned",
+      "result": {
+        "side_effects": false,
+        "planned_steps": [],
+        "requires": []
+      }
+    }
+  ]
 }
 ```
 
