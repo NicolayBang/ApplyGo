@@ -89,6 +89,7 @@ class Application(Base):
     state: Mapped[str] = mapped_column(
         String(64),
         default=ApplicationState.APPLICATION_CREATED.value,
+        server_default=ApplicationState.APPLICATION_CREATED.value,
         nullable=False,
     )
     automation_mode: Mapped[str] = mapped_column(String(32), default="manual", nullable=False)
@@ -127,7 +128,7 @@ class Application(Base):
         back_populates="application", cascade="all, delete-orphan"
     )
     events: Mapped[list[EventLogEntry]] = relationship(
-        back_populates="application", cascade="all, delete-orphan"
+        back_populates="application", passive_deletes="all"
     )
 
     __table_args__ = (

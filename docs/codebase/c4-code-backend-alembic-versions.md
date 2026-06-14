@@ -3,10 +3,10 @@
 ## Overview
 
 - **Name**: Alembic Migration Versions
-- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Three migrations establish the canonical application hub, policy decision outcomes, and audit trail preservation.
+- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Four migrations establish the canonical application hub, policy decision outcomes, audit trail preservation, and the M1 application state default.
 - **Location**: `backend/alembic/versions/`
 - **Language**: Python (Alembic DDL)
-- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 → 0002 → 0003`.
+- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 → 0002 → 0003 → 0004`.
 
 ---
 
@@ -64,6 +64,19 @@ Re-adds `ON DELETE CASCADE` to the FK.
 
 ---
 
+### 0004_align_application_state_default.py — M1 State Default Alignment
+
+**Revision:** `0004` | **Depends on:** `0003`
+
+#### `upgrade() -> None`
+Changes the database default for `applications.state` from the original scaffold value
+`discovered` to the implemented M1 state-machine value `ApplicationCreated`.
+
+#### `downgrade() -> None`
+Restores the previous `discovered` default.
+
+---
+
 ## Dependencies
 
 ### Internal
@@ -85,7 +98,8 @@ stateDiagram-v2
     [*] --> 0001_initial_schema : alembic upgrade head
     0001_initial_schema --> 0002_policy_decision_outcomes
     0002_policy_decision_outcomes --> 0003_preserve_event_log
-    0003_preserve_event_log --> [*] : HEAD
+    0003_preserve_event_log --> 0004_align_state_default
+    0004_align_state_default --> [*] : HEAD
 ```
 
 ```mermaid

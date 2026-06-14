@@ -1,12 +1,14 @@
 """Tests for architecture-critical ORM constraints."""
 
 from applypilot.db.models import (
+    Application,
     Document,
     EmailThread,
     EventLogEntry,
     ExecutorAction,
     PolicyDecision,
 )
+from applypilot.domain.state_machine import ApplicationState
 
 
 def application_fk_ondelete(model: type, column_name: str = "application_id") -> str | None:
@@ -24,6 +26,16 @@ def test_application_owned_records_cascade_with_application() -> None:
 
 def test_event_log_does_not_cascade_delete_with_application() -> None:
     assert application_fk_ondelete(EventLogEntry) is None
+    assert "delete" not in Application.events.property.cascade
+    assert "delete-orphan" not in Application.events.property.cascade
+    assert Application.events.property.passive_deletes == "all"
+
+
+def test_application_state_default_matches_state_machine() -> None:
+    column = Application.__table__.c.state
+
+    assert column.default.arg == ApplicationState.APPLICATION_CREATED.value
+    assert column.server_default.arg == ApplicationState.APPLICATION_CREATED.value
 
 
 def test_executor_idempotency_key_is_unique() -> None:
