@@ -72,6 +72,26 @@ const demoAudit = {
   ],
 };
 
+const stateTransitions = {
+  ApplicationCreated: [{ state: "Draft", label: "Move to draft" }],
+  Draft: [
+    { state: "ReadyForReview", label: "Ready for review" },
+    { state: "Archived", label: "Archive" },
+  ],
+  ReadyForReview: [
+    { state: "Approved", label: "Approve" },
+    { state: "Rejected", label: "Reject" },
+    { state: "Draft", label: "Return to draft" },
+  ],
+  Approved: [
+    { state: "Submitted", label: "Mark submitted" },
+    { state: "Rejected", label: "Reject" },
+  ],
+  Submitted: [{ state: "Archived", label: "Archive" }],
+  Rejected: [{ state: "Archived", label: "Archive" }],
+  Archived: [],
+};
+
 const elements = {
   form: document.querySelector("#audit-form"),
   intakeForm: document.querySelector("#intake-form"),
@@ -89,6 +109,7 @@ const elements = {
   demoButton: document.querySelector("#demo-button"),
   statusPill: document.querySelector("#status-pill"),
   statusMessage: document.querySelector("#status-message"),
+  stateActions: document.querySelector("#state-actions"),
   applicationSummary: document.querySelector("#application-summary"),
   scoreList: document.querySelector("#score-list"),
   policyList: document.querySelector("#policy-list"),
@@ -144,6 +165,25 @@ function renderSummary(application) {
   elements.applicationSummary.innerHTML = rows
     .map(
       ([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
+    )
+    .join("");
+}
+
+function renderStateActions(application) {
+  const transitions = stateTransitions[application.state] || [];
+
+  if (!transitions.length) {
+    elements.stateActions.innerHTML = "";
+    return;
+  }
+
+  elements.stateActions.innerHTML = transitions
+    .map(
+      (transition) => `
+        <button type="button" data-state-target="${escapeHtml(transition.state)}">
+          ${escapeHtml(transition.label)}
+        </button>
+      `,
     )
     .join("");
 }
@@ -244,6 +284,7 @@ function renderTimeline(events) {
 function renderAudit(data) {
   currentAudit = data;
   renderSummary(data.application);
+  renderStateActions(data.application);
   renderScoreDetails(data.application);
   renderPolicy(data.policy_decisions || []);
   renderExecutor(data.executor_actions || []);
@@ -433,6 +474,38 @@ async function scoreApplication() {
   }
 }
 
+async function transitionApplicationState(targetState) {
+  const applicationId = requireApplicationId();
+  const base = apiBase();
+
+  if (!applicationId) return;
+
+  setStatus("loading", "State", `Moving application to ${targetState}.`);
+
+  try {
+    elements.apiBase.value = base;
+    await fetchJson(`${base}/applications/${applicationId}/state`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        state: targetState,
+        actor: "user",
+        payload: {
+          source: "dashboard",
+          previous_state: currentAudit.application?.state || null,
+        },
+      }),
+    });
+    await loadAudit();
+    setStatus("", "State updated", `Application moved to ${targetState}.`);
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
+        : "";
+    setStatus("error", "State failed", `${error.message}.${hint}`);
+  }
+}
+
 async function evaluatePolicy() {
   const applicationId = requireApplicationId();
   const base = apiBase();
@@ -545,6 +618,12 @@ elements.intakeForm.addEventListener("submit", (event) => {
 
 elements.scoreButton.addEventListener("click", () => {
   scoreApplication();
+});
+
+elements.stateActions.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-state-target]");
+  if (!button) return;
+  transitionApplicationState(button.dataset.stateTarget);
 });
 
 elements.policyButton.addEventListener("click", () => {
