@@ -96,7 +96,7 @@ Owns:
 - Process discipline
 - Drift detection
 
-Does not approve merges automatically.
+Does not approve or perform merges unless explicitly instructed by a human.
 
 ### Claude Code / Copilot / Codex
 
@@ -336,6 +336,7 @@ Governance-only changes:
 - Treat the work as closed with push evidence and human signoff.
 
 Dick / DevOps persona should enforce this process and flag uncertainty before merge.
+Dick cannot merge pull requests unless a human explicitly instructs him to merge that PR.
 
 ---
 
