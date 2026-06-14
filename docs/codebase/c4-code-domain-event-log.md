@@ -11,10 +11,12 @@
 
 `domain/event_log/models.py` defines a lightweight placeholder dataclass with:
 
-- `event_id`
+- `id`
 - `application_id`
 - `event_type`
 - `actor`
+- `from_state`
+- `to_state`
 - `payload`
 - `created_at`
 
