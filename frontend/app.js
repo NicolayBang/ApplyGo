@@ -281,6 +281,13 @@ function badge(value) {
   return `<span class="badge ${normalized}">${escapeHtml(value || "unknown")}</span>`;
 }
 
+function compactMeta(label, values) {
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  if (!items.length) return "";
+
+  return `<div class="meta"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(items.join(", "))}</div>`;
+}
+
 function renderPolicy(decisions) {
   if (!decisions.length) {
     elements.policyList.innerHTML = '<p class="empty">No policy decisions recorded.</p>';
@@ -294,6 +301,9 @@ function renderPolicy(decisions) {
           <strong>${escapeHtml(decision.action_type)}</strong>
           ${badge(decision.decision)}
           <div class="meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
+          ${compactMeta("Reasons", decision.reasons)}
+          ${compactMeta("Risks", decision.risks)}
+          ${compactMeta("Required overrides", decision.required_overrides)}
         </div>
       `,
     )

@@ -84,5 +84,7 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "Evaluate policy before dry-run." in script_response.text
     assert "fit_score" in script_response.text
     assert "recommendation" in script_response.text
+    assert "compactMeta" in script_response.text
+    assert "Required overrides" in script_response.text
     assert "button:disabled" in style_response.text
     assert "clearStateActions" in script_response.text
