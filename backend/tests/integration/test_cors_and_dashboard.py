@@ -86,5 +86,7 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "recommendation" in script_response.text
     assert "compactMeta" in script_response.text
     assert "Required overrides" in script_response.text
+    assert "Planned steps" in script_response.text
+    assert "Side effects" in script_response.text
     assert "button:disabled" in style_response.text
     assert "clearStateActions" in script_response.text
