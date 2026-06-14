@@ -138,6 +138,26 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "clearStateActions" in script_response.text
 
 
+def test_dashboard_renders_review_summary_readiness() -> None:
+    """The static dashboard shows compact review readiness from the API."""
+    index_response = client.get("/ui/index.html")
+    style_response = client.get("/ui/styles.css")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert style_response.status_code == 200
+    assert script_response.status_code == 200
+    assert 'id="review-summary"' in index_response.text
+    assert 'id="review-summary-status"' in index_response.text
+    assert "/applications/${applicationId}/review-summary" in script_response.text
+    assert "renderReviewSummary" in script_response.text
+    assert "ready_for_policy" in script_response.text
+    assert "ready_for_dry_run" in script_response.text
+    assert "ready_for_submission" in script_response.text
+    assert "readiness-item" in style_response.text
+    assert "badge.blocked" in style_response.text
+
+
 def test_dashboard_summarizes_audit_timeline_events() -> None:
     """The static dashboard renders readable summaries for audit timeline events."""
     script_response = client.get("/ui/app.js")

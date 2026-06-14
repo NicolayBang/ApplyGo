@@ -101,6 +101,17 @@ const demoAudit = {
   ],
 };
 
+const demoReviewSummary = {
+  application: demoAudit.application,
+  latest_policy_decision: demoAudit.policy_decisions.at(-1),
+  latest_executor_action: demoAudit.executor_actions.at(-1),
+  event_count: demoAudit.events.length,
+  next_states: ["Draft"],
+  ready_for_policy: true,
+  ready_for_dry_run: true,
+  ready_for_submission: false,
+};
+
 const stateTransitions = {
   ApplicationCreated: [{ state: "Draft", label: "Move to draft" }],
   Draft: [
@@ -162,11 +173,14 @@ const elements = {
   scoreList: document.querySelector("#score-list"),
   policyList: document.querySelector("#policy-list"),
   executorList: document.querySelector("#executor-list"),
+  reviewSummary: document.querySelector("#review-summary"),
+  reviewSummaryStatus: document.querySelector("#review-summary-status"),
   timeline: document.querySelector("#timeline"),
   eventCount: document.querySelector("#event-count"),
 };
 
 let currentAudit = demoAudit;
+let currentReviewSummary = demoReviewSummary;
 
 function formatDate(value) {
   if (!value) return "Not recorded";
@@ -235,9 +249,13 @@ function visibleStateTransitions(application) {
 
 function updateWorkflowReadiness() {
   const hasApplication = hasLoadedApplication();
-  const hasScore = Boolean(currentAudit.application?.confidence);
-  const hasAllowedPolicy = Boolean(latestAllowedPolicyDecision());
-  const hasSubmissionEvidence = hasSubmissionExecutorEvidence();
+  const hasScore = Boolean(currentReviewSummary?.ready_for_policy || currentAudit.application?.confidence);
+  const hasAllowedPolicy = Boolean(
+    currentReviewSummary?.ready_for_dry_run || latestAllowedPolicyDecision(),
+  );
+  const hasSubmissionEvidence = Boolean(
+    currentReviewSummary?.ready_for_submission || hasSubmissionExecutorEvidence(),
+  );
   const isApproved = currentAudit.application?.state === "Approved";
 
   if (!hasApplication) {
@@ -317,6 +335,61 @@ function renderStateActions(application) {
         <button type="button" data-state-target="${escapeHtml(transition.state)}">
           ${escapeHtml(transition.label)}
         </button>
+      `,
+    )
+    .join("");
+}
+
+function readinessValue(isReady) {
+  return isReady ? badge("ready") : badge("blocked");
+}
+
+function renderReviewSummary(summary) {
+  if (!summary) {
+    elements.reviewSummaryStatus.textContent = "No summary";
+    elements.reviewSummary.innerHTML = '<p class="empty">No review summary loaded.</p>';
+    return;
+  }
+
+  elements.reviewSummaryStatus.textContent = `${summary.event_count || 0} audit events`;
+  const latestPolicy = summary.latest_policy_decision;
+  const latestExecutor = summary.latest_executor_action;
+  const nextStates = (summary.next_states || []).join(", ") || "None";
+  const items = [
+    {
+      label: "Policy",
+      ready: summary.ready_for_policy,
+      detail: summary.ready_for_policy ? "Score context is available." : "Score before policy.",
+    },
+    {
+      label: "Dry-run",
+      ready: summary.ready_for_dry_run,
+      detail: latestPolicy
+        ? `${latestPolicy.decision} policy for ${latestPolicy.action_type}`
+        : "Allowed policy decision required.",
+    },
+    {
+      label: "Submission",
+      ready: summary.ready_for_submission,
+      detail: latestExecutor
+        ? `${latestExecutor.status} ${latestExecutor.execution_mode} evidence recorded.`
+        : "Executor evidence required.",
+    },
+    {
+      label: "Next states",
+      ready: Boolean((summary.next_states || []).length),
+      detail: nextStates,
+    },
+  ];
+
+  elements.reviewSummary.innerHTML = items
+    .map(
+      (item) => `
+        <div class="readiness-item">
+          <strong>${escapeHtml(item.label)}</strong>
+          ${readinessValue(item.ready)}
+          <div class="meta">${escapeHtml(item.detail)}</div>
+        </div>
       `,
     )
     .join("");
@@ -491,15 +564,41 @@ function renderRecentApplications(applications) {
     .join("");
 }
 
-function renderAudit(data) {
+function renderAudit(data, reviewSummary = null) {
   currentAudit = data;
+  currentReviewSummary = reviewSummary || reviewSummaryFromAudit(data);
   renderSummary(data.application);
+  renderReviewSummary(currentReviewSummary);
   renderStateActions(data.application);
   renderScoreDetails(data.application);
   renderPolicy(data.policy_decisions || []);
   renderExecutor(data.executor_actions || []);
   renderTimeline(data.events || []);
   updateWorkflowReadiness();
+}
+
+function reviewSummaryFromAudit(data) {
+  const policyDecisions = data.policy_decisions || [];
+  const executorActions = data.executor_actions || [];
+  const application = data.application || {};
+  const allowedPolicyIds = new Set(
+    policyDecisions.filter((decision) => decision.allowed).map((decision) => decision.id),
+  );
+  const hasSubmissionEvidence = executorActions.some((action) => {
+    const policyDecisionId = action.payload?.policy_decision_id || action.result?.policy_decision_id;
+    return allowedPolicyIds.has(policyDecisionId) && Boolean(action.result);
+  });
+
+  return {
+    application,
+    latest_policy_decision: policyDecisions.at(-1) || null,
+    latest_executor_action: executorActions.at(-1) || null,
+    event_count: (data.events || []).length,
+    next_states: visibleStateTransitions(application).map((transition) => transition.state),
+    ready_for_policy: Boolean(application.confidence),
+    ready_for_dry_run: Boolean(policyDecisions.some((decision) => decision.allowed)),
+    ready_for_submission: application.state === "Approved" && hasSubmissionEvidence,
+  };
 }
 
 async function fetchJson(url, options) {
@@ -847,7 +946,7 @@ async function loadAudit() {
   elements.apiBase.value = base;
 
   if (!applicationId) {
-    renderAudit(demoAudit);
+    renderAudit(demoAudit, demoReviewSummary);
     setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
     return;
   }
@@ -861,10 +960,14 @@ async function loadAudit() {
   setStatus("loading", "Loading", "Fetching audit summary from the backend.");
 
   try {
-    renderAudit(await fetchJson(`${base}/applications/${applicationId}/audit`));
+    const [audit, reviewSummary] = await Promise.all([
+      fetchJson(`${base}/applications/${applicationId}/audit`),
+      fetchJson(`${base}/applications/${applicationId}/review-summary`),
+    ]);
+    renderAudit(audit, reviewSummary);
     setStatus("", "Live data", "Audit summary loaded from the backend.");
   } catch (error) {
-    renderAudit(demoAudit);
+    renderAudit(demoAudit, demoReviewSummary);
     const hint =
       error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
@@ -903,7 +1006,7 @@ elements.dryRunButton.addEventListener("click", () => {
 
 elements.demoButton.addEventListener("click", () => {
   elements.applicationId.value = "";
-  renderAudit(demoAudit);
+  renderAudit(demoAudit, demoReviewSummary);
   setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
 });
 
@@ -941,4 +1044,4 @@ elements.apiBase.addEventListener("blur", () => {
 });
 
 initializeApiBase();
-renderAudit(demoAudit);
+renderAudit(demoAudit, demoReviewSummary);
