@@ -47,6 +47,7 @@ Useful reviewer entry points:
 - `docs/diagrams/README.md`: diagram index and diagram authority reminder
 - `docs/diagrams/database-schema.md`: separate implemented and planned ER views
 - `docs/devops/codespaces.md`: Codespaces and DB-backed validation workflow
+- `docs/team/README.md`: virtual team persona index and advisory boundaries
 - `docs/architecture/locked-plan.md`: architecture authority and M1 scope
 
 The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
