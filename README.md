@@ -68,14 +68,17 @@ The dashboard includes a `Sample job` prefill button so reviewers can run the de
 
 1. Copy `.env.example` to `.env` and adjust values.
 2. Start local services with Docker Compose.
-3. Create a Python virtual environment inside `backend/`.
-4. Install backend dependencies.
-5. Run the FastAPI app.
+3. Run database migrations.
+4. Create a Python virtual environment inside `backend/`.
+5. Install backend dependencies.
+6. Run the FastAPI app.
 
 Example commands:
 
 ```powershell
 Copy-Item .env.example .env
+docker compose up -d postgres redis
+docker compose run --rm migrate
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -91,10 +94,17 @@ The full M1 validation path runs migrations, backend tests, and the seed-to-dash
 
 ```powershell
 docker compose up -d postgres redis
+docker compose run --rm migrate
 cd backend
-python -m alembic upgrade head
 python -m pytest
 python -m scripts.validate_seed_to_dashboard
+```
+
+The Compose migration runner uses the same Alembic migration chain as local backend commands. For
+an optional demo seed and audit validation inside Compose, run:
+
+```powershell
+docker compose --profile demo run --rm seed
 ```
 
 ## Definition of done for milestone 1

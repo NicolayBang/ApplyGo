@@ -1,5 +1,6 @@
 """Alembic environment placeholder for future migrations."""
 
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -11,6 +12,12 @@ import applypilot.db.models  # noqa: F401 - registers all ORM models with Base.m
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Allow DATABASE_URL env var to override alembic.ini so the Compose migrate
+# service (and CI) can inject the correct host without editing alembic.ini.
+_db_url = os.environ.get("DATABASE_URL")
+if _db_url:
+    config.set_main_option("sqlalchemy.url", _db_url)
 
 target_metadata = Base.metadata
 

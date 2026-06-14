@@ -1,4 +1,32 @@
 services:
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-applypilot}:${POSTGRES_PASSWORD:-applypilot}@postgres:5432/${POSTGRES_DB:-applypilot}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: "no"
+    profiles:
+      - demo
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-applypilot}:${POSTGRES_PASSWORD:-applypilot}@postgres:5432/${POSTGRES_DB:-applypilot}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["python", "-m", "scripts.validate_seed_to_dashboard"]
+
   postgres:
     image: postgres:16
     container_name: applypilot-postgres
@@ -11,6 +39,12 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-applypilot} -d $${POSTGRES_DB:-applypilot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   redis:
     image: redis:7
@@ -20,6 +54,12 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
 volumes:
   postgres_data:
