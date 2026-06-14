@@ -9,6 +9,24 @@ This document describes the data model currently implemented in `backend/src/app
 
 It is not a future-state schema proposal. If this document conflicts with the code or migrations, treat this document as stale and update it.
 
+Detailed columns and constraint layers are defined in
+`docs/contracts/database-schema-contract.md`. Current and future ER views are separated in
+`docs/diagrams/database-schema.md`.
+
+## Provisioning
+
+The Compose `postgres` service starts an empty PostgreSQL server. ApplyPilot tables exist only
+after the migration chain is applied:
+
+```bash
+docker compose up -d postgres
+cd backend
+python -m alembic upgrade head
+```
+
+The Docker image and local named volume are not repository artifacts. Teammates reproduce the
+schema from migrations.
+
 ## Migration Chain
 
 Current migrations:
@@ -92,6 +110,12 @@ Submitted
 Rejected
 Archived
 ```
+
+Migration `0004` aligns the database default with the ORM and implemented state machine value
+`ApplicationCreated`.
+
+State, automation mode, confidence, and recommendation values are validated by application code.
+PostgreSQL does not currently enforce their allowed values with enum or `CHECK` constraints.
 
 Indexes:
 
@@ -212,7 +236,9 @@ event_log.application_id does not cascade on application delete
 Application.events also avoids ORM delete/delete-orphan cascade
 ```
 
-This preserves audit history. Consumers should treat the event log as append-only.
+Migration `0003` preserves audit history at the database foreign-key layer. The SQLAlchemy
+relationship also avoids delete/delete-orphan cascade and uses passive deletes. Consumers should
+treat the event log as append-only.
 
 Indexes:
 
@@ -233,7 +259,36 @@ ix_event_log_created_at(created_at)
 - Policy decisions are persisted before executor actions.
 - Executor actions use a unique idempotency key.
 - Executor dry-run and result records append audit events.
-- Event log rows are preserved when application-owned records are deleted.
+- The event-log database FK does not cascade on application delete.
+
+## Validation Boundaries
+
+Database-enforced:
+
+- Primary and foreign keys.
+- Required versus nullable columns.
+- Executor idempotency-key uniqueness.
+- Declared indexes and server defaults.
+- Event-log FK without `ON DELETE CASCADE`.
+
+Application-enforced:
+
+- Valid state transitions.
+- Allowed state, mode, confidence, recommendation, decision, execution-mode, and status values.
+- Policy decision before the dry-run executor endpoint.
+- Event append ordering in Tracker/API workflows.
+
+## Alignment Register
+
+| Area | Status | Evidence / next action |
+|---|---|---|
+| Application DB default differs from state machine | Resolved by #47 | Migration `0004` and ORM default use `ApplicationCreated` |
+| ORM event delete cascade conflicts with append-only rule | Resolved by #47 | Database FK does not cascade; ORM relationship uses passive deletes |
+| Event contract vocabulary differs from implementation | Resolved by #48 | Contract uses `id`, `event_type`, and implemented event names |
+| Enum-like strings lack PostgreSQL checks | Open | Decide in a dedicated M1 database implementation PR |
+| Policy/executor records cascade with application | Open | Decide whether operational audit must outlive application deletion |
+| PostgreSQL schema creation is manual | Open | Compose starts PostgreSQL; developers run Alembic separately |
+| Normalized company/document/thread/answer model | Deferred | Proposed in ADR-0002; not approved or implemented |
 
 ## Current Non-Goals
 
@@ -250,3 +305,12 @@ The following are not implemented as separate schema tables in M1:
 - `application_answers`
 
 These may be introduced later through new migrations and architecture review.
+
+The proposed phase placement is:
+
+- M3: `companies`
+- M5: `document_versions`, `application_documents`, `answer_library`,
+  `application_answers`
+- M7: `contacts`, `threads`, `messages`, `thread_applications`
+
+See proposed ADR-0002. No future table is authorized while that ADR remains Proposed.
