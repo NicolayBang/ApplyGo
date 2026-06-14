@@ -68,6 +68,7 @@ class ApplicationScorer:
             reasons.append("Job description has enough detail for screening.")
         else:
             missing_data.append("detailed job description")
+            risks.append("Limited job description reduces screening confidence.")
 
         if job.remote_ok:
             score += 5
@@ -87,6 +88,7 @@ class ApplicationScorer:
             reasons.append("Compensation information is available for review.")
         else:
             missing_data.append("compensation range")
+            risks.append("Compensation is missing and should be confirmed before applying.")
 
         searchable_text = " ".join(
             part
@@ -106,13 +108,18 @@ class ApplicationScorer:
         )
         if matched_keywords:
             score += min(10, len(matched_keywords) * 2)
-            reasons.append("Relevant technical keywords were found.")
+            reasons.append(
+                f"Relevant technical keywords were found: {', '.join(matched_keywords)}."
+            )
 
         if "senior" in searchable_text or "lead" in searchable_text:
             risks.append("Seniority expectations should be reviewed by a human.")
 
         if "unpaid" in searchable_text or "commission only" in searchable_text:
             red_flags.append("Compensation language needs review.")
+
+        if job.ats_type is None and job.source_url:
+            risks.append("ATS/source type was not classified from the posting URL or text.")
 
         score = max(0, min(score, 100))
         confidence = self._confidence(score, missing_data, red_flags)

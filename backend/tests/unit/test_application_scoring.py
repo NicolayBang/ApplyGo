@@ -26,7 +26,8 @@ def test_scorer_recommends_complete_technical_remote_job() -> None:
     assert result.confidence == "high"
     assert result.recommendation == "recommended"
     assert result.missing_data == []
-    assert "Relevant technical keywords were found." in result.reasons
+    assert "Relevant technical keywords were found:" in " ".join(result.reasons)
+    assert "python" in " ".join(result.reasons)
     assert "Job type was classified for screening." in result.reasons
     assert "ATS source was classified for traceability." in result.reasons
     assert "Compensation information is available for review." in result.reasons
@@ -47,6 +48,8 @@ def test_scorer_flags_sparse_job_for_review() -> None:
     assert "detailed job description" in result.missing_data
     assert "job type" in result.missing_data
     assert "compensation range" in result.missing_data
+    assert "Limited job description reduces screening confidence." in result.risks
+    assert "Compensation is missing and should be confirmed before applying." in result.risks
 
 
 def test_scorer_marks_compensation_red_flag_not_recommended() -> None:
@@ -84,3 +87,21 @@ def test_scorer_uses_classified_metadata_without_external_services() -> None:
     assert "Compensation information is available for review." in result.reasons
     assert "job type" not in result.missing_data
     assert "compensation range" not in result.missing_data
+
+
+def test_scorer_flags_unclassified_source_when_url_is_present() -> None:
+    result = ApplicationScorer().score(
+        JobScoringInput(
+            title="Backend Developer",
+            company="Example Co",
+            source_url="https://example.com/job",
+            raw_text=(
+                "Build backend APIs with Python and SQL for reliable internal data workflows. "
+                "Work with platform teams on automation services and operational tooling."
+            ),
+            job_type="full-time",
+            salary_raw="$85k to $110k",
+        )
+    )
+
+    assert "ATS/source type was not classified from the posting URL or text." in result.risks
