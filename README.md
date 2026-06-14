@@ -23,7 +23,7 @@ Milestone 1 focuses on the platform spine:
 - Append-only event log
 - Policy engine and automation modes
 - Executor contract with `execute` and `dry_run`
-- Stub executor that logs planned actions
+- Stub executor that logs planned actions, safeguards, and side-effect status
 - Minimal dashboard for tracker, workflow state, scoring, policy, dry-run, and audit visibility
 
 No Gmail, browser automation, LLM integration, or business logic is implemented yet.
@@ -99,7 +99,7 @@ python -m scripts.validate_seed_to_dashboard
 - Transition through states
 - Log every event
 - Evaluate policy
-- Simulate an executor action in dry-run
+- Simulate an executor action in dry-run with plan details and no side effects
 - Inspect it in the dashboard
 
 ## Non-goals in v1

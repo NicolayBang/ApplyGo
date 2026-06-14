@@ -71,7 +71,7 @@ The dashboard should show:
 - application summary
 - score details
 - policy decisions
-- executor actions
+- executor actions with dry-run plan details
 - audit timeline
 
 ## Demo Script
@@ -159,11 +159,13 @@ Expected result:
 
 - executor action is created with execution mode `dry_run`
 - executor status is `planned`
+- executor details show `side_effects: false`
+- executor details list planned steps and required safeguards
 - audit timeline includes:
   - `executor_attempt_logged`
   - `executor_result_logged`
 
-The dry-run executor records the planned action only. It does not send email, open a browser, or submit anything externally.
+The dry-run executor records the planned action only. It does not send email, open a browser, or submit anything externally. Its result explains what would happen and which safeguards were required before planning.
 
 ## Validation Commands
 
@@ -193,7 +195,7 @@ Expected result:
 - The database owns durable truth.
 - The workflow state machine controls valid application progression.
 - Policy decisions are recorded before executor actions.
-- Dry-run execution is first-class and side-effect free.
+- Dry-run execution is first-class, side-effect free, and inspectable.
 - The audit timeline records important workflow events.
 - Human review remains central; the system supports governed automation rather than loose autonomous action.
 
