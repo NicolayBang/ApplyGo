@@ -10,6 +10,16 @@ from applypilot.main import app
 
 
 client = TestClient(app)
+EXPECTED_DASHBOARD_API_PATHS = {
+    "/jobs",
+    "/applications",
+    "/applications/{application_id}/state",
+    "/applications/{application_id}/score",
+    "/applications/{application_id}/policy-decisions",
+    "/applications/{application_id}/executor-actions/dry-run",
+    "/applications/{application_id}/audit",
+    "/applications/{application_id}/review-summary",
+}
 
 
 def test_dashboard_script_selectors_exist_in_markup() -> None:
@@ -43,3 +53,17 @@ def test_dashboard_review_summary_contract_is_wired() -> None:
     assert "/review-summary" in script_response.text
     assert ".readiness-list" in style_response.text
     assert ".readiness-item" in style_response.text
+
+
+def test_dashboard_fetch_paths_are_backed_by_api_routes() -> None:
+    """Every dashboard API path stays inside the supported M1 route contract."""
+    script_response = client.get("/ui/app.js")
+
+    assert script_response.status_code == 200
+
+    fetch_paths = {
+        path.replace("${applicationId}", "{application_id}")
+        for path in re.findall(r"fetchJson\(`\$\{base\}([^`?]+)", script_response.text)
+    }
+
+    assert fetch_paths == EXPECTED_DASHBOARD_API_PATHS
