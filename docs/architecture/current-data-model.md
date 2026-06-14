@@ -1,0 +1,246 @@
+# Current Data Model
+
+**Status:** Implemented snapshot  
+**Scope:** Milestone 1 backend schema  
+**Database:** PostgreSQL  
+**Source of truth:** SQLAlchemy models and Alembic migrations
+
+This document describes the data model currently implemented in `backend/src/applypilot/db/models.py` and the active Alembic migration chain.
+
+It is not a future-state schema proposal. If this document conflicts with the code or migrations, treat this document as stale and update it.
+
+## Migration Chain
+
+Current migrations:
+
+1. `0001_initial_schema.py`
+2. `0002_policy_decision_outcomes.py`
+3. `0003_preserve_event_log_on_application_delete.py`
+
+## Core Shape
+
+```mermaid
+erDiagram
+    JOBS ||--o{ APPLICATIONS : has
+    APPLICATIONS ||--o{ DOCUMENTS : owns
+    APPLICATIONS ||--o{ EMAIL_THREADS : owns
+    APPLICATIONS ||--o{ POLICY_DECISIONS : records
+    APPLICATIONS ||--o{ EXECUTOR_ACTIONS : records
+    APPLICATIONS ||--o{ EVENT_LOG : audits
+```
+
+`applications` is the canonical hub record. Workflow state, scoring, policy decisions, executor records, documents, email threads, and audit events all attach to an application.
+
+## Tables
+
+### `jobs`
+
+Normalized job posting data.
+
+```text
+id uuid PK
+source_url varchar(2048) nullable
+raw_text text nullable
+title varchar(512) nullable
+company varchar(256) nullable
+location varchar(256) nullable
+remote_ok boolean not null default false
+job_type varchar(64) nullable
+ats_type varchar(64) nullable
+salary_raw varchar(256) nullable
+created_at timestamptz not null
+updated_at timestamptz not null
+```
+
+Indexes:
+
+```text
+ix_jobs_company(company)
+```
+
+### `applications`
+
+Canonical application hub.
+
+```text
+id uuid PK
+job_id uuid FK -> jobs.id on delete cascade
+state varchar(64) not null
+automation_mode varchar(32) not null default manual
+fit_score integer nullable
+confidence varchar(16) nullable
+recommendation varchar(32) nullable
+score_reasons jsonb nullable
+score_risks jsonb nullable
+missing_data jsonb nullable
+red_flags jsonb nullable
+created_at timestamptz not null
+updated_at timestamptz not null
+```
+
+Implemented states:
+
+```text
+ApplicationCreated
+Draft
+ReadyForReview
+Approved
+Submitted
+Rejected
+Archived
+```
+
+Indexes:
+
+```text
+ix_applications_state(state)
+ix_applications_job_id(job_id)
+```
+
+### `documents`
+
+Generated application documents such as CV bullets, cover notes, and screening answers.
+
+```text
+id uuid PK
+application_id uuid FK -> applications.id on delete cascade
+doc_type varchar(64) not null
+content text nullable
+content_json jsonb nullable
+version integer not null default 1
+created_at timestamptz not null
+```
+
+Indexes:
+
+```text
+ix_documents_application_id(application_id)
+```
+
+### `email_threads`
+
+Recruiter or application-related email thread records.
+
+```text
+id uuid PK
+application_id uuid FK -> applications.id on delete cascade
+external_thread_id varchar(256) nullable
+subject varchar(512) nullable
+direction varchar(16) not null default inbound
+classification varchar(64) nullable
+raw_body text nullable
+draft_reply text nullable
+sent_at timestamptz nullable
+created_at timestamptz not null
+```
+
+Indexes:
+
+```text
+ix_email_threads_application_id(application_id)
+```
+
+### `policy_decisions`
+
+Persisted policy gate evaluations. Policy decisions are recorded before executor actions.
+
+```text
+id uuid PK
+application_id uuid FK -> applications.id on delete cascade
+action_type varchar(64) not null
+mode varchar(32) not null
+decision varchar(16) not null default review
+allowed boolean not null
+reasons jsonb nullable
+risks jsonb nullable
+required_overrides jsonb nullable
+created_at timestamptz not null
+```
+
+Indexes:
+
+```text
+ix_policy_decisions_application_id(application_id)
+```
+
+### `executor_actions`
+
+Execution or dry-run records for approved worker actions.
+
+```text
+id uuid PK
+application_id uuid FK -> applications.id on delete cascade
+idempotency_key varchar(256) unique not null
+action_type varchar(64) not null
+execution_mode varchar(16) not null
+status varchar(32) not null default queued
+payload jsonb nullable
+result jsonb nullable
+created_at timestamptz not null
+completed_at timestamptz nullable
+```
+
+Indexes:
+
+```text
+ix_executor_actions_application_id(application_id)
+ix_executor_actions_idempotency_key(idempotency_key)
+```
+
+### `event_log`
+
+Append-only audit log for application creation, state transitions, policy decisions, executor attempts, and executor results.
+
+```text
+id uuid PK
+application_id uuid FK -> applications.id
+event_type varchar(128) not null
+actor varchar(64) not null default system
+from_state varchar(64) nullable
+to_state varchar(64) nullable
+payload jsonb nullable
+created_at timestamptz not null
+```
+
+Important rule:
+
+```text
+event_log.application_id does not cascade on application delete
+```
+
+This preserves audit history. Consumers should treat the event log as append-only.
+
+Indexes:
+
+```text
+ix_event_log_application_id(application_id)
+ix_event_log_event_type(event_type)
+ix_event_log_created_at(created_at)
+```
+
+## Implemented Rules
+
+- PostgreSQL is the durable system of record.
+- `applications` is the central aggregate for M1.
+- Application state transitions go through the state machine.
+- Application creation and state changes append event log records.
+- Policy decisions are persisted before executor actions.
+- Executor actions use a unique idempotency key.
+- Executor dry-run and result records append audit events.
+- Event log rows are preserved when application-owned records are deleted.
+
+## Current Non-Goals
+
+The following are not implemented as separate schema tables in M1:
+
+- `companies`
+- `contacts`
+- `document_versions`
+- `application_documents`
+- `threads`
+- `messages`
+- `thread_applications`
+- `answer_library`
+- `application_answers`
+
+These may be introduced later through new migrations and architecture review.
