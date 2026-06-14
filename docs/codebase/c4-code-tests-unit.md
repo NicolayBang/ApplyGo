@@ -4,7 +4,7 @@
 
 - **Location**: `backend/tests/unit/`
 - **Runner**: pytest
-- **Current coverage**: 35 tests across eight modules.
+- **Current coverage**: 39 tests across nine modules.
 - **Purpose**: Validate deterministic domain behavior, constraints, and dry-run planning.
 
 ## Modules
@@ -15,9 +15,10 @@
 | `test_state_machine.py` | 7 | Valid lifecycle and invalid/terminal transitions |
 | `test_application_scoring.py` | 4 | Complete, sparse, red-flag, and classified job scoring |
 | `test_job_intake_classification.py` | 4 | Classification, preservation, sparse input, salary false positives |
-| `test_model_constraints.py` | 5 | Cascades, state defaults, audit preservation, idempotency, replay indexes |
+| `test_model_constraints.py` | 6 | Cascades, state defaults, audit preservation, idempotency, executor metadata, replay indexes |
 | `test_demo_seed.py` | 1 | Seeded policy and dry-run audit workflow |
 | `test_executor_stub.py` | 1 | Side-effect-free plan details and safeguards |
+| `test_tracker_executor_contract.py` | 3 | Executor request/result metadata matching |
 | `test_tracker_submission_workflow.py` | 4 | Guarded submission workflow and direct-state bypass protection |
 
 ## Architecture-Critical Assertions
@@ -28,6 +29,8 @@ The suite checks:
 - event log rows do not cascade-delete with applications
 - application-owned operational records do cascade
 - executor idempotency keys are unique
+- executor request metadata is persisted and indexed
+- tracker rejects executor results with mismatched request metadata
 - event-log replay indexes exist
 - policy decisions expose deterministic outcomes and overrides
 - dry-run executor plans declare no side effects

@@ -42,9 +42,22 @@ def test_executor_idempotency_key_is_unique() -> None:
     assert ExecutorAction.__table__.c.idempotency_key.unique is True
 
 
+def test_executor_contract_metadata_is_persisted() -> None:
+    table = ExecutorAction.__table__.c
+
+    assert table.request_id.unique is True
+    assert table.request_id.nullable is False
+    assert table.worker.nullable is False
+    assert table.requested_by.nullable is False
+    assert table.requested_at.nullable is False
+
+
 def test_event_log_has_replay_indexes() -> None:
     index_names = {index.name for index in EventLogEntry.__table__.indexes}
 
     assert "ix_event_log_application_id" in index_names
     assert "ix_event_log_event_type" in index_names
     assert "ix_event_log_created_at" in index_names
+    assert "ix_executor_actions_request_id" in {
+        index.name for index in ExecutorAction.__table__.indexes
+    }

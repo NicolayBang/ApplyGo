@@ -353,6 +353,7 @@ class Tracker:
         app = self._session.get(Application, application_id)
         if app is None:
             raise ValueError(f"Application {application_id} not found")
+        self._ensure_executor_result_matches_request(request, result)
 
         existing = (
             self._session.query(ExecutorAction)
@@ -367,14 +368,18 @@ class Tracker:
             return existing
 
         action = ExecutorAction(
+            request_id=request.request_id,
             application_id=application_id,
+            worker=request.worker,
             idempotency_key=request.idempotency_key,
             action_type=request.action_type,
             execution_mode=request.mode.value,
             status=result.status,
+            requested_by=request.requested_by,
+            requested_at=request.requested_at,
             payload=request.payload,
             result=result.details,
-            completed_at=datetime.now(tz=timezone.utc),
+            completed_at=result.completed_at,
         )
         self._session.add(action)
         self._session.flush()
@@ -385,9 +390,13 @@ class Tracker:
             actor=actor,
             payload={
                 "executor_action_id": str(action.id),
+                "request_id": str(action.request_id),
                 "action_type": action.action_type,
+                "worker": action.worker,
                 "execution_mode": action.execution_mode,
                 "idempotency_key": action.idempotency_key,
+                "requested_by": action.requested_by,
+                "requested_at": action.requested_at.isoformat(),
                 "policy_decision_id": request.payload.get("policy_decision_id"),
             },
         )
@@ -397,11 +406,27 @@ class Tracker:
             actor=actor,
             payload={
                 "executor_action_id": str(action.id),
+                "request_id": str(action.request_id),
                 "status": action.status,
+                "worker": action.worker,
                 "result": action.result or {},
             },
         )
         return action
+
+    def _ensure_executor_result_matches_request(
+        self,
+        request: ExecutorRequest,
+        result: ExecutorResult,
+    ) -> None:
+        if result.request_id != request.request_id:
+            raise ValueError("Executor result request_id does not match request")
+        if result.application_id != request.application_id:
+            raise ValueError("Executor result application_id does not match request")
+        if result.worker != request.worker:
+            raise ValueError("Executor result worker does not match request")
+        if result.mode != request.mode:
+            raise ValueError("Executor result mode does not match request")
 
     def get_executor_actions(self, application_id: uuid.UUID) -> list[ExecutorAction]:
         """Return executor actions recorded for an application."""

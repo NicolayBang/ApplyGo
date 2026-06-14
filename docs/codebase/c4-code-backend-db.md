@@ -33,7 +33,7 @@ rolls back on exceptions, and always closes its session.
 | `Document` | `documents` | Application-owned generated content placeholder |
 | `EmailThread` | `email_threads` | Application-owned communication placeholder |
 | `PolicyDecision` | `policy_decisions` | Recorded permission decision and evidence |
-| `ExecutorAction` | `executor_actions` | Idempotent execution attempt/result record |
+| `ExecutorAction` | `executor_actions` | Idempotent execution attempt/result record with executor request metadata |
 | `EventLogEntry` | `event_log` | Append-only audit event |
 
 Operational child records cascade with the application. The event log foreign key does not
@@ -62,7 +62,7 @@ cascade, preserving the audit record at both schema and ORM boundaries.
 | `record_policy_decision` | Persists permission evidence and appends policy audit event |
 | `get_policy_decision` | Fetches one decision by UUID |
 | `get_policy_decisions` | Returns ordered decisions for an application |
-| `record_executor_result` | Enforces idempotency, persists action, appends attempt/result events |
+| `record_executor_result` | Validates request/result metadata, enforces idempotency, persists action, appends attempt/result events |
 | `get_executor_actions` | Returns ordered actions for an application |
 
 ### Event Methods

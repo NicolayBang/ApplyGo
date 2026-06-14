@@ -76,11 +76,15 @@ classDiagram
 
     class ExecutorAction {
         +UUID id
+        +UUID request_id
         +UUID application_id
+        +str worker
         +str idempotency_key
         +str action_type
         +str execution_mode
         +str status
+        +str requested_by
+        +datetime requested_at
         +dict payload
         +dict result
         +datetime created_at
@@ -133,16 +137,28 @@ classDiagram
     }
 
     class ExecutorRequest {
+        +UUID request_id
         +str action_type
         +ExecutionMode mode
         +str application_id
+        +str worker
         +str idempotency_key
+        +str requested_by
+        +datetime requested_at
         +dict payload
+        +create() ExecutorRequest
     }
 
     class ExecutorResult {
+        +UUID request_id
+        +str application_id
+        +str worker
+        +ExecutionMode mode
         +str status
         +dict details
+        +str error_code
+        +str error_message
+        +datetime completed_at
     }
 
     class ExecutionMode {

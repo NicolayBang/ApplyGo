@@ -255,15 +255,19 @@ class FakeTracker:
 
         record = SimpleNamespace(
             id=uuid.uuid4(),
+            request_id=request.request_id,
             application_id=application_id,
+            worker=request.worker,
             idempotency_key=request.idempotency_key,
             action_type=request.action_type,
             execution_mode=request.mode.value,
             status=result.status,
+            requested_by=request.requested_by,
+            requested_at=request.requested_at,
             payload=request.payload,
             result=result.details,
             created_at=datetime.now(tz=UTC),
-            completed_at=datetime.now(tz=UTC),
+            completed_at=result.completed_at,
         )
         self.executor_actions.append(record)
         self.events.append(
@@ -276,9 +280,13 @@ class FakeTracker:
                 to_state=None,
                 payload={
                     "executor_action_id": str(record.id),
+                    "request_id": str(record.request_id),
                     "action_type": record.action_type,
+                    "worker": record.worker,
                     "execution_mode": record.execution_mode,
                     "idempotency_key": record.idempotency_key,
+                    "requested_by": record.requested_by,
+                    "requested_at": record.requested_at.isoformat(),
                     "policy_decision_id": request.payload.get("policy_decision_id"),
                 },
                 created_at=datetime.now(tz=UTC),
@@ -294,7 +302,9 @@ class FakeTracker:
                 to_state=None,
                 payload={
                     "executor_action_id": str(record.id),
+                    "request_id": str(record.request_id),
                     "status": record.status,
+                    "worker": record.worker,
                     "result": record.result,
                 },
                 created_at=datetime.now(tz=UTC),
@@ -473,6 +483,7 @@ def test_submitted_state_allows_matching_policy_and_executor_evidence() -> None:
         f"/applications/{tracker.application_id}/executor-actions/dry-run",
         json={
             "policy_decision_id": policy_response.json()["id"],
+            "worker": "email",
             "action_type": "send_follow_up_email",
             "idempotency_key": "dry-run-001",
         },
@@ -646,6 +657,7 @@ def test_executor_dry_run_is_persisted_and_audited() -> None:
         f"/applications/{tracker.application_id}/executor-actions/dry-run",
         json={
             "policy_decision_id": policy_response.json()["id"],
+            "worker": "email",
             "action_type": "send_follow_up_email",
             "idempotency_key": "dry-run-001",
             "payload": {"template": "follow_up"},
@@ -655,9 +667,14 @@ def test_executor_dry_run_is_persisted_and_audited() -> None:
     assert response.status_code == 201
     body = response.json()
     assert body["action_type"] == "send_follow_up_email"
+    assert body["request_id"]
+    assert body["worker"] == "email"
     assert body["execution_mode"] == "dry_run"
     assert body["status"] == "planned"
+    assert body["requested_by"] == "worker"
     assert body["result"]["idempotency_key"] == "dry-run-001"
+    assert body["result"]["request_id"] == body["request_id"]
+    assert body["result"]["worker"] == "email"
     assert body["result"]["side_effects"] is False
     assert body["result"]["requires"] == [
         "recorded_policy_decision",
@@ -673,7 +690,10 @@ def test_executor_dry_run_is_persisted_and_audited() -> None:
         "executor_result_logged",
     ]
     assert events[-2]["payload"]["idempotency_key"] == "dry-run-001"
+    assert events[-2]["payload"]["request_id"] == body["request_id"]
+    assert events[-2]["payload"]["worker"] == "email"
     assert events[-2]["payload"]["policy_decision_id"] == policy_response.json()["id"]
+    assert events[-1]["payload"]["request_id"] == body["request_id"]
     assert events[-1]["payload"]["status"] == "planned"
 
 
@@ -691,6 +711,7 @@ def test_executor_dry_run_reuses_idempotent_result() -> None:
     )
     payload = {
         "policy_decision_id": policy_response.json()["id"],
+        "worker": "email",
         "action_type": "send_follow_up_email",
         "idempotency_key": "dry-run-001",
         "payload": {"template": "follow_up"},
@@ -763,6 +784,7 @@ def test_application_audit_summary_returns_application_events_policy_and_executo
         f"/applications/{tracker.application_id}/executor-actions/dry-run",
         json={
             "policy_decision_id": policy_response.json()["id"],
+            "worker": "email",
             "action_type": "send_follow_up_email",
             "idempotency_key": "dry-run-001",
         },

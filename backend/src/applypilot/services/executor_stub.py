@@ -9,12 +9,20 @@ class StubExecutor:
     def dispatch(self, request: ExecutorRequest) -> ExecutorResult:
         is_dry_run = request.mode.value == "dry_run"
         return ExecutorResult(
+            request_id=request.request_id,
+            application_id=request.application_id,
+            worker=request.worker,
+            mode=request.mode,
             status="planned" if is_dry_run else "queued",
             details={
+                "request_id": str(request.request_id),
                 "action_type": request.action_type,
                 "application_id": request.application_id,
+                "worker": request.worker,
                 "idempotency_key": request.idempotency_key,
                 "execution_mode": request.mode.value,
+                "requested_by": request.requested_by,
+                "requested_at": request.requested_at.isoformat(),
                 "side_effects": not is_dry_run,
                 "requires": [
                     "recorded_policy_decision",

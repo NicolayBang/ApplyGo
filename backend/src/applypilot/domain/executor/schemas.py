@@ -13,6 +13,7 @@ from applypilot.domain.executor.contracts import ExecutionMode
 
 class ExecutorDryRunRequest(BaseModel):
     policy_decision_id: uuid.UUID
+    worker: str = "email"
     action_type: str
     idempotency_key: str = Field(min_length=1)
     payload: dict[str, Any] = Field(default_factory=dict)
@@ -21,11 +22,15 @@ class ExecutorDryRunRequest(BaseModel):
 
 class ExecutorActionRead(BaseModel):
     id: uuid.UUID
+    request_id: uuid.UUID
     application_id: uuid.UUID
+    worker: str
     idempotency_key: str
     action_type: str
     execution_mode: ExecutionMode
     status: str
+    requested_by: str
+    requested_at: datetime
     payload: dict | None = None
     result: dict | None = None
     created_at: datetime

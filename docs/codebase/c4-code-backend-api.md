@@ -63,7 +63,8 @@ application scoring and adds `application score` to missing data when no score e
 ### `dry_run_executor_action`
 
 Requires a recorded, allowed policy decision for the same application. Dispatches only to
-`StubExecutor` in `DRY_RUN` mode, then records the idempotent result and audit events.
+`StubExecutor` in `DRY_RUN` mode, creates executor request metadata at the API boundary,
+then records the idempotent result and audit events.
 
 ### Audit Reads
 

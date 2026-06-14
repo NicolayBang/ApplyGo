@@ -15,11 +15,12 @@ Nineteen tests use FastAPI `TestClient` and a fake unit of work to cover:
 - application creation, listing, missing jobs, and state transitions
 - score persistence and score audit events
 - policy persistence, stored-score context, review outcomes, and missing applications
-- executor dry-run persistence, idempotent reuse, missing applications, and mandatory policy
+- executor dry-run metadata, persistence, idempotent reuse, missing applications, and mandatory policy
 - guarded `Submitted` transitions requiring allowed policy and executor evidence
 - complete audit-summary responses and missing applications
 
-The tests assert policy-before-execution and verify executor attempt/result audit events.
+The tests assert policy-before-execution and verify executor request metadata plus
+attempt/result audit events.
 
 ## `test_cors_and_dashboard.py`
 
