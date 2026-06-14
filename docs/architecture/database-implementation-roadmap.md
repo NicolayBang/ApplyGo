@@ -20,6 +20,8 @@ Authority remains:
 For exact implemented columns and constraints, use
 `docs/contracts/database-schema-contract.md`. For the proposed direction, use
 `docs/decisions/ADR-0002-canonical-data-model.md`. This roadmap does not override either document.
+The cross-milestone status, owner, prerequisite, and implementation-gate index is
+`docs/contracts/README.md`.
 
 ## Status Labels
 
@@ -106,10 +108,10 @@ manual intake
 
 These are known boundaries, not evidence that the current schema is fake.
 
-## NEXT: Contract Decisions Before Another Migration
+## M1 Decisions Completed; Future Migration Gates
 
-The next database PR should not begin with a generated migration. It should begin with decisions
-for the constraints and retention behavior that PostgreSQL will enforce.
+M1 value constraints, audit retention, and migration ownership are complete. Any future database PR
+must still begin with an approved milestone contract rather than a generated migration.
 
 ### 1. Database value checks
 
@@ -285,7 +287,7 @@ source value is explicitly named `jobs.company_source_text`.
 
 ### E. Lifecycle and transition contract
 
-**Status:** PARTLY DONE / FUTURE EXPANSION
+**Status:** IMPLEMENTED M1 BASELINE / PROPOSED FUTURE MODEL
 
 The seven current M1 states are implemented:
 
@@ -320,9 +322,18 @@ Before adding them, define:
 Do not rename `state` or add substates until this contract is approved. Fine-grained execution
 status should not be forced into the headline workflow state.
 
+The proposed reconciliation is recorded in
+`docs/decisions/ADR-0006-lifecycle-state-model.md` and
+`docs/contracts/lifecycle-transition-contract.md`. Neither document authorizes schema or runtime
+changes.
+
 ### F. Audit and retention contract
 
-**Status:** NEXT FOR M1 RETENTION; FUTURE FOR LONG-TERM POLICY
+**Status:** DONE FOR M1 BY ADR-0004 AND MIGRATION `0007`; FUTURE FOR LONG-TERM POLICY
+
+M1 physical deletion is restricted while event, policy, or executor audit evidence references an
+application. The remaining questions apply to future privacy, redaction, archive, access, and
+retention requirements:
 
 The contract must answer:
 

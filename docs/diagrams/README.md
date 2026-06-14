@@ -12,9 +12,9 @@ Authority remains:
 
 ## Current Diagrams
 
-- `component-diagram.md` - high-level component relationships.
+- `component-diagram.md` - separate implemented M1 and planned future component relationships.
 - `database-schema.md` - implemented M1 database view plus planned future ER view.
-- `state-machine.md` - implemented M1 application workflow states.
+- `state-machine.md` - implemented M1 states plus a clearly labeled proposed future projection.
 - `execution-sequence.md` - policy, executor, and audit ordering.
 - `backend-class-diagram.md` - backend class and module reference.
 

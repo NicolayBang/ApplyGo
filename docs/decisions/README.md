@@ -51,7 +51,9 @@ Authority order:
 - `ADR-0003-m1-database-value-checks.md` (Approved)
 - `ADR-0004-m1-audit-retention.md` (Approved)
 - `ADR-0005-m3-company-identity.md` (Approved; implementation timing gated)
+- `ADR-0006-lifecycle-state-model.md` (Proposed; no implementation authorized)
 
 ## Review Briefs
 - `m3-company-identity-decision-brief.md` (Review brief)
 - `ADR-0005-final-review.md` (Direction approved; implementation timing gated)
+- `future-milestone-contract-briefs.md` (M5-M9 bounded review briefs; no implementation authorized)

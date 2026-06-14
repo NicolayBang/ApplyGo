@@ -21,7 +21,20 @@ Source of truth priority:
 5. `AGENTS.md`
 6. Chat discussions
 
-If implementation, documentation, or agent output conflicts with the architecture PDF, treat it as architecture drift unless explicitly superseded by an approved ADR.
+If implementation, documentation, or agent output conflicts with the architecture PDF, treat it as
+architecture drift and follow the unresolved authority boundary below.
+
+### Authority Boundary Requiring Human Decision
+
+The current authority order places the architecture PDF above approved ADRs, while the drift rule
+allows an approved ADR to supersede conflicting architecture. Until Nicolay and Francis approve a
+dedicated governance ADR that resolves this boundary:
+
+- do not claim that an ADR supersedes the architecture PDF;
+- stop and flag any proposed PDF conflict as architecture drift;
+- record the competing interpretations and request a human decision;
+- use ADRs to refine lower-priority architecture and contracts only when they remain compatible with
+  the PDF.
 
 ---
 
@@ -304,9 +317,7 @@ ApplyPilot/
 
 ### Branches
 
-- `feature/APP-001-short-description`
-- `docs/APP-001-short-description`
-- `fix/APP-001-short-description`
+Use the milestone-based branch format in the Repository Naming Convention below.
 
 ### Commits
 
@@ -386,7 +397,7 @@ Apply this convention only to future work.
 ## Branch, Commit, Migration, and Merge Discipline
 
 - Do not mix governance/docs commits with backend implementation commits.
-- Use scoped branches such as `feature/APP-001-backend-spine`.
+- Use scoped branches such as `feature/M1-backend-spine`.
 - Group commits by concern: models, migrations, service wiring, tests, docs.
 - Keep Alembic migrations in dedicated commits.
 - Before committing migrations, verify they are deterministic and aligned with the canonical data model.
@@ -488,39 +499,6 @@ human-confirmed merge behavior.
 - `docker-compose.yml` is the shared source of truth.
 - No machine-specific setup should be required.
 - Environment changes must be documented.
-
----
-
-## Repository Naming Convention
-
-Rules:
-
-- Do not rename existing branches or commits.
-- Existing APP-001 and APP-002 history remains unchanged.
-- Apply the new convention only to future work.
-
-Ticket names use milestone + ticket ID:
-
-`M1-APP-002 - Add Cloud Development Environment`
-
-Branch names use milestone + short description:
-
-- `feature/M1-codespaces-support`
-- `feature/M1-policy-engine`
-- `docs/M1-devops-guide`
-- `fix/M1-migration-ordering`
-
-Commits use Conventional Commits:
-
-- `feat(devops): add codespaces support`
-- `docs: define repository naming conventions`
-- `fix(db): correct migration ordering`
-
-Purpose:
-
-- Tickets are for planning and traceability.
-- Branches are for readable development workflow.
-- Commits describe the actual change.
 
 ---
 
