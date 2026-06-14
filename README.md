@@ -24,7 +24,7 @@ Milestone 1 focuses on the platform spine:
 - Policy engine and automation modes
 - Executor contract with `execute` and `dry_run`
 - Stub executor that logs planned actions, safeguards, and side-effect status
-- Minimal dashboard for tracker, workflow state, scoring, policy, dry-run, and audit visibility
+- Minimal dashboard for tracker, workflow state, scoring, policy, dry-run, review readiness, and audit visibility
 
 No Gmail, browser automation, LLM integration, or real external submission behavior is implemented yet.
 
@@ -33,7 +33,7 @@ No Gmail, browser automation, LLM integration, or real external submission behav
 The current dashboard demo flow is:
 
 ```text
-manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
+manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> review readiness -> audit timeline
 ```
 
 Useful reviewer entry points:
@@ -120,6 +120,7 @@ docker compose --profile demo run --rm seed
 - Evaluate policy
 - Simulate an executor action in dry-run with plan details and no side effects
 - Inspect it in the dashboard
+- Inspect review readiness and audit evidence in the dashboard
 
 ## Non-goals in v1
 

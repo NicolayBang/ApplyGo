@@ -7,7 +7,7 @@
 This guide demonstrates the implemented M1 platform spine:
 
 ```text
-manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
+manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> review readiness -> audit timeline
 ```
 
 The demo uses the current backend, PostgreSQL, and the static dashboard served by FastAPI at `/ui`.
@@ -69,6 +69,7 @@ The dashboard should show:
 - recent applications list
 - parsed job metadata in the application summary
 - workflow actions
+- review readiness
 - application summary
 - score details
 - policy decisions
@@ -104,6 +105,7 @@ Expected result:
 - application ID field is populated
 - recent applications can be refreshed and selected without copying the ID manually
 - application summary loads with state `ApplicationCreated`
+- review readiness shows whether policy, dry-run, and submission evidence are ready
 - application summary shows parsed/classified job metadata, including remote marker, job type, ATS, and salary when inferred
 - audit timeline includes `application.created`
 
@@ -138,6 +140,7 @@ Expected result:
 - recommendation appears as `recommended`, `needs_review`, or `not_recommended`
 - score details show reasons, risks, missing data, and red flags
 - audit timeline includes `application.scored`
+- review readiness marks policy as ready after score context exists
 
 The current scorer is deterministic and does not call an LLM.
 
@@ -149,6 +152,7 @@ Expected result:
 
 - policy decision is recorded
 - decision appears in the policy decisions panel
+- review readiness marks dry-run as ready when the latest allowed policy decision exists
 - audit timeline includes `policy_decision_logged`
 
 The policy check uses stored application score context when explicit context is not provided by the dashboard.
@@ -163,11 +167,32 @@ Expected result:
 - executor status is `planned`
 - executor details show `side_effects: false`
 - executor details list planned steps and required safeguards
+- review readiness shows executor evidence and continues to block submission unless the application is approved and matching executor evidence exists
 - audit timeline includes:
   - `executor_attempt_logged`
   - `executor_result_logged`
 
 The dry-run executor records the planned action only. It does not send email, open a browser, or submit anything externally. Its result explains what would happen and which safeguards were required before planning.
+
+### 6. Inspect Review Readiness
+
+Use the `Review readiness` panel as the compact reviewer view.
+
+Expected result:
+
+- `Policy` shows whether score context is available.
+- `Dry-run` shows whether an allowed policy decision is available.
+- `Submission` shows whether the current application has matching executor evidence.
+- `Next states` mirrors the backend review summary and hides `Submitted` until submission evidence exists.
+
+This panel is backed by:
+
+```text
+GET /applications/{application_id}/review-summary
+```
+
+It is intended to help reviewers inspect readiness quickly without replacing the detailed audit
+timeline.
 
 ## Validation Commands
 
@@ -191,6 +216,7 @@ Expected result:
 - backend tests pass
 - seed-to-dashboard validation passes
 - dashboard audit endpoint returns application, policy, executor, and event records
+- dashboard review-summary endpoint returns readiness flags and guarded next states
 
 ## What This Demo Proves
 
@@ -198,6 +224,7 @@ Expected result:
 - The workflow state machine controls valid application progression.
 - Policy decisions are recorded before executor actions.
 - Dry-run execution is first-class, side-effect free, and inspectable.
+- Review readiness is derived from recorded score, policy, executor, and state evidence.
 - The audit timeline records important workflow events.
 - Human review remains central; the system supports governed automation rather than loose autonomous action.
 
