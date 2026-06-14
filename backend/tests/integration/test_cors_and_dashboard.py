@@ -51,3 +51,16 @@ def test_dashboard_manual_intake_collects_job_description() -> None:
     assert 'id="job-description"' in index_response.text
     assert "jobDescription" in script_response.text
     assert "raw_text" in script_response.text
+
+
+def test_dashboard_exposes_state_progression_controls() -> None:
+    """The static dashboard can advance applications through governed states."""
+    index_response = client.get("/ui/index.html")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert script_response.status_code == 200
+    assert 'id="state-actions"' in index_response.text
+    assert "stateTransitions" in script_response.text
+    assert "/applications/${applicationId}/state" in script_response.text
+    assert "ReadyForReview" in script_response.text
