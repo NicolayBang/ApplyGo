@@ -64,3 +64,19 @@ def test_dashboard_exposes_state_progression_controls() -> None:
     assert "stateTransitions" in script_response.text
     assert "/applications/${applicationId}/state" in script_response.text
     assert "ReadyForReview" in script_response.text
+
+
+def test_dashboard_exposes_demo_readiness_guards() -> None:
+    """The static dashboard guides reviewers through the demo order."""
+    index_response = client.get("/ui/index.html")
+    style_response = client.get("/ui/styles.css")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert style_response.status_code == 200
+    assert script_response.status_code == 200
+    assert 'id="workflow-hint"' in index_response.text
+    assert "updateWorkflowReadiness" in script_response.text
+    assert "Score the application before evaluating policy." in script_response.text
+    assert "Evaluate policy before dry-run." in script_response.text
+    assert "button:disabled" in style_response.text

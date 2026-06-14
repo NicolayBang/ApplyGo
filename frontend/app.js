@@ -109,6 +109,7 @@ const elements = {
   demoButton: document.querySelector("#demo-button"),
   statusPill: document.querySelector("#status-pill"),
   statusMessage: document.querySelector("#status-message"),
+  workflowHint: document.querySelector("#workflow-hint"),
   stateActions: document.querySelector("#state-actions"),
   applicationSummary: document.querySelector("#application-summary"),
   scoreList: document.querySelector("#score-list"),
@@ -147,6 +148,37 @@ function setStatus(type, label, message) {
   elements.statusMessage.textContent = message;
 }
 
+function isValidUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+function hasLoadedApplication() {
+  const applicationId = currentApplicationId();
+  return isValidUuid(applicationId) && currentAudit.application?.id === applicationId;
+}
+
+function updateWorkflowReadiness() {
+  const hasApplication = hasLoadedApplication();
+  const hasScore = Boolean(currentAudit.application?.confidence);
+  const hasAllowedPolicy = Boolean(latestAllowedPolicyDecision());
+
+  elements.scoreButton.disabled = !hasApplication;
+  elements.policyButton.disabled = !hasApplication || !hasScore;
+  elements.dryRunButton.disabled = !hasApplication || !hasAllowedPolicy;
+
+  if (!hasApplication) {
+    elements.workflowHint.textContent = "Create or load an application to begin.";
+  } else if (!hasScore) {
+    elements.workflowHint.textContent = "Score the application before evaluating policy.";
+  } else if (!hasAllowedPolicy) {
+    elements.workflowHint.textContent = "Evaluate policy before dry-run.";
+  } else {
+    elements.workflowHint.textContent = "Ready for dry-run follow-up.";
+  }
+}
+
 function renderSummary(application) {
   const rows = [
     ["Application", application.id],
@@ -172,7 +204,7 @@ function renderSummary(application) {
 function renderStateActions(application) {
   const transitions = stateTransitions[application.state] || [];
 
-  if (!transitions.length) {
+  if (!hasLoadedApplication() || !transitions.length) {
     elements.stateActions.innerHTML = "";
     return;
   }
@@ -289,6 +321,7 @@ function renderAudit(data) {
   renderPolicy(data.policy_decisions || []);
   renderExecutor(data.executor_actions || []);
   renderTimeline(data.events || []);
+  updateWorkflowReadiness();
 }
 
 async function fetchJson(url, options) {
@@ -418,7 +451,7 @@ function requireApplicationId() {
     return null;
   }
 
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId)) {
+  if (!isValidUuid(applicationId)) {
     setStatus("error", "Invalid ID", "Application ID must be a valid UUID.");
     return null;
   }
@@ -511,6 +544,10 @@ async function evaluatePolicy() {
   const base = apiBase();
 
   if (!applicationId) return;
+  if (!currentAudit.application?.confidence) {
+    setStatus("error", "Score needed", "Score the application before evaluating policy.");
+    return;
+  }
 
   setStatus("loading", "Policy", "Evaluating dry-run follow-up policy.");
 
@@ -586,8 +623,9 @@ async function loadAudit() {
     return;
   }
 
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId)) {
+  if (!isValidUuid(applicationId)) {
     setStatus("error", "Invalid ID", "Application ID must be a valid UUID. Run demo_seed to get one.");
+    updateWorkflowReadiness();
     return;
   }
 
@@ -638,6 +676,10 @@ elements.demoButton.addEventListener("click", () => {
   elements.applicationId.value = "";
   renderAudit(demoAudit);
   setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
+});
+
+elements.applicationId.addEventListener("input", () => {
+  updateWorkflowReadiness();
 });
 
 elements.apiBase.addEventListener("blur", () => {
