@@ -314,3 +314,124 @@ def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
         with pytest.raises(IntegrityError):
             with db_session.begin_nested():
                 db_session.execute(text(statement), params)
+
+
+def test_audit_records_prevent_application_delete(db_session) -> None:
+    """PostgreSQL prevents deleting applications with retained audit evidence."""
+
+    def create_application() -> str:
+        job_id = uuid.uuid4()
+        application_id = uuid.uuid4()
+        db_session.execute(
+            text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
+            {"job_id": str(job_id)},
+        )
+        db_session.execute(
+            text(
+                """
+                INSERT INTO applications (id, job_id, state, automation_mode)
+                VALUES (
+                    CAST(:application_id AS uuid),
+                    CAST(:job_id AS uuid),
+                    'ApplicationCreated',
+                    'manual'
+                )
+                """
+            ),
+            {"application_id": str(application_id), "job_id": str(job_id)},
+        )
+        return str(application_id)
+
+    policy_application_id = create_application()
+    db_session.execute(
+        text(
+            """
+            INSERT INTO policy_decisions (
+                id,
+                application_id,
+                action_type,
+                mode,
+                decision,
+                allowed
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'submit',
+                'dry_run',
+                'allow',
+                true
+            )
+            """
+        ),
+        {"application_id": policy_application_id},
+    )
+
+    executor_application_id = create_application()
+    db_session.execute(
+        text(
+            """
+            INSERT INTO executor_actions (
+                id,
+                request_id,
+                application_id,
+                worker,
+                idempotency_key,
+                action_type,
+                execution_mode,
+                status,
+                requested_by,
+                requested_at
+            )
+            VALUES (
+                gen_random_uuid(),
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'email',
+                :idempotency_key,
+                'submit',
+                'dry_run',
+                'planned',
+                'test',
+                now()
+            )
+            """
+        ),
+        {
+            "application_id": executor_application_id,
+            "idempotency_key": "retention-executor-action",
+        },
+    )
+
+    event_application_id = create_application()
+    db_session.execute(
+        text(
+            """
+            INSERT INTO event_log (id, application_id, event_type, actor)
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'application.created',
+                'test'
+            )
+            """
+        ),
+        {"application_id": event_application_id},
+    )
+
+    for application_id in (
+        policy_application_id,
+        executor_application_id,
+        event_application_id,
+    ):
+        with pytest.raises(IntegrityError):
+            with db_session.begin_nested():
+                db_session.execute(
+                    text(
+                        """
+                        DELETE FROM applications
+                        WHERE id = CAST(:application_id AS uuid)
+                        """
+                    ),
+                    {"application_id": application_id},
+                )

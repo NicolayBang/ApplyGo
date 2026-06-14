@@ -132,7 +132,7 @@ Generated application documents such as CV bullets, cover notes, and screening a
 
 ```text
 id uuid PK
-application_id uuid FK -> applications.id on delete cascade
+application_id uuid FK -> applications.id
 doc_type varchar(64) not null
 content text nullable
 content_json jsonb nullable
@@ -152,7 +152,7 @@ Recruiter or application-related email thread records.
 
 ```text
 id uuid PK
-application_id uuid FK -> applications.id on delete cascade
+application_id uuid FK -> applications.id
 external_thread_id varchar(256) nullable
 subject varchar(512) nullable
 direction varchar(16) not null default inbound
@@ -273,6 +273,7 @@ ix_event_log_created_at(created_at)
 - Executor actions use a unique idempotency key.
 - Executor dry-run and result records append audit events.
 - The event-log database FK does not cascade on application delete.
+- Policy decision and executor action FKs do not cascade on application delete.
 
 ## Validation Boundaries
 
@@ -300,7 +301,7 @@ Application-enforced:
 | ORM event delete cascade conflicts with append-only rule | Resolved by #47 | Database FK does not cascade; ORM relationship uses passive deletes |
 | Event contract vocabulary differs from implementation | Resolved by #48 | Contract uses `id`, `event_type`, and implemented event names |
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
-| Policy/executor records cascade with application | Proposed in ADR-0004 | Restrict physical deletion for M1 audit-bearing records |
+| Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is manual | Open | Compose starts PostgreSQL; developers run Alembic separately |
 | Normalized company/document/thread/answer model | Deferred | Proposed in ADR-0002; not approved or implemented |
 

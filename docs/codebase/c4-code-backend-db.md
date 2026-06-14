@@ -36,9 +36,10 @@ rolls back on exceptions, and always closes its session.
 | `ExecutorAction` | `executor_actions` | Idempotent execution attempt/result record with executor request metadata |
 | `EventLogEntry` | `event_log` | Append-only audit event |
 
-Operational child records cascade with the application. The event log foreign key does not
-use database `ON DELETE CASCADE`, and the ORM relationship avoids delete/delete-orphan
-cascade, preserving the audit record at both schema and ORM boundaries.
+Generated placeholder records (`documents`, `email_threads`) still cascade with the application.
+Audit-bearing records (`event_log`, `policy_decisions`, `executor_actions`) do not use database
+`ON DELETE CASCADE`, and the ORM relationships avoid delete/delete-orphan cascade, preserving audit
+records at both schema and ORM boundaries.
 
 Stable M1 value sets are also represented in the ORM metadata as named `CheckConstraint`
 definitions. Alembic revision `0006` enforces the matching PostgreSQL `CHECK` constraints for

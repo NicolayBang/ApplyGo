@@ -27,7 +27,8 @@ The suite checks:
 
 - invalid workflow transitions are rejected
 - event log rows do not cascade-delete with applications
-- application-owned operational records do cascade
+- policy decision and executor action rows do not cascade-delete with applications
+- generated application-owned placeholder records do cascade
 - executor idempotency keys are unique
 - executor request metadata is persisted and indexed
 - stable M1 value-check constraints are declared on ORM models

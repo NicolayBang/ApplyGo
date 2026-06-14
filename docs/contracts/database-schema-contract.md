@@ -16,7 +16,7 @@ manual intake -> parse/classify -> state progression -> scoring
 It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
-The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006`.
+The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007`.
 
 ## Provisioning Boundary
 
@@ -121,7 +121,7 @@ No Gmail integration is implemented in M1.
 | Column | PostgreSQL type | Null | Default | Key / index |
 |---|---|---:|---|---|
 | `id` | `uuid` | no | supplied by domain | PK |
-| `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_policy_decisions_application_id` |
+| `application_id` | `uuid` | no | none | FK -> `applications.id`, `ix_policy_decisions_application_id` |
 | `action_type` | `varchar(64)` | no | none | |
 | `mode` | `varchar(32)` | no | none | `ck_policy_decisions_mode_m1` |
 | `decision` | `varchar(16)` | no | `review` | `ck_policy_decisions_decision_m1` |
@@ -131,8 +131,8 @@ No Gmail integration is implemented in M1.
 | `required_overrides` | `jsonb` | yes | none | |
 | `created_at` | `timestamptz` | no | `now()` | |
 
-Mode and decision values are enforced by named PostgreSQL `CHECK` constraints. Current delete
-behavior is application-owned cascade; whether decisions must outlive an application remains open.
+Mode and decision values are enforced by named PostgreSQL `CHECK` constraints. Migration `0007`
+removes delete cascade so policy decisions remain durable audit-bearing records.
 
 ### `executor_actions`
 
@@ -140,7 +140,7 @@ behavior is application-owned cascade; whether decisions must outlive an applica
 |---|---|---:|---|---|
 | `id` | `uuid` | no | supplied by ORM | PK |
 | `request_id` | `uuid` | no | generated at executor boundary | UNIQUE, `ix_executor_actions_request_id` |
-| `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_executor_actions_application_id` |
+| `application_id` | `uuid` | no | none | FK -> `applications.id`, `ix_executor_actions_application_id` |
 | `worker` | `varchar(32)` | no | none | `ck_executor_actions_worker_m1` |
 | `idempotency_key` | `varchar(256)` | no | none | UNIQUE, `ix_executor_actions_idempotency_key` |
 | `action_type` | `varchar(64)` | no | none | |
@@ -155,7 +155,8 @@ behavior is application-owned cascade; whether decisions must outlive an applica
 
 The unique idempotency key, request ID, worker vocabulary, execution mode, and status vocabulary are
 database-enforced. The dry-run endpoint verifies an allowed, application-owned policy decision before
-recording an action.
+recording an action. Migration `0007` removes delete cascade so executor actions remain durable
+audit-bearing records.
 
 ### `event_log`
 
@@ -190,8 +191,5 @@ The current dry-run does not automatically advance application state after execu
 
 ## Open Database Decisions
 
-- Decide whether to approve the proposed M1 retention contract in
-  `docs/decisions/ADR-0004-m1-audit-retention.md`; today `policy_decisions` and
-  `executor_actions` still cascade with application deletion.
 - Decide whether Compose should gain a one-shot migration service; today migration is manual.
 - Approve or reject the normalized future model through ADR-0002 before adding tables.

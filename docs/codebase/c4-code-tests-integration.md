@@ -4,7 +4,7 @@
 
 - **Location**: `backend/tests/integration/`
 - **Runner**: pytest
-- **Current coverage**: 29 tests across three modules.
+- **Current coverage**: 30 tests across three modules.
 - **Purpose**: Validate API composition, dashboard contracts, CORS, and the DB-backed demo.
 
 ## `test_application_api.py`
@@ -37,14 +37,15 @@ These tests read the static frontend artifacts and protect the dashboard-to-API 
 
 ## `test_seed_to_dashboard.py`
 
-Two PostgreSQL-backed tests run against the configured database environment:
+Three PostgreSQL-backed tests run against the configured database environment:
 
 - demo seed to audit endpoint validation for persisted M1 records
 - direct invalid-write checks proving M1 value constraints reject bad database values
+- delete rejection checks proving audit-bearing records prevent physical application deletion
 
 ## Dependencies
 
 - FastAPI `TestClient`
 - pytest
 - application dependency overrides and fakes
-- PostgreSQL for the seed-to-dashboard and value-constraint tests
+- PostgreSQL for the seed-to-dashboard, value-constraint, and retention tests
