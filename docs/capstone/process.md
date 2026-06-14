@@ -1,7 +1,8 @@
 # Capstone Process Scaffold
 
 ## Objective
-Deliver the platform spine with architecture alignment and auditable execution flow, without business logic implementation.
+Deliver the platform spine with architecture alignment, deterministic M1 workflow behavior, and
+auditable execution flow before any external automation.
 
 ## Milestone 1 Deliverables
 - Canonical tracker entities and persistence scaffolding
@@ -10,6 +11,8 @@ Deliver the platform spine with architecture alignment and auditable execution f
 - Policy contract and mode evaluation scaffolding
 - Executor contract with dry-run/execute parity and stub behavior
 - Minimal dashboard views for tracker and audit timeline
+- PostgreSQL migration and validation workflow
+- Reviewer-facing demo runbook and MVP status summary
 
 ## Definition of Done
 - Create an application record
@@ -22,7 +25,8 @@ Deliver the platform spine with architecture alignment and auditable execution f
 ## Process Rules
 - Architecture-first: honor authority order before implementation.
 - Drift control: any conflict against locked PDF is architecture drift unless superseded by approved ADR.
-- No business logic in this phase.
+- No external side effects in this phase.
+- Keep deterministic M1 behavior separate from future LLM, Gmail, browser, and production automation.
 
 ## Working Agreement
 - Prefer small PRs aligned to one contract/domain at a time.
