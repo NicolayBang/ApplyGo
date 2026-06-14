@@ -116,6 +116,16 @@ const stateTransitions = {
   Archived: [],
 };
 
+const sampleJob = {
+  title: "Backend Platform Engineer",
+  company: "ApplyPilot Demo Co.",
+  location: "Remote",
+  source_url: "https://example.com/jobs/backend-platform-engineer",
+  remote_ok: true,
+  raw_text:
+    "Build Python APIs with FastAPI, PostgreSQL, automation workflows, and platform data services. Partner with DevOps and product teams to improve reliable backend delivery.",
+};
+
 const elements = {
   form: document.querySelector("#audit-form"),
   intakeForm: document.querySelector("#intake-form"),
@@ -127,6 +137,7 @@ const elements = {
   jobUrl: document.querySelector("#job-url"),
   jobDescription: document.querySelector("#job-description"),
   remoteOk: document.querySelector("#remote-ok"),
+  sampleJobButton: document.querySelector("#sample-job-button"),
   scoreButton: document.querySelector("#score-button"),
   policyButton: document.querySelector("#policy-button"),
   dryRunButton: document.querySelector("#dry-run-button"),
@@ -549,6 +560,16 @@ function requireApplicationId() {
   return applicationId;
 }
 
+function loadSampleJob() {
+  elements.jobTitle.value = sampleJob.title;
+  elements.jobCompany.value = sampleJob.company;
+  elements.jobLocation.value = sampleJob.location;
+  elements.jobUrl.value = sampleJob.source_url;
+  elements.remoteOk.checked = sampleJob.remote_ok;
+  elements.jobDescription.value = sampleJob.raw_text;
+  setStatus("", "Sample loaded", "Review the sample job, then create the application.");
+}
+
 function latestAllowedPolicyDecision() {
   const decisions = currentAudit.policy_decisions || [];
   return decisions
@@ -768,6 +789,10 @@ elements.demoButton.addEventListener("click", () => {
   elements.applicationId.value = "";
   renderAudit(demoAudit);
   setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
+});
+
+elements.sampleJobButton.addEventListener("click", () => {
+  loadSampleJob();
 });
 
 elements.applicationId.addEventListener("input", () => {
