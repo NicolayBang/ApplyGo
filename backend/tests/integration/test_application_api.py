@@ -349,11 +349,11 @@ def test_create_job_returns_created_job() -> None:
     response = client.post(
         "/jobs",
         json={
-            "title": "Backend Developer",
-            "company": "ApplyPilot",
-            "location": "Remote",
-            "source_url": "https://example.com/jobs/backend-developer",
-            "raw_text": "Build reliable backend APIs with Python, FastAPI, and PostgreSQL.",
+            "title": "  Backend   Developer  ",
+            "company": " ApplyPilot  ",
+            "location": "  Remote Canada ",
+            "source_url": " https://example.com/jobs/backend-developer ",
+            "raw_text": "\nBuild reliable backend APIs with Python, FastAPI, and PostgreSQL.\n",
             "remote_ok": True,
         },
     )
@@ -362,8 +362,44 @@ def test_create_job_returns_created_job() -> None:
     body = response.json()
     assert body["title"] == "Backend Developer"
     assert body["company"] == "ApplyPilot"
+    assert body["location"] == "Remote Canada"
     assert body["source_url"] == "https://example.com/jobs/backend-developer"
     assert body["raw_text"] == "Build reliable backend APIs with Python, FastAPI, and PostgreSQL."
+
+
+def test_create_job_rejects_empty_manual_intake() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        "/jobs",
+        json={
+            "title": "   ",
+            "company": "   ",
+            "location": "   ",
+            "source_url": "   ",
+            "raw_text": "\n\n",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "job intake requires at least a title, source_url, or raw_text" in response.text
+
+
+def test_create_job_rejects_non_http_source_url() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        "/jobs",
+        json={
+            "title": "Backend Developer",
+            "source_url": "ftp://example.com/jobs/backend-developer",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "source_url must be a valid http or https URL" in response.text
 
 
 def test_application_flow_creates_lists_transitions_and_returns_events() -> None:

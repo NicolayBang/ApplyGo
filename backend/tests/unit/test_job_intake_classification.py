@@ -4,6 +4,24 @@ from applypilot.domain.applications.intake import JobIntakeClassifier
 from applypilot.domain.applications.models import JobCreate
 
 
+def test_job_create_normalizes_manual_intake_text() -> None:
+    job = JobCreate(
+        title="  Backend   Platform   Engineer  ",
+        company="  ApplyPilot   Demo Co. ",
+        location="  Remote   Canada ",
+        source_url="  https://example.com/jobs/backend-platform-engineer  ",
+        raw_text="\r\nBuild reliable APIs.\r\n\r\n",
+        salary_raw="  $95k   to   $125k ",
+    )
+
+    assert job.title == "Backend Platform Engineer"
+    assert job.company == "ApplyPilot Demo Co."
+    assert job.location == "Remote Canada"
+    assert job.source_url == "https://example.com/jobs/backend-platform-engineer"
+    assert job.raw_text == "Build reliable APIs."
+    assert job.salary_raw == "$95k to $125k"
+
+
 def test_classifier_extracts_job_type_ats_salary_and_remote_marker() -> None:
     result = JobIntakeClassifier().classify(
         JobCreate(
