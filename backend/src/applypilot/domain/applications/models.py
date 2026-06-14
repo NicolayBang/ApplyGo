@@ -52,6 +52,7 @@ class ApplicationCreate(BaseModel):
 class ApplicationRead(BaseModel):
     id: uuid.UUID
     job_id: uuid.UUID
+    job: JobRead | None = None
     state: ApplicationState
     automation_mode: str
     fit_score: int | None = None

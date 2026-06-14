@@ -31,15 +31,16 @@ class FakeTracker:
             company="ApplyPilot",
             location="Remote",
             remote_ok=True,
-            job_type=None,
-            ats_type=None,
-            salary_raw=None,
+            job_type="full-time",
+            ats_type="lever",
+            salary_raw="$95,000 - $125,000",
             created_at=self.created_at,
             updated_at=self.created_at,
         )
         self.application = SimpleNamespace(
             id=self.application_id,
             job_id=self.job_id,
+            job=self.job,
             state="ApplicationCreated",
             automation_mode="manual",
             fit_score=None,
@@ -74,6 +75,9 @@ class FakeTracker:
         self.job.source_url = data.source_url
         self.job.raw_text = data.raw_text
         self.job.remote_ok = data.remote_ok
+        self.job.job_type = data.job_type
+        self.job.ats_type = data.ats_type
+        self.job.salary_raw = data.salary_raw
         return self.job
 
     def get_job(self, job_id):
@@ -616,6 +620,8 @@ def test_application_audit_summary_returns_application_events_policy_and_executo
     assert response.status_code == 200
     body = response.json()
     assert body["application"]["id"] == str(tracker.application_id)
+    assert body["application"]["job"]["job_type"] == "full-time"
+    assert body["application"]["job"]["ats_type"] == "lever"
     assert [event["event_type"] for event in body["events"]] == [
         "application.created",
         "policy_decision_logged",

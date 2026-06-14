@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from applypilot.db.models import Application, EventLogEntry, ExecutorAction, Job
 from applypilot.db.models import PolicyDecision as PolicyDecisionRecord
 from applypilot.domain.applications.models import ApplicationCreate, JobCreate
+from applypilot.domain.applications.intake import JobIntakeClassifier
 from applypilot.domain.applications.scoring import ApplicationScorer, JobScoringInput
 from applypilot.domain.executor import ExecutorRequest, ExecutorResult
 from applypilot.domain.policy import PolicyDecision, PolicyRequest
@@ -36,7 +37,8 @@ class Tracker:
     # ------------------------------------------------------------------
 
     def create_job(self, data: JobCreate) -> Job:
-        job = Job(**data.model_dump())
+        enriched = JobIntakeClassifier().enrich(data)
+        job = Job(**enriched.model_dump())
         self._session.add(job)
         self._session.flush()
         return job
