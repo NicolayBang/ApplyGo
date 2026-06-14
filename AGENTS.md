@@ -159,42 +159,44 @@ stop and verify before modifying the repository.
 
 ---
 
-## Experiment Mode
+## Remote Validation Assist
 
-Experiment Mode is opt-in. Use it only when a human explicitly says `go in experiment mode`,
-`use experiment mode`, or gives an equivalent instruction.
+Remote Validation Assist replaces the temporary five-PR Experiment Mode trial. Use it selectively
+when remote validation adds real confidence, not as a default ceremony for every PR.
 
-When Experiment Mode is active, the agent should divide the work into clear parallel tracks:
+Codex owns the main implementation thread, architecture interpretation, final integration, and final
+recommendation. Copilot or another GitHub agent may be asked to provide bounded support only when the
+task benefits from a remote environment or independent check.
 
-- Codex owns the main implementation thread, architecture interpretation, final integration,
-  and final recommendation.
-- Copilot or another GitHub agent may be asked to handle bounded support work such as running
-  validation in Codespaces, checking CI output, finding stale references, reviewing docs for
-  consistency, or adding narrow missing tests.
-- Each delegated task must name the exact branch or PR, the files or behavior in scope, the
-  commands or checks to run, the expected result, and what must not be changed.
-- Delegated tasks must be small enough to review quickly and must not require the other agent to
-  invent architecture, change product direction, handle secrets, design migrations alone, perform
-  broad refactors, or merge pull requests unless a human explicitly allows it.
-- Results from delegated agents are advisory until reviewed and reconciled by Codex or a human.
+Use Remote Validation Assist when:
 
-For the next five pull requests that use Experiment Mode, track execution time lightly in a PR
-comment:
+- PostgreSQL is required and is not running locally.
+- A migration, database retention rule, policy contract, executor contract, or deployment setup needs
+  Codespaces or CI validation.
+- GitHub CI fails and remote logs or reruns are needed.
+- Browser, Codespaces, or GitHub-hosted behavior cannot be fully checked locally.
+- A narrow missing-test or stale-reference check can be delegated without architecture judgment.
 
-- Start time when the PR or task is selected.
-- Local implementation or validation complete time.
-- Copilot delegated validation complete time, if used.
-- Merge time.
-- Notes on blockers, such as CI delay or missing local PostgreSQL.
+Do not use Remote Validation Assist when:
 
-Document each of those five PRs with the same basic workflow summary used on PR #56: what Codex
-owned, what Copilot or another agent was delegated, validation performed, timing, result, and
-whether the split workflow helped.
+- The PR is docs-only and `git diff --check` plus scoped review are sufficient.
+- Local tests fully cover the change.
+- The task requires architecture decisions, product direction, secrets, broad refactors, or migration
+  design.
+- Prompting and reviewing another agent would cost more time than doing the check directly.
 
-After five Experiment Mode PRs, stop using Experiment Mode by default, tell the humans the trial is
-complete, and ask whether to continue, adjust, or retire the workflow.
+Delegated tasks must name the exact branch or PR, files or behavior in scope, commands or checks to
+run, expected result, and what must not be changed. Delegated tasks must be small enough to review
+quickly and must not authorize the other agent to merge pull requests unless a human explicitly
+allows it.
 
-Experiment Mode does not override architecture authority, human final decision-making, PR
+Results from delegated agents are advisory until reviewed and reconciled by Codex or a human.
+
+PR descriptions should record remote validation only when it is used. Timing notes are optional and
+should be used for unusual blockers, new workflow experiments, or when a human explicitly asks for
+speed tracking.
+
+Remote Validation Assist does not override architecture authority, human final decision-making, PR
 discipline, testing requirements, security boundaries, or merge rules.
 
 ---
