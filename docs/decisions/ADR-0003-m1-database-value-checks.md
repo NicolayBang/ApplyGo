@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed |
+| **Status** | Approved |
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
@@ -18,13 +18,13 @@ The database roadmap identifies value checks as M1 hardening and recommends name
 `CHECK` constraints for small, stable value sets. PostgreSQL enum types are intentionally avoided
 for M1 because they are more awkward to evolve when the workflow vocabulary changes.
 
-This ADR decides the contract for the next migration. It does not itself add a migration.
+This ADR decides the contract implemented by migration `0006_add_m1_value_check_constraints.py`.
 
 ## Decision
 
 Adopt named PostgreSQL `CHECK` constraints for stable M1 value sets.
 
-The next implementation PR should add constraints for:
+Migration `0006` adds constraints for:
 
 | Table | Column | Allowed values |
 |-------|--------|----------------|
@@ -60,6 +60,14 @@ ck_email_threads_direction_m1
 
 The migration should be additive and reversible. It should not rename tables, add future lifecycle
 columns, add executor retry fields, or change retention behavior.
+
+## Implementation
+
+Implemented by Alembic revision `0006_add_m1_value_check_constraints.py`.
+
+The migration normalizes the legacy scaffold state value `discovered` to `ApplicationCreated`
+before adding the state constraint, then creates all named M1 `CHECK` constraints. Downgrade drops
+the same constraints in reverse order.
 
 ## Validation Required
 

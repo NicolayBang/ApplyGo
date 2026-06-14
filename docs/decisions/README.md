@@ -48,4 +48,4 @@ Authority order:
 ## ADR Index
 - `ADR-0001-architecture-operating-structure.md` (Approved)
 - `ADR-0002-canonical-data-model.md` (Proposed)
-- `ADR-0003-m1-database-value-checks.md` (Proposed)
+- `ADR-0003-m1-database-value-checks.md` (Approved)

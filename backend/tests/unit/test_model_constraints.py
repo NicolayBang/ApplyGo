@@ -1,5 +1,7 @@
 """Tests for architecture-critical ORM constraints."""
 
+from sqlalchemy import CheckConstraint
+
 from applypilot.db.models import (
     Application,
     Document,
@@ -15,6 +17,14 @@ def application_fk_ondelete(model: type, column_name: str = "application_id") ->
     column = model.__table__.c[column_name]
     foreign_key = next(iter(column.foreign_keys))
     return foreign_key.ondelete
+
+
+def check_constraint_names(model: type) -> set[str]:
+    return {
+        constraint.name
+        for constraint in model.__table__.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
 
 
 def test_application_owned_records_cascade_with_application() -> None:
@@ -61,3 +71,22 @@ def test_event_log_has_replay_indexes() -> None:
     assert "ix_executor_actions_request_id" in {
         index.name for index in ExecutorAction.__table__.indexes
     }
+
+
+def test_m1_value_check_constraints_are_declared_on_models() -> None:
+    assert {
+        "ck_applications_state_m1",
+        "ck_applications_automation_mode_m1",
+    }.issubset(check_constraint_names(Application))
+    assert {"ck_email_threads_direction_m1"}.issubset(
+        check_constraint_names(EmailThread)
+    )
+    assert {
+        "ck_policy_decisions_mode_m1",
+        "ck_policy_decisions_decision_m1",
+    }.issubset(check_constraint_names(PolicyDecision))
+    assert {
+        "ck_executor_actions_execution_mode_m1",
+        "ck_executor_actions_status_m1",
+        "ck_executor_actions_worker_m1",
+    }.issubset(check_constraint_names(ExecutorAction))

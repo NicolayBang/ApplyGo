@@ -3,10 +3,10 @@
 ## Overview
 
 - **Name**: Alembic Migration Versions
-- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Five migrations establish the canonical application hub, policy decision outcomes, audit trail preservation, the M1 application state default, and executor contract metadata.
+- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Six migrations establish the canonical application hub, policy decision outcomes, audit trail preservation, the M1 application state default, executor contract metadata, and M1 value checks.
 - **Location**: `backend/alembic/versions/`
 - **Language**: Python (Alembic DDL)
-- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 -> 0002 -> 0003 -> 0004 -> 0005`.
+- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006`.
 
 ---
 
@@ -106,6 +106,30 @@ Drops the request ID index, unique constraint, and the four added metadata colum
 
 ---
 
+### 0006_add_m1_value_check_constraints.py - M1 Value Checks
+
+**Revision:** `0006` | **Depends on:** `0005`
+
+#### `upgrade() -> None`
+
+Normalizes legacy scaffold `applications.state = 'discovered'` rows to `ApplicationCreated`, then
+adds named PostgreSQL `CHECK` constraints for stable M1 value sets:
+
+- `ck_applications_state_m1`
+- `ck_applications_automation_mode_m1`
+- `ck_policy_decisions_mode_m1`
+- `ck_policy_decisions_decision_m1`
+- `ck_executor_actions_execution_mode_m1`
+- `ck_executor_actions_status_m1`
+- `ck_executor_actions_worker_m1`
+- `ck_email_threads_direction_m1`
+
+#### `downgrade() -> None`
+
+Drops the M1 value-check constraints in reverse order.
+
+---
+
 ## Dependencies
 
 ### Internal
@@ -131,7 +155,8 @@ stateDiagram-v2
     0002_policy_decision_outcomes --> 0003_preserve_event_log
     0003_preserve_event_log --> 0004_align_state_default
     0004_align_state_default --> 0005_executor_contract_metadata
-    0005_executor_contract_metadata --> [*] : HEAD
+    0005_executor_contract_metadata --> 0006_m1_value_checks
+    0006_m1_value_checks --> [*] : HEAD
 ```
 
 ```mermaid

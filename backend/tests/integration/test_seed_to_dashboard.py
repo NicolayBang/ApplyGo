@@ -15,8 +15,11 @@ Run explicitly:
 
 from __future__ import annotations
 
+import uuid
+
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from applypilot.config.settings import get_settings
@@ -123,3 +126,191 @@ def test_seed_creates_records_and_audit_api_returns_summary(db_session) -> None:
         assert body["executor_actions"][0]["execution_mode"] == "dry_run"
     finally:
         app.dependency_overrides.pop(get_tracker_unit, None)
+
+
+def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
+    """PostgreSQL rejects invalid stable M1 vocabulary values."""
+    job_id = uuid.uuid4()
+    application_id = uuid.uuid4()
+
+    db_session.execute(
+        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
+        {"job_id": str(job_id)},
+    )
+    db_session.execute(
+        text(
+            """
+            INSERT INTO applications (id, job_id, state, automation_mode)
+            VALUES (
+                CAST(:application_id AS uuid),
+                CAST(:job_id AS uuid),
+                'ApplicationCreated',
+                'manual'
+            )
+            """
+        ),
+        {"application_id": str(application_id), "job_id": str(job_id)},
+    )
+
+    invalid_writes = [
+        (
+            """
+            INSERT INTO applications (id, job_id, state, automation_mode)
+            VALUES (gen_random_uuid(), CAST(:job_id AS uuid), 'BadState', 'manual')
+            """,
+            {"job_id": str(job_id)},
+        ),
+        (
+            """
+            INSERT INTO applications (id, job_id, state, automation_mode)
+            VALUES (
+                gen_random_uuid(),
+                CAST(:job_id AS uuid),
+                'ApplicationCreated',
+                'autopilot'
+            )
+            """,
+            {"job_id": str(job_id)},
+        ),
+        (
+            """
+            INSERT INTO policy_decisions (
+                id,
+                application_id,
+                action_type,
+                mode,
+                decision,
+                allowed
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'submit',
+                'autopilot',
+                'review',
+                false
+            )
+            """,
+            {"application_id": str(application_id)},
+        ),
+        (
+            """
+            INSERT INTO policy_decisions (
+                id,
+                application_id,
+                action_type,
+                mode,
+                decision,
+                allowed
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'submit',
+                'manual',
+                'maybe',
+                false
+            )
+            """,
+            {"application_id": str(application_id)},
+        ),
+        (
+            """
+            INSERT INTO executor_actions (
+                id,
+                request_id,
+                application_id,
+                worker,
+                idempotency_key,
+                action_type,
+                execution_mode,
+                status,
+                requested_by,
+                requested_at
+            )
+            VALUES (
+                gen_random_uuid(),
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'email',
+                :idempotency_key,
+                'submit',
+                'simulate',
+                'queued',
+                'test',
+                now()
+            )
+            """,
+            {"application_id": str(application_id), "idempotency_key": "bad-mode"},
+        ),
+        (
+            """
+            INSERT INTO executor_actions (
+                id,
+                request_id,
+                application_id,
+                worker,
+                idempotency_key,
+                action_type,
+                execution_mode,
+                status,
+                requested_by,
+                requested_at
+            )
+            VALUES (
+                gen_random_uuid(),
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'email',
+                :idempotency_key,
+                'submit',
+                'dry_run',
+                'mystery',
+                'test',
+                now()
+            )
+            """,
+            {"application_id": str(application_id), "idempotency_key": "bad-status"},
+        ),
+        (
+            """
+            INSERT INTO executor_actions (
+                id,
+                request_id,
+                application_id,
+                worker,
+                idempotency_key,
+                action_type,
+                execution_mode,
+                status,
+                requested_by,
+                requested_at
+            )
+            VALUES (
+                gen_random_uuid(),
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'calendar',
+                :idempotency_key,
+                'submit',
+                'dry_run',
+                'queued',
+                'test',
+                now()
+            )
+            """,
+            {"application_id": str(application_id), "idempotency_key": "bad-worker"},
+        ),
+        (
+            """
+            INSERT INTO email_threads (id, application_id, direction)
+            VALUES (gen_random_uuid(), CAST(:application_id AS uuid), 'sideways')
+            """,
+            {"application_id": str(application_id)},
+        ),
+    ]
+
+    for statement, params in invalid_writes:
+        with pytest.raises(IntegrityError):
+            with db_session.begin_nested():
+                db_session.execute(text(statement), params)

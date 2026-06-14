@@ -17,7 +17,7 @@
 ## Status
 
 **Proposed.** This revision aligns the canonical-data-model decision with the database as actually
-implemented at M1 (real PostgreSQL, migrations `0001` through `0005`) and with the PostgreSQL Implementation
+implemented at M1 (real PostgreSQL, migrations `0001` through `0006`) and with the PostgreSQL Implementation
 Roadmap. It corrects two over-eager positions in the initial ADR-0002 draft: pre-adding unused
 executor retry columns, and treating table renames / sub-state splits as immediate M1 work. Both are
 now deferred to the milestone and contract that actually need them.
@@ -28,7 +28,7 @@ now deferred to the milestone and contract that actually need them.
 
 ### What is already implemented (M1 — DONE)
 
-The M1 database is real, not mock data. Compose runs `postgres:16`; Alembic revisions `0001` through `0005`
+The M1 database is real, not mock data. Compose runs `postgres:16`; Alembic revisions `0001` through `0006`
 create a seven-table aggregate; SQLAlchemy persists real rows; the demo seed and the
 seed-to-dashboard validator run against PostgreSQL.
 
@@ -44,12 +44,12 @@ Guarantees in place today:
 - Executor request metadata is persisted on executor actions.
 - `event_log` has **no** delete cascade from `applications`, and the ORM does not orphan-delete events.
 - Migration `0004` aligns the application state default with `ApplicationCreated`.
+- Migration `0006` enforces stable M1 values with named PostgreSQL `CHECK` constraints.
 - Implemented M1 states: `ApplicationCreated`, `Draft`, `ReadyForReview`, `Approved`, `Submitted`,
   `Rejected`, `Archived`.
 
 ### Known M1 boundaries (intentional, not drift)
 
-- Enum-like strings are application-validated but lack PostgreSQL `CHECK` constraints.
 - `policy_decisions` and `executor_actions` still cascade on application deletion.
 - `jobs.company` is a nullable string, not a normalized company foreign key.
 - `documents` and `email_threads` are single-application-owner placeholders.
@@ -126,8 +126,8 @@ erDiagram
 
 | Phase | Milestone | Scope | Status |
 |-------|-----------|-------|--------|
-| **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0005` | **DONE** |
-| **0.5** | M1 hardening | `CHECK` constraints for stable enums; policy/executor retention; reproducible migration startup | **NEXT — decisions required first** |
+| **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0006` | **DONE** |
+| **0.5** | M1 hardening | Policy/executor retention; reproducible migration startup | **NEXT — decisions required first** |
 | **1** | M3 | Normalize `companies`; `jobs.company_id` FK; preserve source company text for provenance | **FUTURE — contract D required first** |
 | **2** | M5 | `documents`, `document_versions`, `application_documents`, `answer_library`, `application_answers` (the document↔application M—N) | **FUTURE — contract G required first** |
 | **3** | M7 | `contacts`, `threads`, `messages`, `thread_applications`, `threads.conversation_state` (the thread↔application M—N) | **FUTURE — contract H required first** |
@@ -148,14 +148,11 @@ Do not pull M3, M5, M7, or executor hardening into an M1 hardening migration.
    implemented `ApplicationCreated…Archived` set differs from the PDF set and must be reconciled there,
    including whether the headline state is stored or derived). Fine-grained execution status must not
    be forced into the headline workflow state.
-4. **M1 hardening is a separate track** (`CHECK` constraints + audit retention) from M3/M5/M7
+4. **M1 hardening is a separate track** (value checks, audit retention, and migration startup) from M3/M5/M7
    normalization, and precedes none of them as a dependency.
 
 ### Decisions still required before M1 hardening (Phase 0.5)
 
-- **DB value checks** — which application-validated enums also get PostgreSQL enforcement. Recommended:
-  named `CHECK` constraints for small, stable value sets; reserve PostgreSQL enums for cases where the
-  evolution tradeoff is intentional.
 - **Policy/executor retention** — `policy_decisions` and `executor_actions` currently cascade on
   application deletion, which weakens audit. Recommended: restrict physical deletion or soft-delete
   applications, and preserve events, policy decisions, and executor records. Exact mechanism belongs

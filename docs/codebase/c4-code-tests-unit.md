@@ -4,7 +4,7 @@
 
 - **Location**: `backend/tests/unit/`
 - **Runner**: pytest
-- **Current coverage**: 39 tests across nine modules.
+- **Current coverage**: 40 tests across nine modules.
 - **Purpose**: Validate deterministic domain behavior, constraints, and dry-run planning.
 
 ## Modules
@@ -15,7 +15,7 @@
 | `test_state_machine.py` | 7 | Valid lifecycle and invalid/terminal transitions |
 | `test_application_scoring.py` | 4 | Complete, sparse, red-flag, and classified job scoring |
 | `test_job_intake_classification.py` | 4 | Classification, preservation, sparse input, salary false positives |
-| `test_model_constraints.py` | 6 | Cascades, state defaults, audit preservation, idempotency, executor metadata, replay indexes |
+| `test_model_constraints.py` | 7 | Cascades, state defaults, audit preservation, idempotency, executor metadata, replay indexes, value-check metadata |
 | `test_demo_seed.py` | 1 | Seeded policy and dry-run audit workflow |
 | `test_executor_stub.py` | 1 | Side-effect-free plan details and safeguards |
 | `test_tracker_executor_contract.py` | 3 | Executor request/result metadata matching |
@@ -30,6 +30,7 @@ The suite checks:
 - application-owned operational records do cascade
 - executor idempotency keys are unique
 - executor request metadata is persisted and indexed
+- stable M1 value-check constraints are declared on ORM models
 - tracker rejects executor results with mismatched request metadata
 - event-log replay indexes exist
 - policy decisions expose deterministic outcomes and overrides

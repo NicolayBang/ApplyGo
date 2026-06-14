@@ -16,6 +16,7 @@ from datetime import datetime
 from sqlalchemy import (
     UUID,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -132,6 +133,17 @@ class Application(Base):
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "state IN ("
+            "'ApplicationCreated', 'Draft', 'ReadyForReview', 'Approved', "
+            "'Submitted', 'Rejected', 'Archived'"
+            ")",
+            name="ck_applications_state_m1",
+        ),
+        CheckConstraint(
+            "automation_mode IN ('manual', 'dry_run', 'semi_auto', 'full_auto')",
+            name="ck_applications_automation_mode_m1",
+        ),
         Index("ix_applications_state", "state"),
         Index("ix_applications_job_id", "job_id"),
     )
@@ -197,7 +209,13 @@ class EmailThread(Base):
 
     application: Mapped[Application] = relationship(back_populates="email_threads")
 
-    __table_args__ = (Index("ix_email_threads_application_id", "application_id"),)
+    __table_args__ = (
+        CheckConstraint(
+            "direction IN ('inbound', 'outbound')",
+            name="ck_email_threads_direction_m1",
+        ),
+        Index("ix_email_threads_application_id", "application_id"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +248,17 @@ class PolicyDecision(Base):
 
     application: Mapped[Application] = relationship(back_populates="policy_decisions")
 
-    __table_args__ = (Index("ix_policy_decisions_application_id", "application_id"),)
+    __table_args__ = (
+        CheckConstraint(
+            "mode IN ('manual', 'dry_run', 'semi_auto', 'full_auto')",
+            name="ck_policy_decisions_mode_m1",
+        ),
+        CheckConstraint(
+            "decision IN ('allow', 'deny', 'review')",
+            name="ck_policy_decisions_decision_m1",
+        ),
+        Index("ix_policy_decisions_application_id", "application_id"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +304,21 @@ class ExecutorAction(Base):
     application: Mapped[Application] = relationship(back_populates="executor_actions")
 
     __table_args__ = (
+        CheckConstraint(
+            "execution_mode IN ('dry_run', 'execute')",
+            name="ck_executor_actions_execution_mode_m1",
+        ),
+        CheckConstraint(
+            "status IN ("
+            "'planned', 'queued', 'completed', 'failed', 'blocked', "
+            "'not_implemented'"
+            ")",
+            name="ck_executor_actions_status_m1",
+        ),
+        CheckConstraint(
+            "worker IN ('email', 'browser', 'documents')",
+            name="ck_executor_actions_worker_m1",
+        ),
         Index("ix_executor_actions_application_id", "application_id"),
         Index("ix_executor_actions_request_id", "request_id"),
         Index("ix_executor_actions_idempotency_key", "idempotency_key"),
