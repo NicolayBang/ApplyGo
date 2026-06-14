@@ -51,6 +51,12 @@ whose prerequisites are missing, and requires an allowed recorded policy decisio
 offering the dry-run action. It also requires matching policy and executor evidence before
 offering the `Submitted` state transition.
 
+## Validation
+
+CI runs `node --check frontend/app.js` as a lightweight syntax gate for the dependency-free
+dashboard. Backend integration tests continue to verify that the dashboard assets are
+served and expose the expected workflow controls.
+
 ## API Contract
 
 The dashboard uses the same-origin API by default, with configurable local API-base support
