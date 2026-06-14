@@ -282,7 +282,7 @@ class ExecutorAction(Base):
 class EventLogEntry(Base):
     """Append-only event log. Never updated or deleted.
 
-    Schema: event_id, application_id, type, actor, payload, created_at
+    Schema: id, application_id, event_type, actor, from_state, to_state, payload, created_at
     Records state transitions, policy decisions, executor attempts, and results.
     """
 

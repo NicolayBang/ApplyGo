@@ -9,9 +9,11 @@ from typing import Any
 class EventRecord:
     """Append-only event placeholder."""
 
-    event_id: str
+    id: str
     application_id: str
     event_type: str
     actor: str
+    from_state: str | None
+    to_state: str | None
     payload: dict[str, Any]
     created_at: datetime
