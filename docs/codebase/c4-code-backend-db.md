@@ -51,7 +51,8 @@ cascade, preserving the audit record at both schema and ORM boundaries.
 | `create_application` | Creates `ApplicationCreated` and appends `application.created` |
 | `get_application` | Fetches an application by UUID |
 | `list_applications` | Filters by optional state and applies pagination |
-| `update_state` | Validates transition, persists it, appends `application.state_changed` |
+| `update_state` | Validates generic transitions, persists them, appends `application.state_changed`; rejects direct `Submitted` |
+| `submit_application` | Guards `Approved -> Submitted` behind allowed policy and matching executor evidence |
 | `score_application` | Scores linked job, stores evidence, appends `application.scored` |
 
 ### Policy and Executor Methods
