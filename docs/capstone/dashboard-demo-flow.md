@@ -66,6 +66,7 @@ In Codespaces, open the forwarded port `8000` URL and add `/ui/`.
 The dashboard should show:
 
 - manual intake form
+- recent applications list
 - parsed job metadata in the application summary
 - workflow actions
 - application summary
@@ -101,6 +102,7 @@ Expected result:
 
 - status message says the application was created
 - application ID field is populated
+- recent applications can be refreshed and selected without copying the ID manually
 - application summary loads with state `ApplicationCreated`
 - application summary shows parsed/classified job metadata, including remote marker, job type, ATS, and salary when inferred
 - audit timeline includes `application.created`

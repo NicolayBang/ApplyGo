@@ -175,6 +175,39 @@ button:disabled {
   margin-top: 20px;
 }
 
+.recent-panel {
+  margin-top: 20px;
+}
+
+.recent-applications-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recent-application {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  border-color: var(--line);
+  padding: 12px;
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+}
+
+.recent-application:hover,
+.recent-application:focus {
+  border-color: var(--brand);
+}
+
+.recent-application strong,
+.recent-application .meta {
+  display: block;
+}
+
 .workflow-panel {
   margin-top: 16px;
 }

@@ -138,6 +138,8 @@ const elements = {
   jobDescription: document.querySelector("#job-description"),
   remoteOk: document.querySelector("#remote-ok"),
   sampleJobButton: document.querySelector("#sample-job-button"),
+  recentApplicationsButton: document.querySelector("#recent-applications-button"),
+  recentApplicationsList: document.querySelector("#recent-applications-list"),
   scoreButton: document.querySelector("#score-button"),
   policyButton: document.querySelector("#policy-button"),
   dryRunButton: document.querySelector("#dry-run-button"),
@@ -414,6 +416,36 @@ function renderTimeline(events) {
     .join("");
 }
 
+function renderRecentApplications(applications) {
+  if (!applications.length) {
+    elements.recentApplicationsList.innerHTML = '<p class="empty">No applications found.</p>';
+    return;
+  }
+
+  elements.recentApplicationsList.innerHTML = applications
+    .map((application) => {
+      const job = application.job || {};
+      const title = job.title || "Untitled role";
+      const company = job.company || "Unknown company";
+      const updated = formatDate(application.updated_at || application.created_at);
+
+      return `
+        <button
+          type="button"
+          class="recent-application"
+          data-application-id="${escapeHtml(application.id)}"
+        >
+          <span>
+            <strong>${escapeHtml(title)}</strong>
+            <span class="meta">${escapeHtml(company)} - ${escapeHtml(updated)}</span>
+          </span>
+          ${badge(application.state)}
+        </button>
+      `;
+    })
+    .join("");
+}
+
 function renderAudit(data) {
   currentAudit = data;
   renderSummary(data.application);
@@ -530,6 +562,7 @@ async function createManualApplication() {
 
     elements.applicationId.value = application.id;
     await loadAudit();
+    await loadRecentApplications({ quiet: true });
     setStatus("", "Created", "Manual application created and audit trail loaded.");
   } catch (error) {
     const hint =
@@ -568,6 +601,28 @@ function loadSampleJob() {
   elements.remoteOk.checked = sampleJob.remote_ok;
   elements.jobDescription.value = sampleJob.raw_text;
   setStatus("", "Sample loaded", "Review the sample job, then create the application.");
+}
+
+async function loadRecentApplications(options = {}) {
+  const base = apiBase();
+  elements.apiBase.value = base;
+
+  if (!options.quiet) {
+    setStatus("loading", "Loading", "Fetching recent applications from the backend.");
+  }
+
+  try {
+    renderRecentApplications(await fetchJson(`${base}/applications?limit=10`));
+    if (!options.quiet) {
+      setStatus("", "Loaded", "Recent applications loaded.");
+    }
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
+        : "";
+    setStatus("error", "Recent failed", `${error.message}.${hint}`);
+  }
 }
 
 function latestAllowedPolicyDecision() {
@@ -793,6 +848,18 @@ elements.demoButton.addEventListener("click", () => {
 
 elements.sampleJobButton.addEventListener("click", () => {
   loadSampleJob();
+});
+
+elements.recentApplicationsButton.addEventListener("click", () => {
+  loadRecentApplications();
+});
+
+elements.recentApplicationsList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-application-id]");
+  if (!button) return;
+
+  elements.applicationId.value = button.dataset.applicationId;
+  loadAudit();
 });
 
 elements.applicationId.addEventListener("input", () => {

@@ -70,6 +70,23 @@ def test_dashboard_can_prefill_sample_job_for_demo() -> None:
     assert "ApplyPilot Demo Co." in script_response.text
 
 
+def test_dashboard_can_load_recent_applications() -> None:
+    """The static dashboard can list recent applications and load one by ID."""
+    index_response = client.get("/ui/index.html")
+    style_response = client.get("/ui/styles.css")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert style_response.status_code == 200
+    assert script_response.status_code == 200
+    assert 'id="recent-applications-button"' in index_response.text
+    assert 'id="recent-applications-list"' in index_response.text
+    assert "loadRecentApplications" in script_response.text
+    assert "/applications?limit=10" in script_response.text
+    assert "data-application-id" in script_response.text
+    assert "recent-application" in style_response.text
+
+
 def test_dashboard_exposes_state_progression_controls() -> None:
     """The static dashboard can advance applications through governed states."""
     index_response = client.get("/ui/index.html")
