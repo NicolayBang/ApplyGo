@@ -50,9 +50,10 @@ Use `docs/capstone/dashboard-demo-flow.md` for the step-by-step runbook.
 
 The next architecture-safe direction is to keep implementation contract-first:
 
-- approve or reject the proposed M3 company identity and migration contracts;
-- only then add the `companies` schema, ORM/API compatibility, migration, and PostgreSQL-backed
-  tests;
+- collect Francis feedback on the proposed M3 company identity and migration contracts;
+- treat Nicolay's current position as soft approval of the direction, not implementation approval;
+- review timing again before adding the `companies` schema, ORM/API compatibility, migration, and
+  PostgreSQL-backed tests;
 - keep external side effects behind policy checks, dry-run behavior, and human oversight.
 
 ## Reviewer Signal
