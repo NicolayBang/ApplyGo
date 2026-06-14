@@ -2,6 +2,20 @@ const demoAudit = {
   application: {
     id: "5f2c4a50-8f75-4d38-a40f-15fd5f8f27d4",
     job_id: "77b2ac60-06b2-4f6f-9a42-9a02d2e18424",
+    job: {
+      id: "77b2ac60-06b2-4f6f-9a42-9a02d2e18424",
+      title: "Backend Platform Engineer",
+      company: "ApplyPilot Demo Co.",
+      location: "Remote",
+      source_url: "https://jobs.lever.co/applypilot/backend-platform-engineer",
+      raw_text: "Build Python APIs with FastAPI, PostgreSQL, automation, and platform workflows.",
+      remote_ok: true,
+      job_type: "full-time",
+      ats_type: "lever",
+      salary_raw: "$95,000 - $125,000",
+      created_at: "2026-06-13T16:10:00Z",
+      updated_at: "2026-06-13T16:10:00Z",
+    },
     state: "ApplicationCreated",
     automation_mode: "manual",
     fit_score: 86,
@@ -184,9 +198,17 @@ function updateWorkflowReadiness() {
 }
 
 function renderSummary(application) {
+  const job = application.job || {};
   const rows = [
     ["Application", application.id],
     ["Job", application.job_id],
+    ["Role", job.title],
+    ["Company", job.company],
+    ["Location", job.location],
+    ["Remote", job.remote_ok ? "Yes" : null],
+    ["Job type", job.job_type],
+    ["ATS", job.ats_type],
+    ["Salary", job.salary_raw],
     ["State", application.state],
     ["Mode", application.automation_mode],
     ["Fit score", application.fit_score],

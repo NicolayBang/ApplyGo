@@ -42,7 +42,7 @@ def test_cors_headers_present_on_audit_endpoint() -> None:
 
 
 def test_dashboard_manual_intake_collects_job_description() -> None:
-    """The static dashboard includes raw job text intake for scoring."""
+    """The static dashboard includes raw job text intake for scoring and classification."""
     index_response = client.get("/ui/index.html")
     script_response = client.get("/ui/app.js")
 
@@ -51,6 +51,9 @@ def test_dashboard_manual_intake_collects_job_description() -> None:
     assert 'id="job-description"' in index_response.text
     assert "jobDescription" in script_response.text
     assert "raw_text" in script_response.text
+    assert "job_type" in script_response.text
+    assert "ats_type" in script_response.text
+    assert "salary_raw" in script_response.text
 
 
 def test_dashboard_exposes_state_progression_controls() -> None:
