@@ -1,0 +1,587 @@
+# Database Design and PostgreSQL Implementation Roadmap
+
+**Status:** Planning and implementation guide
+
+**Scope:** Implemented M1 database, next PostgreSQL work, and proposed later phases
+
+**Does not authorize migrations:** Yes
+
+This document reconciles the technical design drafts with the repository as it exists now. It is
+an implementation-alignment guide, not a greenfield replacement for the current schema.
+
+Authority remains:
+
+1. `docs/architecture/OpenClaw_Final_Agreed_Architecture.pdf`
+2. Approved ADRs
+3. `docs/architecture/`
+4. `docs/contracts/`
+5. `AGENTS.md`
+
+For exact implemented columns and constraints, use
+`docs/contracts/database-schema-contract.md`. For the proposed direction, use
+`docs/decisions/ADR-0002-canonical-data-model.md`. This roadmap does not override either document.
+
+## Status Labels
+
+- **DONE:** implemented and represented by models and migrations.
+- **NEXT:** the next review or implementation step after human approval.
+- **FUTURE:** planned for a later milestone and not implemented.
+- **DECISION REQUIRED:** Nicolay and Francis must approve the contract before implementation.
+
+## Executive Position
+
+ApplyPilot already uses PostgreSQL. The current database is not merely mock data:
+
+- Compose starts a real `postgres:16` server.
+- Alembic migrations `0001` through `0004` create the real M1 tables.
+- SQLAlchemy writes persisted jobs, applications, policy decisions, executor actions, and events.
+- The demo seed and seed-to-dashboard validator operate against PostgreSQL when it is running.
+
+However, Compose currently starts only an empty PostgreSQL engine. It does not automatically run
+Alembic, and it has no one-shot migration or seed container.
+
+The repository does not contain the PostgreSQL image binary or a shared database volume. Docker
+pulls `postgres:16`; each developer creates a local volume; Alembic reproduces the schema. A custom
+PostgreSQL image is not needed for normal team sharing.
+
+## Roadmap At A Glance
+
+| Status | Milestone | Database shape |
+|---|---|---|
+| **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0004` |
+| **NEXT** | M1 hardening | Resolve database checks, retention policy, and reproducible migration startup |
+| **FUTURE** | M3 | Normalize companies and job ownership |
+| **FUTURE** | M5 | Versioned application packets and reusable answers |
+| **FUTURE** | M7 | Contacts, recruiter threads, and individual messages |
+| **FUTURE** | Later executor hardening | Retry, backoff, rate-limit, and execution-attempt persistence |
+
+Do not pull M3, M5, M7, or later executor work into an M1 hardening migration.
+
+## DONE: Implemented M1 PostgreSQL Baseline
+
+### Current tables
+
+The implemented aggregate is:
+
+1. `jobs`
+2. `applications`
+3. `documents`
+4. `email_threads`
+5. `policy_decisions`
+6. `executor_actions`
+7. `event_log`
+
+`applications` is the central record. The current persistence path is:
+
+```text
+manual intake
+-> jobs
+-> applications
+-> state and scoring fields
+-> policy_decisions
+-> executor_actions
+-> event_log
+-> dashboard audit view
+```
+
+### Current guarantees
+
+- `applications.job_id` is a required foreign key.
+- `executor_actions.idempotency_key` is unique in PostgreSQL.
+- Application state changes pass through the state machine in application code.
+- A policy decision is recorded before the current dry-run executor action.
+- Executor attempts and results are represented in the event vocabulary.
+- `event_log` has no database delete cascade from `applications`.
+- The ORM does not delete or orphan-delete events when an application is removed.
+- Migration `0004` aligns the application state default with `ApplicationCreated`.
+
+### Current limitations
+
+- Several enum-like strings are application-validated but have no PostgreSQL `CHECK`.
+- `policy_decisions` and `executor_actions` still cascade with application deletion.
+- `jobs.company` is a nullable string, not a normalized company foreign key.
+- `documents` and `email_threads` are M1 placeholders with one application owner.
+- Retry, backoff, and rate-limit fields are not present.
+- Compose does not have a health check, migration service, or seed service.
+
+These are known boundaries, not evidence that the current schema is fake.
+
+## NEXT: Contract Decisions Before Another Migration
+
+The next database PR should not begin with a generated migration. It should begin with decisions
+for the constraints and retention behavior that PostgreSQL will enforce.
+
+### 1. Database value checks
+
+**Status:** DECISION REQUIRED
+
+Decide which application-owned enums must also be enforced by PostgreSQL. Candidates include:
+
+- `applications.state`
+- `applications.automation_mode`
+- `applications.confidence`
+- `applications.recommendation`
+- `email_threads.direction`
+- `policy_decisions.mode`
+- `policy_decisions.decision`
+- `executor_actions.execution_mode`
+- `executor_actions.status`
+
+The contract must specify:
+
+- the exact allowed values
+- whether `NULL` remains valid
+- the behavior for existing invalid rows
+- whether values are represented by `CHECK` constraints or PostgreSQL enums
+- how a future value is added without breaking deployment ordering
+
+Recommended M1 approach: use named `CHECK` constraints for stable, small value sets. PostgreSQL
+enums are harder to evolve and should be chosen only when that tradeoff is intentional.
+
+### 2. Policy and executor retention
+
+**Status:** DECISION REQUIRED
+
+Current event rows are preserved, but policy decisions and executor actions are deleted with their
+application. That weakens the long-term audit story.
+
+Choose one application deletion policy:
+
+1. **Restrict physical deletion:** PostgreSQL rejects deletion while audit records reference the
+   application.
+2. **Soft-delete applications:** add deletion metadata and exclude deleted rows from normal reads.
+3. **Retain detached audit records:** make selected foreign keys nullable and preserve snapshots.
+
+Recommended direction: soft-delete or restrict applications, and preserve events, policy
+decisions, and executor records. The final choice needs an approved retention contract and tests.
+
+### 3. PostgreSQL startup and migration ownership
+
+**Status:** NEXT
+
+Today the operator runs:
+
+```bash
+docker compose up -d postgres redis
+cd backend
+python -m alembic upgrade head
+```
+
+A separate operational PR may add:
+
+- a PostgreSQL health check
+- a small Python backend image used as a migration runner
+- a one-shot `migrate` Compose service
+- an optional, explicitly invoked demo `seed` service
+
+That service should wait for healthy PostgreSQL, run `alembic upgrade head`, and exit. It should
+not bundle the FastAPI deployment or publish a custom PostgreSQL image.
+
+### 4. Real PostgreSQL validation
+
+**Status:** NEXT
+
+Any implementation PR touching the schema must prove:
+
+```bash
+python -m ruff check .
+python -m alembic upgrade head
+python -m pytest
+python -m scripts.validate_seed_to_dashboard
+```
+
+It must also show:
+
+- a fresh empty database upgrades through every revision
+- existing M1 fixture data survives the migration
+- constraints reject invalid writes
+- expected delete/retention behavior is enforced by PostgreSQL
+- the API and dashboard still expose compatible fields
+
+## Contract Readiness Register
+
+The proposed ADR records direction, but direction alone is not enough to write safe migrations.
+The following contracts are required before their related implementation begins.
+
+### A. Current M1 schema contract
+
+**Status:** DONE
+
+**Location:** `docs/contracts/database-schema-contract.md`
+
+It defines current columns, types, defaults, nullability, keys, indexes, uniqueness, delete
+behavior, migration order, and demo persistence mapping.
+
+This is the implementation baseline against which all future migrations are reviewed.
+
+### B. Future schema contract
+
+**Status:** FUTURE / REQUIRED BEFORE M3, M5, OR M7 MIGRATIONS
+
+The future ER diagram is not a complete table contract. Before each milestone, define for every new
+table:
+
+- column name and PostgreSQL type
+- nullability and server default
+- primary, foreign, and candidate keys
+- unique and partial unique indexes
+- query indexes
+- delete and update behavior
+- ownership and cardinality
+- mutable versus immutable fields
+- timestamps and retention
+- API-visible compatibility projections
+
+This should be split by milestone rather than written as one permanently speculative mega-contract.
+
+### C. Migration and compatibility contract
+
+**Status:** NEXT FOR ANY SCHEMA CHANGE
+
+Every migration plan must define:
+
+- starting schema revision and target revision
+- data backfill algorithm
+- treatment of blank, malformed, and duplicate legacy values
+- temporary nullable columns or compatibility fields
+- order of add, backfill, constrain, switch, and remove
+- API compatibility during mixed application/database versions
+- downgrade limits and rollback procedure
+- row-count and referential-integrity checks
+- zero-data-loss acceptance criteria
+
+Table renames must use rename operations, not drop-and-recreate. Destructive column removal should
+happen only after the replacement is populated and consumers have switched.
+
+### D. Company identity and deduplication contract
+
+**Status:** FUTURE / REQUIRED BEFORE M3
+
+The current `jobs.company` string is valid for M1. Before adding `companies`, decide:
+
+- company identity key
+- normalization of whitespace, case, punctuation, and legal suffixes
+- domain normalization and subdomain handling
+- whether a normalized domain is unique when present
+- fallback deduplication when no domain exists
+- representation of unknown or confidential companies
+- merge behavior when duplicate companies are discovered
+- whether jobs retain the original source company text for provenance
+
+A proposed migration shape is:
+
+```text
+add companies
+-> insert deterministic Unknown Company
+-> add nullable jobs.company_id
+-> normalize and deduplicate legacy jobs.company values
+-> create company rows
+-> backfill jobs.company_id
+-> validate all jobs have a company
+-> make jobs.company_id non-null if approved
+-> preserve or remove the legacy string only after API compatibility is proven
+```
+
+This is a proposed sequence, not approval to run it in M1.
+
+### E. Lifecycle and transition contract
+
+**Status:** PARTLY DONE / FUTURE EXPANSION
+
+The seven current M1 states are implemented:
+
+```text
+ApplicationCreated
+Draft
+ReadyForReview
+Approved
+Submitted
+Rejected
+Archived
+```
+
+Future design proposes independent lifecycle columns:
+
+- `applications.lifecycle_state`
+- `applications.packet_state`
+- `applications.submission_state`
+- `threads.conversation_state`
+
+Before adding them, define:
+
+- exact values and defaults
+- allowed transitions
+- terminal states
+- actor or service allowed to trigger each transition
+- required policy decision
+- event emitted for success and failure
+- compatibility mapping from current `applications.state`
+- whether headline state is stored or derived
+
+Do not rename `state` or add substates until this contract is approved. Fine-grained execution
+status should not be forced into the headline workflow state.
+
+### F. Audit and retention contract
+
+**Status:** NEXT FOR M1 RETENTION; FUTURE FOR LONG-TERM POLICY
+
+The contract must answer:
+
+- which records are append-only
+- which records may be corrected and how corrections are audited
+- whether applications can be physically deleted
+- how long events, decisions, actions, and payloads are retained
+- whether personally identifiable data must be redacted separately from audit metadata
+- who may read audit history
+- what PostgreSQL foreign-key action applies to each relationship
+- whether audit rows retain enough snapshot data if a parent changes
+
+Minimum invariant:
+
+```text
+policy decision
+-> decision audit evidence
+-> executor attempt/result
+-> result audit evidence
+-> workflow state update
+```
+
+No deletion policy may silently erase proof that an action was permitted and attempted.
+
+### G. M5 packet and answer contract
+
+**Status:** FUTURE / M5
+
+Proposed entities:
+
+- `documents`
+- `document_versions`
+- `application_documents`
+- `answer_library`
+- `application_answers`
+
+The contract must define:
+
+- logical document identity versus immutable rendered version
+- uniqueness and ordering of version numbers
+- storage of text, structured content, artifact URI, checksum, and format
+- application-document roles such as CV, cover letter, or attachment
+- whether a document version may be reused across applications
+- answer ownership, sensitivity, approval, versioning, and provenance
+- deletion behavior for a version already used in an application
+
+The required many-to-many relationship is:
+
+```text
+applications
+<-> application_documents
+<-> document_versions
+```
+
+The current M1 `documents.application_id` model remains in place until this M5 contract and its data
+migration are approved.
+
+### H. M7 recruiter communication contract
+
+**Status:** FUTURE / M7
+
+Proposed entities:
+
+- `contacts`
+- `threads`
+- `messages`
+- `thread_applications`
+
+The contract must define:
+
+- contact identity, company ownership, and deduplication
+- provider and external message/thread identifiers
+- inbound and outbound direction
+- immutable raw message storage versus editable drafts
+- sender, recipients, timestamps, and attachment references
+- thread conversation state
+- one thread relating to multiple applications
+- Gmail synchronization and idempotency boundaries
+- retention and privacy policy
+
+The required many-to-many relationship is:
+
+```text
+applications
+<-> thread_applications
+<-> threads
+```
+
+The current M1 `email_threads.application_id` placeholder remains implemented until M7.
+
+### I. Executor persistence contract
+
+**Status:** PARTLY DONE / FUTURE HARDENING
+
+DONE now:
+
+- unique `idempotency_key`
+- action type
+- execute versus dry-run mode
+- status
+- request payload
+- result payload
+- created and completed timestamps
+
+Future contract decisions:
+
+- whether `executor_actions` is renamed to `executor_runs`
+- attempt and maximum-attempt semantics
+- retryable versus terminal failures
+- deterministic backoff calculation
+- `last_error` representation
+- `next_retry_at`
+- rate-limit key and scope
+- one logical action versus multiple execution attempts
+- result reuse for duplicate idempotency keys
+- retention after application deletion
+
+The future shape may include `attempt`, `max_attempts`, `rate_limit_key`, `last_error`, and
+`next_retry_at`, but these fields should land with actual retry semantics and tests, not as unused
+M1 columns.
+
+### J. API and data compatibility contract
+
+**Status:** NEXT FOR ANY NORMALIZING OR RENAMING MIGRATION
+
+Database normalization must not unexpectedly break the current API or dashboard. Before a migration,
+record:
+
+- old request and response fields
+- new database representation
+- compatibility projection or adapter
+- write behavior during the transition
+- removal milestone for deprecated fields
+- serialization of renamed states and tables
+- error behavior for legacy values
+
+For example, a future normalized company model may continue returning a `company` name string while
+the database stores `jobs.company_id`. The compatibility period and owner must be explicit.
+
+## Proposed Implementation Sequence
+
+### PR 1: M1 database decision contracts
+
+**Branch:** `docs/M1-database-hardening-contracts`
+
+Document and obtain approval for:
+
+- database value-check policy
+- application and audit retention policy
+- exact constraints to add
+- migration compatibility and rollback
+
+No models or migrations in this PR.
+
+### PR 2: M1 database hardening
+
+**Branch:** `fix/M1-database-schema-hardening`
+
+After approval:
+
+1. Add one deterministic Alembic revision.
+2. Update SQLAlchemy models to match the migration.
+3. Add PostgreSQL-backed constraint and retention tests.
+4. Preserve current API and dashboard behavior.
+5. Update the implemented schema contract and current ER view.
+
+Do not add `companies`, packet substates, recruiter entities, or executor retries here.
+
+### PR 3: Reproducible Compose migration runner
+
+**Branch:** `feature/M1-compose-migration-runner`
+
+This may proceed separately from schema hardening:
+
+1. Add a small supported-Python backend Dockerfile.
+2. Add the PostgreSQL health check.
+3. Add a one-shot `migrate` service.
+4. Optionally add a profile-gated demo seed service.
+5. Document startup, retry, failure, and cleanup behavior.
+
+The canonical delivery remains migrations, not a database image or volume.
+
+### Later milestone PRs
+
+- M3: company identity contract, migration, ORM/API compatibility, and tests.
+- M5: packet/document/answer contract, migration, services, and tests.
+- M7: contact/thread/message contract, migration, synchronization boundary, and tests.
+- Later: executor attempt/retry/rate-limit contract, migration, scheduler behavior, and tests.
+
+Each milestone receives its own ADR review or approved contract, migration commit, implementation
+commits, tests, and documentation update.
+
+## How The Team Shares PostgreSQL Work
+
+### Canonical workflow
+
+The repository shares:
+
+- `docker-compose.yml`
+- Alembic configuration and revisions
+- SQLAlchemy models
+- deterministic seed and validation code
+- environment-variable examples
+
+The developer runs:
+
+```bash
+git pull
+cp .env.example .env
+docker compose up -d postgres redis
+cd backend
+python -m alembic upgrade head
+python -m scripts.validate_seed_to_dashboard
+```
+
+Docker pulls the official image and creates a local named volume. Alembic makes every teammate's
+database structurally equivalent.
+
+### What not to commit
+
+Do not commit:
+
+- PostgreSQL data directories or Docker volumes
+- credentials or `.env`
+- production or personal application data
+- ad hoc SQL dumps as the authoritative schema
+- a custom PostgreSQL image containing a developer database
+
+A sanitized `pg_dump` may be used temporarily for troubleshooting or fixture creation, but it is
+not the source of truth and must not contain secrets or personal data.
+
+## Definition Of Ready For A PostgreSQL Schema PR
+
+The implementation PR is ready to start only when:
+
+- the target milestone is clear
+- the relevant contract sections are approved
+- every new or changed column is specified
+- backfill and duplicate handling are specified
+- API compatibility is specified
+- deletion and retention behavior is specified
+- migration and rollback boundaries are specified
+- PostgreSQL-backed tests are planned
+- Nicolay and Francis have approved architecture-critical decisions
+
+## Definition Of Done
+
+A PostgreSQL schema change is done when:
+
+- migration from a fresh database succeeds
+- migration from representative existing data succeeds
+- SQLAlchemy and Alembic describe the same schema
+- required constraints are database-enforced
+- audit and deletion behavior are tested
+- API/dashboard compatibility tests pass
+- seed-to-dashboard validation passes
+- implemented contracts and diagrams are updated
+- CI is green
+- Nicolay and Francis approve the high-risk change
+
+Until those conditions are met, the future model remains **Planned / Not Implemented**.
