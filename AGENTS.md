@@ -430,16 +430,22 @@ Low-risk documentation auto-merge exception:
 ### Auto-Merge Mode
 
 Auto-Merge Mode is an explicit, temporary operating mode. It is inactive by default and starts only
-when a human says to enable Auto-Merge Mode, defines the scope, and defines the stop condition.
+when a human says to enable Auto-Merge Mode.
 
-The activation must include:
+Default activation:
 
-- the maximum number of PRs or an exact ending condition;
-- the allowed risk level;
-- whether Copilot or another remote agent review is required;
-- whether Codex may merge after validation or must ask first.
+- maximum window: 3 PRs;
+- scope: next logical ApplyPilot work;
+- allowed risk level: low-to-medium only;
+- Copilot or remote-agent review: required when useful for validation, CI/environment checks, or
+  governance/architecture consistency;
+- merge permission: Codex may merge after CI passes, required validation is complete, requested
+  Copilot/remote review has been reconciled, and Codex is comfortable with the diff;
+- stop condition: after 3 successful merges, return to normal human-confirmed merge behavior.
 
-If any activation detail is missing, Derek/Codex must ask before merging anything.
+Humans may override any default activation detail. Explicit human overrides win unless they conflict
+with repository safety rules, human authority, security boundaries, or the hard exclusions below.
+If an override is unclear or unsafe, Derek/Codex must ask before merging anything.
 
 Auto-Merge Mode may merge a PR only when all of the following are true:
 
