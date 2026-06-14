@@ -113,7 +113,7 @@ for the constraints and retention behavior that PostgreSQL will enforce.
 
 ### 1. Database value checks
 
-**Status:** DECISION REQUIRED
+**Status:** PROPOSED IN ADR-0003
 
 Decide which application-owned enums must also be enforced by PostgreSQL. Candidates include:
 
@@ -137,6 +137,8 @@ The contract must specify:
 
 Recommended M1 approach: use named `CHECK` constraints for stable, small value sets. PostgreSQL
 enums are harder to evolve and should be chosen only when that tradeoff is intentional.
+
+Proposed decision artifact: `docs/decisions/ADR-0003-m1-database-value-checks.md`.
 
 ### 2. Policy and executor retention
 

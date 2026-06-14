@@ -189,7 +189,8 @@ The current dry-run does not automatically advance application state after execu
 
 ## Open Database Decisions
 
-- Add PostgreSQL checks for enum-like values, or continue application-only validation.
+- PostgreSQL value checks for stable enum-like values are proposed in
+  `docs/decisions/ADR-0003-m1-database-value-checks.md`; no migration has implemented them yet.
 - Decide whether `policy_decisions` and `executor_actions` survive application deletion.
 - Decide whether Compose should gain a one-shot migration service; today migration is manual.
 - Approve or reject the normalized future model through ADR-0002 before adding tables.

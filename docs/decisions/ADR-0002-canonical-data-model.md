@@ -17,7 +17,7 @@
 ## Status
 
 **Proposed.** This revision aligns the canonical-data-model decision with the database as actually
-implemented at M1 (real PostgreSQL, migrations `0001`–`0004`) and with the PostgreSQL Implementation
+implemented at M1 (real PostgreSQL, migrations `0001` through `0005`) and with the PostgreSQL Implementation
 Roadmap. It corrects two over-eager positions in the initial ADR-0002 draft: pre-adding unused
 executor retry columns, and treating table renames / sub-state splits as immediate M1 work. Both are
 now deferred to the milestone and contract that actually need them.
@@ -28,7 +28,7 @@ now deferred to the milestone and contract that actually need them.
 
 ### What is already implemented (M1 — DONE)
 
-The M1 database is real, not mock data. Compose runs `postgres:16`; Alembic revisions `0001`–`0004`
+The M1 database is real, not mock data. Compose runs `postgres:16`; Alembic revisions `0001` through `0005`
 create a seven-table aggregate; SQLAlchemy persists real rows; the demo seed and the
 seed-to-dashboard validator run against PostgreSQL.
 
@@ -41,6 +41,7 @@ Guarantees in place today:
 - `executor_actions.idempotency_key` is unique in PostgreSQL.
 - State changes pass through the state machine in application code.
 - A policy decision is recorded before the dry-run executor action.
+- Executor request metadata is persisted on executor actions.
 - `event_log` has **no** delete cascade from `applications`, and the ORM does not orphan-delete events.
 - Migration `0004` aligns the application state default with `ApplicationCreated`.
 - Implemented M1 states: `ApplicationCreated`, `Draft`, `ReadyForReview`, `Approved`, `Submitted`,
@@ -125,7 +126,7 @@ erDiagram
 
 | Phase | Milestone | Scope | Status |
 |-------|-----------|-------|--------|
-| **0** | M1 (now) | Seven-table aggregate, migrations `0001`–`0004` | **DONE** |
+| **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0005` | **DONE** |
 | **0.5** | M1 hardening | `CHECK` constraints for stable enums; policy/executor retention; reproducible migration startup | **NEXT — decisions required first** |
 | **1** | M3 | Normalize `companies`; `jobs.company_id` FK; preserve source company text for provenance | **FUTURE — contract D required first** |
 | **2** | M5 | `documents`, `document_versions`, `application_documents`, `answer_library`, `application_answers` (the document↔application M—N) | **FUTURE — contract G required first** |
