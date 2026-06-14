@@ -28,8 +28,8 @@ Creates the complete initial schema with 7 tables and 11 indexes.
 | `applications` | Canonical hub record | `id UUID PK`, `job_id FK->jobs`, `state`, `automation_mode`, `fit_score`, `confidence`, `recommendation`, `score_reasons JSONB`, `score_risks JSONB`, `missing_data JSONB`, `red_flags JSONB` |
 | `documents` | Generated documents | `id UUID PK`, `application_id FK->applications CASCADE` |
 | `email_threads` | Recruiter email conversations | `id UUID PK`, `application_id FK->applications CASCADE`, `direction`, `classification` |
-| `policy_decisions` | Policy gate evaluations | `id UUID PK`, `application_id FK->applications`, `action_type`, `mode`, `allowed BOOL` |
-| `executor_actions` | Execution audit records | `id UUID PK`, `application_id FK->applications`, `idempotency_key UNIQUE`, `status`, `payload JSONB`, `result JSONB` |
+| `policy_decisions` | Policy gate evaluations | `id UUID PK`, `application_id FK->applications CASCADE`, `action_type`, `mode`, `allowed BOOL` |
+| `executor_actions` | Execution audit records | `id UUID PK`, `application_id FK->applications CASCADE`, `idempotency_key UNIQUE`, `status`, `payload JSONB`, `result JSONB` |
 | `event_log` | Append-only audit log | `id UUID PK`, `application_id FK->applications CASCADE`, `event_type`, `actor`, `from_state`, `to_state`, `payload JSONB` |
 
 **Indexes created:** `ix_jobs_company`, `ix_applications_state`, `ix_applications_job_id`, `ix_documents_application_id`, `ix_email_threads_application_id`, `ix_policy_decisions_application_id`, `ix_executor_actions_application_id`, `ix_executor_actions_idempotency_key`, `ix_event_log_application_id`, `ix_event_log_event_type`, `ix_event_log_created_at`.

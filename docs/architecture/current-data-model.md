@@ -132,7 +132,7 @@ Generated application documents such as CV bullets, cover notes, and screening a
 
 ```text
 id uuid PK
-application_id uuid FK -> applications.id
+application_id uuid FK -> applications.id on delete cascade
 doc_type varchar(64) not null
 content text nullable
 content_json jsonb nullable
@@ -152,7 +152,7 @@ Recruiter or application-related email thread records.
 
 ```text
 id uuid PK
-application_id uuid FK -> applications.id
+application_id uuid FK -> applications.id on delete cascade
 external_thread_id varchar(256) nullable
 subject varchar(512) nullable
 direction varchar(16) not null default inbound
@@ -176,7 +176,7 @@ Persisted policy gate evaluations. Policy decisions are recorded before executor
 
 ```text
 id uuid PK
-application_id uuid FK -> applications.id on delete cascade
+application_id uuid FK -> applications.id
 action_type varchar(64) not null
 mode varchar(32) not null
 decision varchar(16) not null default review
@@ -202,7 +202,7 @@ Execution or dry-run records for approved worker actions.
 ```text
 id uuid PK
 request_id uuid unique not null
-application_id uuid FK -> applications.id on delete cascade
+application_id uuid FK -> applications.id
 worker varchar(32) not null
 idempotency_key varchar(256) unique not null
 action_type varchar(64) not null
