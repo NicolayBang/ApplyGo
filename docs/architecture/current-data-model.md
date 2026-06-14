@@ -37,6 +37,8 @@ erDiagram
 
 Normalized job posting data.
 
+Blank `job_type`, `ats_type`, `salary_raw`, and `remote_ok` fields may be enriched by the deterministic job intake classifier during job creation. This is implemented behavior, not an LLM call.
+
 ```text
 id uuid PK
 source_url varchar(2048) nullable
@@ -222,6 +224,7 @@ ix_event_log_created_at(created_at)
 
 - PostgreSQL is the durable system of record.
 - `applications` is the central aggregate for M1.
+- Job creation may deterministically enrich blank job metadata from manual intake.
 - Application state transitions go through the state machine.
 - Application creation and state changes append event log records.
 - Policy decisions are persisted before executor actions.

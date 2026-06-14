@@ -69,10 +69,12 @@ The dashboard will display the application record, policy decisions, executor ac
 With the backend running, the dashboard can create a manual application directly:
 
 1. Fill in role title and company.
-2. Optionally add location, job URL, and remote preference.
+2. Optionally add location, job URL, remote preference, and a job description.
 3. Click **Create**.
 
 The dashboard calls `POST /jobs`, then `POST /applications`, copies the new application ID into the audit controls, and loads `GET /applications/{application_id}/audit`.
+
+The backend deterministically enriches blank job metadata during job creation. The application summary can show inferred `job_type`, `ats_type`, `salary_raw`, and `remote_ok` values when the intake data supports them.
 
 ## Workflow actions
 
