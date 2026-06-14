@@ -16,6 +16,8 @@ manual intake -> parse/classify -> state progression -> scoring
 It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
+The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004`.
+
 ## Provisioning Boundary
 
 `docker compose up -d postgres` starts an empty PostgreSQL server and a local named volume.
@@ -66,7 +68,7 @@ classification fields before persistence, but PostgreSQL does not require them.
 |---|---|---:|---|---|
 | `id` | `uuid` | no | supplied by ORM | PK |
 | `job_id` | `uuid` | no | none | FK -> `jobs.id` (`ON DELETE CASCADE`), `ix_applications_job_id` |
-| `state` | `varchar(64)` | no | `discovered` in migrations `0001`-`0003` | `ix_applications_state` |
+| `state` | `varchar(64)` | no | `ApplicationCreated` | `ix_applications_state` |
 | `automation_mode` | `varchar(32)` | no | `manual` | |
 | `fit_score` | `integer` | yes | none | |
 | `confidence` | `varchar(16)` | yes | none | |
@@ -78,10 +80,9 @@ classification fields before persistence, but PostgreSQL does not require them.
 | `created_at` | `timestamptz` | no | `now()` | |
 | `updated_at` | `timestamptz` | no | `now()` | |
 
-Tracker creation explicitly persists `ApplicationCreated`; therefore the implemented API path does
-not rely on the stale database default. Draft PR #47 aligns the database default and ORM retention
-behavior. The seven allowed states are currently enforced by the application state machine, not by
-a PostgreSQL `CHECK` constraint.
+Migration `0004` and the ORM align the database default with the implemented state-machine value
+`ApplicationCreated`. The seven allowed states are enforced by the application state machine, not
+by a PostgreSQL `CHECK` constraint.
 
 ### `documents`
 
@@ -164,9 +165,9 @@ application-owned policy decision before recording an action.
 | `payload` | `jsonb` | yes | none | |
 | `created_at` | `timestamptz` | no | `now()` | `ix_event_log_created_at` |
 
-Migration `0003` removes database `ON DELETE CASCADE`. On the current baseline, however,
-`Application.events` still has ORM delete/delete-orphan cascade. Draft PR #47 removes that ORM
-deletion path. The repository exposes append and read operations but no event update/delete API.
+Migration `0003` removes database `ON DELETE CASCADE`. The ORM relationship also avoids
+delete/delete-orphan cascade and uses passive deletes. The repository exposes append and read
+operations but no event update/delete API.
 
 ## M1 Persistence Map
 

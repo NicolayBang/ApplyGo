@@ -284,7 +284,7 @@ Application-enforced:
 |---|---|---|
 | Application DB default differs from state machine | Resolved by #47 | Migration `0004` and ORM default use `ApplicationCreated` |
 | ORM event delete cascade conflicts with append-only rule | Resolved by #47 | Database FK does not cascade; ORM relationship uses passive deletes |
-| Event contract vocabulary differs from implementation | Pending #48 | Align contract to `id`, `event_type`, and implemented event names |
+| Event contract vocabulary differs from implementation | Resolved by #48 | Contract uses `id`, `event_type`, and implemented event names |
 | Enum-like strings lack PostgreSQL checks | Open | Decide in a dedicated M1 database implementation PR |
 | Policy/executor records cascade with application | Open | Decide whether operational audit must outlive application deletion |
 | PostgreSQL schema creation is manual | Open | Compose starts PostgreSQL; developers run Alembic separately |
