@@ -40,8 +40,10 @@ Supports optional state filtering plus `limit` and `offset`.
 
 ### `update_application_state`
 
-Delegates transition validation to the state machine through the Tracker. Invalid
-transitions return 400; missing applications return 404.
+Delegates transition validation to the Tracker. Generic state transitions use
+`Tracker.update_state()`. Requests to move to `Submitted` use the guarded
+`Tracker.submit_application()` workflow, which requires policy and executor evidence before
+the state change. Invalid transitions return 400; missing applications return 404.
 
 ### `score_application`
 

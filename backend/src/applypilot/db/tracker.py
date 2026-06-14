@@ -89,24 +89,77 @@ class Tracker:
         payload: dict | None = None,
     ) -> Application:
         """Transition application state and append an event log entry."""
+        target_state = self._parse_target_state(new_state)
+        if target_state == ApplicationState.SUBMITTED:
+            raise InvalidStateTransitionError(
+                "Submitted state requires the submit_application workflow"
+            )
+
+        return self._transition_application_state(
+            application_id=application_id,
+            target_state=target_state,
+            actor=actor,
+            payload=payload,
+        )
+
+    def submit_application(
+        self,
+        application_id: uuid.UUID,
+        actor: str = "system",
+        payload: dict | None = None,
+    ) -> Application:
+        """Submit an approved application after verifying required audit evidence."""
         app = self._session.get(Application, application_id)
         if app is None:
             raise ValueError(f"Application {application_id} not found")
 
-        try:
-            old_state = ApplicationState(app.state)
-        except ValueError as exc:
-            raise InvalidStateTransitionError(
-                f"Application {application_id} has unknown state: {app.state}"
-            ) from exc
+        old_state = self._current_state(app, application_id)
+        self._state_machine.apply_transition(old_state, ApplicationState.SUBMITTED)
+        self._ensure_submission_prerequisites(application_id)
 
-        try:
-            target_state = ApplicationState(new_state)
-        except ValueError as exc:
-            raise InvalidStateTransitionError(f"Unknown target state: {new_state}") from exc
+        return self._transition_loaded_application_state(
+            app=app,
+            application_id=application_id,
+            old_state=old_state,
+            target_state=ApplicationState.SUBMITTED,
+            actor=actor,
+            payload=payload,
+        )
+
+    def _transition_application_state(
+        self,
+        *,
+        application_id: uuid.UUID,
+        target_state: ApplicationState,
+        actor: str,
+        payload: dict | None,
+    ) -> Application:
+        app = self._session.get(Application, application_id)
+        if app is None:
+            raise ValueError(f"Application {application_id} not found")
+
+        old_state = self._current_state(app, application_id)
 
         self._state_machine.apply_transition(old_state, target_state)
+        return self._transition_loaded_application_state(
+            app=app,
+            application_id=application_id,
+            old_state=old_state,
+            target_state=target_state,
+            actor=actor,
+            payload=payload,
+        )
 
+    def _transition_loaded_application_state(
+        self,
+        *,
+        app: Application,
+        application_id: uuid.UUID,
+        old_state: ApplicationState,
+        target_state: ApplicationState,
+        actor: str,
+        payload: dict | None,
+    ) -> Application:
         app.state = target_state.value
         app.updated_at = datetime.now(tz=timezone.utc)
         self._session.flush()
@@ -120,6 +173,56 @@ class Tracker:
             payload=payload,
         )
         return app
+
+    def _current_state(
+        self,
+        app: Application,
+        application_id: uuid.UUID,
+    ) -> ApplicationState:
+        try:
+            return ApplicationState(app.state)
+        except ValueError as exc:
+            raise InvalidStateTransitionError(
+                f"Application {application_id} has unknown state: {app.state}"
+            ) from exc
+
+    def _parse_target_state(self, new_state: str) -> ApplicationState:
+        try:
+            return ApplicationState(new_state)
+        except ValueError as exc:
+            raise InvalidStateTransitionError(f"Unknown target state: {new_state}") from exc
+
+    def _ensure_submission_prerequisites(self, application_id: uuid.UUID) -> None:
+        allowed_policy_ids = {
+            str(decision.id)
+            for decision in self.get_policy_decisions(application_id)
+            if decision.allowed
+        }
+        if not allowed_policy_ids:
+            raise InvalidStateTransitionError(
+                "Submitted state requires an allowed policy decision"
+            )
+
+        has_executor_evidence = any(
+            self._executor_matches_allowed_policy(action, allowed_policy_ids)
+            for action in self.get_executor_actions(application_id)
+        )
+        if not has_executor_evidence:
+            raise InvalidStateTransitionError(
+                "Submitted state requires executor evidence for an allowed policy decision"
+            )
+
+    def _executor_matches_allowed_policy(
+        self,
+        action: ExecutorAction,
+        allowed_policy_ids: set[str],
+    ) -> bool:
+        payload = action.payload or {}
+        policy_decision_id = payload.get("policy_decision_id")
+        if policy_decision_id not in allowed_policy_ids:
+            return False
+
+        return bool(action.result)
 
     def score_application(
         self,

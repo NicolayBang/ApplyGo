@@ -100,9 +100,44 @@ class FakeTracker:
     def update_state(self, application_id, new_state, actor="system", payload=None):
         if application_id != self.application_id:
             raise ValueError(f"Application {application_id} not found")
-        if self.application.state == "ApplicationCreated" and new_state == "Submitted":
-            raise InvalidStateTransitionError("Invalid transition: ApplicationCreated -> Submitted")
+        if new_state == "Submitted":
+            raise InvalidStateTransitionError(
+                "Submitted state requires the submit_application workflow"
+            )
 
+        return self._transition_state(new_state, actor=actor, payload=payload)
+
+    def submit_application(self, application_id, actor="system", payload=None):
+        if application_id != self.application_id:
+            raise ValueError(f"Application {application_id} not found")
+        if self.application.state != "Approved":
+            raise InvalidStateTransitionError(
+                f"Invalid transition: {self.application.state} -> Submitted"
+            )
+
+        allowed_policy_ids = {
+            str(decision.id)
+            for decision in self.policy_decisions
+            if decision.allowed
+        }
+        if not allowed_policy_ids:
+            raise InvalidStateTransitionError(
+                "Submitted state requires an allowed policy decision"
+            )
+
+        has_executor_evidence = any(
+            (action.payload or {}).get("policy_decision_id") in allowed_policy_ids
+            and bool(action.result)
+            for action in self.executor_actions
+        )
+        if not has_executor_evidence:
+            raise InvalidStateTransitionError(
+                "Submitted state requires executor evidence for an allowed policy decision"
+            )
+
+        return self._transition_state("Submitted", actor=actor, payload=payload)
+
+    def _transition_state(self, new_state, actor="system", payload=None):
         old_state = self.application.state
         self.application.state = new_state
         self.events.append(

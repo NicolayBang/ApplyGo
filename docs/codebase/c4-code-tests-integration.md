@@ -4,25 +4,26 @@
 
 - **Location**: `backend/tests/integration/`
 - **Runner**: pytest
-- **Current coverage**: 24 tests across three modules.
+- **Current coverage**: 28 tests across three modules.
 - **Purpose**: Validate API composition, dashboard contracts, CORS, and the DB-backed demo.
 
 ## `test_application_api.py`
 
-Sixteen tests use FastAPI `TestClient` and a fake unit of work to cover:
+Nineteen tests use FastAPI `TestClient` and a fake unit of work to cover:
 
 - job creation and deterministic intake enrichment
 - application creation, listing, missing jobs, and state transitions
 - score persistence and score audit events
 - policy persistence, stored-score context, review outcomes, and missing applications
 - executor dry-run persistence, idempotent reuse, missing applications, and mandatory policy
+- guarded `Submitted` transitions requiring allowed policy and executor evidence
 - complete audit-summary responses and missing applications
 
 The tests assert policy-before-execution and verify executor attempt/result audit events.
 
 ## `test_cors_and_dashboard.py`
 
-Seven tests cover:
+Eight tests cover:
 
 - CORS headers on health and audit responses
 - manual intake job-description controls
