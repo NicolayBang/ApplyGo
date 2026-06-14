@@ -22,6 +22,11 @@ EXPECTED_DASHBOARD_API_PATHS = {
 }
 
 
+def _assert_fetch_method(script: str, path: str, method: str) -> None:
+    pattern = rf"fetchJson\(`\$\{{base\}}{re.escape(path)}`,\s*\{{\s*method: \"{method}\""
+    assert re.search(pattern, script, flags=re.DOTALL)
+
+
 def test_dashboard_script_selectors_exist_in_markup() -> None:
     """Every id selected by app.js must exist in the dashboard HTML."""
     index_response = client.get("/ui/index.html")
@@ -67,3 +72,21 @@ def test_dashboard_fetch_paths_are_backed_by_api_routes() -> None:
     }
 
     assert fetch_paths == EXPECTED_DASHBOARD_API_PATHS
+
+
+def test_dashboard_fetch_methods_match_m1_route_contract() -> None:
+    """Dashboard writes use the intended route methods and reads stay implicit GETs."""
+    script_response = client.get("/ui/app.js")
+
+    assert script_response.status_code == 200
+
+    script = script_response.text
+    _assert_fetch_method(script, "/jobs", "POST")
+    _assert_fetch_method(script, "/applications", "POST")
+    _assert_fetch_method(script, "/applications/${applicationId}/state", "PATCH")
+    _assert_fetch_method(script, "/applications/${applicationId}/score", "POST")
+    _assert_fetch_method(script, "/applications/${applicationId}/policy-decisions", "POST")
+    _assert_fetch_method(script, "/applications/${applicationId}/executor-actions/dry-run", "POST")
+    assert "fetchJson(`${base}/applications?${recentApplicationQuery()}`)" in script
+    assert "fetchJson(`${base}/applications/${applicationId}/audit`)" in script
+    assert "fetchJson(`${base}/applications/${applicationId}/review-summary`)" in script
