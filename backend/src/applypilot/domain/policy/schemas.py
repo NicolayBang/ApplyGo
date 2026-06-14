@@ -17,6 +17,11 @@ from applypilot.domain.policy.models import (
 
 class PolicyContextInput(BaseModel):
     confidence: ConfidenceLevel
+    fit_score: int | None = Field(default=None, ge=0, le=100)
+    recommendation: str | None = Field(
+        default=None,
+        pattern="^(recommended|needs_review|not_recommended)$",
+    )
     reasons: list[str] = Field(default_factory=list)
     risks: list[str] = Field(default_factory=list)
     missing_data: list[str] = Field(default_factory=list)

@@ -196,6 +196,8 @@ def _policy_context(request: PolicyEvaluationRequest, application: object) -> Po
     if request.context is not None:
         return PolicyContext(
             confidence=request.context.confidence,
+            fit_score=request.context.fit_score,
+            recommendation=request.context.recommendation,
             reasons=request.context.reasons,
             risks=request.context.risks,
             missing_data=request.context.missing_data,
@@ -217,6 +219,8 @@ def _policy_context(request: PolicyEvaluationRequest, application: object) -> Po
 
     return PolicyContext(
         confidence=confidence_level,
+        fit_score=getattr(application, "fit_score", None),
+        recommendation=getattr(application, "recommendation", None),
         reasons=list(getattr(application, "score_reasons", None) or []),
         risks=list(getattr(application, "score_risks", None) or []),
         missing_data=missing_data,

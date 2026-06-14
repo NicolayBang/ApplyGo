@@ -36,6 +36,8 @@ class PolicyContext:
     """Risk and confidence inputs used by policy evaluation."""
 
     confidence: ConfidenceLevel
+    fit_score: int | None = None
+    recommendation: str | None = None
     reasons: list[str] = field(default_factory=list)
     risks: list[str] = field(default_factory=list)
     missing_data: list[str] = field(default_factory=list)

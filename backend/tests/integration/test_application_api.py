@@ -160,6 +160,7 @@ class FakeTracker:
         if request.application_id != self.application_id:
             raise ValueError(f"Application {request.application_id} not found")
 
+        self.policy_request = request
         record = SimpleNamespace(
             id=decision.decision_id,
             application_id=request.application_id,
@@ -463,7 +464,41 @@ def test_policy_decision_uses_stored_application_score_when_context_is_omitted()
     body = response.json()
     assert body["decision"] == "allow"
     assert body["allowed"] is True
+    assert tracker.policy_decisions[0].reasons == [
+        "Dry-run mode may plan the action but must not create side effects."
+    ]
+    assert tracker.policy_request.context.fit_score == 87
+    assert tracker.policy_request.context.recommendation == "recommended"
     assert tracker.policy_decisions[0].risks == []
+
+
+def test_policy_decision_reviews_explicit_not_recommended_context() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {
+                "confidence": "high",
+                "fit_score": 42,
+                "recommendation": "not_recommended",
+                "reasons": [],
+                "risks": [],
+                "missing_data": [],
+                "red_flags": [],
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["decision"] == "review"
+    assert body["allowed"] is False
+    assert body["required_overrides"] == ["human_review"]
 
 
 def test_policy_decision_returns_404_when_application_missing() -> None:
