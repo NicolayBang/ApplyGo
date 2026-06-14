@@ -38,6 +38,7 @@ manual intake -> parse/classify -> state progression -> scoring -> policy check 
 
 Useful reviewer entry points:
 
+- `docs/capstone/mvp-status.md`: concise current implementation status and remaining MVP boundaries
 - `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
 - `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
 - `docs/architecture/database-implementation-roadmap.md`: done/next/future PostgreSQL plan and contract readiness
