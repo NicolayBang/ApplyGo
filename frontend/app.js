@@ -79,9 +79,14 @@ const demoAudit = {
       execution_mode: "dry_run",
       status: "planned",
       idempotency_key: "dry-run-001",
+      payload: {
+        policy_decision_id: "6a7f2bd6-cd99-4892-afef-5d3a28a64a7a",
+        source: "dashboard",
+      },
       result: {
         action_type: "send_follow_up_email",
         execution_mode: "dry_run",
+        policy_decision_id: "6a7f2bd6-cd99-4892-afef-5d3a28a64a7a",
         side_effects: false,
         planned_steps: [
           "Validate recorded policy decision.",
@@ -196,10 +201,39 @@ function hasLoadedApplication() {
   return isValidUuid(applicationId) && currentAudit.application?.id === applicationId;
 }
 
+function allowedPolicyDecisionIds() {
+  return new Set(
+    (currentAudit.policy_decisions || [])
+      .filter((decision) => decision.allowed)
+      .map((decision) => decision.id),
+  );
+}
+
+function hasSubmissionExecutorEvidence() {
+  const allowedIds = allowedPolicyDecisionIds();
+  if (!allowedIds.size) return false;
+
+  return (currentAudit.executor_actions || []).some((action) => {
+    const policyDecisionId = action.payload?.policy_decision_id || action.result?.policy_decision_id;
+    return allowedIds.has(policyDecisionId) && Boolean(action.result);
+  });
+}
+
+function visibleStateTransitions(application) {
+  const transitions = stateTransitions[application.state] || [];
+  if (application.state !== "Approved") return transitions;
+
+  return transitions.filter(
+    (transition) => transition.state !== "Submitted" || hasSubmissionExecutorEvidence(),
+  );
+}
+
 function updateWorkflowReadiness() {
   const hasApplication = hasLoadedApplication();
   const hasScore = Boolean(currentAudit.application?.confidence);
   const hasAllowedPolicy = Boolean(latestAllowedPolicyDecision());
+  const hasSubmissionEvidence = hasSubmissionExecutorEvidence();
+  const isApproved = currentAudit.application?.state === "Approved";
 
   if (!hasApplication) {
     clearStateActions();
@@ -213,6 +247,12 @@ function updateWorkflowReadiness() {
     elements.workflowHint.textContent = "Create or load an application to begin.";
   } else if (!hasScore) {
     elements.workflowHint.textContent = "Score the application before evaluating policy.";
+  } else if (isApproved && !hasAllowedPolicy) {
+    elements.workflowHint.textContent = "Evaluate policy before marking submitted.";
+  } else if (isApproved && !hasSubmissionEvidence) {
+    elements.workflowHint.textContent = "Dry-run before marking submitted.";
+  } else if (isApproved) {
+    elements.workflowHint.textContent = "Ready to mark submitted or reject.";
   } else if (!hasAllowedPolicy) {
     elements.workflowHint.textContent = "Evaluate policy before dry-run.";
   } else {
@@ -222,7 +262,7 @@ function updateWorkflowReadiness() {
 
 function renderSummary(application) {
   const job = application.job || {};
-  const nextStates = (stateTransitions[application.state] || [])
+  const nextStates = visibleStateTransitions(application)
     .map((transition) => transition.state)
     .join(", ");
   const rows = [
@@ -259,7 +299,7 @@ function clearStateActions() {
 }
 
 function renderStateActions(application) {
-  const transitions = stateTransitions[application.state] || [];
+  const transitions = visibleStateTransitions(application);
 
   if (!hasLoadedApplication() || !transitions.length) {
     clearStateActions();
