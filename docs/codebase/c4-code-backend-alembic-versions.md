@@ -1,0 +1,99 @@
+# C4 Code Level: Database Migration Versions
+
+## Overview
+
+- **Name**: Alembic Migration Versions
+- **Description**: Versioned database schema migration scripts that define the full evolution of ApplyPilot's PostgreSQL schema. Three migrations establish the canonical application hub, policy decision outcomes, and audit trail preservation.
+- **Location**: `backend/alembic/versions/`
+- **Language**: Python (Alembic DDL)
+- **Purpose**: Create and evolve the PostgreSQL schema via incremental, reversible migrations. Each migration advances the schema revision chain: `0001 → 0002 → 0003`.
+
+---
+
+## Code Elements
+
+### 0001_initial_schema.py — Initial Schema
+
+**Revision:** `0001` | **Depends on:** none (root)
+
+#### `upgrade() -> None` (line 22)
+Creates the complete initial schema with 7 tables and 11 indexes.
+
+**Tables created (in dependency order):**
+
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| `jobs` | Normalized job postings | `id UUID PK`, `title`, `company`, `location`, `remote_ok`, `job_type`, `ats_type`, `salary_raw`, `raw_text` |
+| `applications` | **Canonical hub record** | `id UUID PK`, `job_id FK→jobs`, `state`, `automation_mode`, `fit_score`, `confidence`, `recommendation`, `score_reasons JSONB`, `score_risks JSONB`, `missing_data JSONB`, `red_flags JSONB` |
+| `documents` | Generated documents (CV, cover, answers) | `id UUID PK`, `application_id FK→applications CASCADE` |
+| `email_threads` | Recruiter email conversations | `id UUID PK`, `application_id FK→applications CASCADE`, `direction`, `classification` |
+| `policy_decisions` | Policy gate evaluations | `id UUID PK`, `application_id FK→applications CASCADE`, `action_type`, `mode`, `allowed BOOL` |
+| `executor_actions` | Execution audit records | `id UUID PK`, `application_id FK→applications CASCADE`, `idempotency_key UNIQUE`, `status`, `payload JSONB`, `result JSONB` |
+| `event_log` | **Append-only audit log** | `id UUID PK`, `application_id FK→applications CASCADE`, `event_type`, `actor`, `from_state`, `to_state`, `payload JSONB` |
+
+**Indexes created:** `ix_jobs_company`, `ix_applications_state`, `ix_applications_job_id`, `ix_documents_application_id`, `ix_email_threads_application_id`, `ix_policy_decisions_application_id`, `ix_executor_actions_application_id`, `ix_executor_actions_idempotency_key`, `ix_event_log_application_id`, `ix_event_log_event_type`, `ix_event_log_created_at`
+
+#### `downgrade() -> None`
+Drops all 7 tables in reverse dependency order.
+
+---
+
+### 0002_policy_decision_outcomes.py — Policy Decision Fields
+
+**Revision:** `0002` | **Depends on:** `0001`
+
+#### `upgrade() -> None` (line 18)
+Adds two columns to `policy_decisions`:
+- `decision VARCHAR(16) NOT NULL DEFAULT 'review'` — Outcome enum (allow/deny/review)
+- `required_overrides JSONB` — Override keys required before action proceeds
+
+#### `downgrade() -> None` (line 26)
+Drops both added columns.
+
+---
+
+### 0003_preserve_event_log_on_application_delete.py — Audit Trail Preservation
+
+**Revision:** `0003` | **Depends on:** `0002`
+
+#### `upgrade() -> None` (line 16)
+Removes `ON DELETE CASCADE` from `event_log.application_id` FK and replaces with a plain FK (no cascade). Event log rows survive application deletion, preserving the complete audit trail. The database owns truth.
+
+#### `downgrade() -> None` (line 28)
+Re-adds `ON DELETE CASCADE` to the FK.
+
+---
+
+## Dependencies
+
+### Internal
+- `applypilot.db.base.Base` — SQLAlchemy metadata base
+- `applypilot.db.models` — ORM models corresponding to these tables
+
+### External
+- `alembic` — Migration framework
+- `sqlalchemy` — DDL types and functions
+- `sqlalchemy.dialects.postgresql` — `UUID`, `JSONB` types
+- PostgreSQL 9.4+
+
+---
+
+## Relationships
+
+```mermaid
+stateDiagram-v2
+    [*] --> 0001_initial_schema : alembic upgrade head
+    0001_initial_schema --> 0002_policy_decision_outcomes
+    0002_policy_decision_outcomes --> 0003_preserve_event_log
+    0003_preserve_event_log --> [*] : HEAD
+```
+
+```mermaid
+erDiagram
+    jobs ||--o{ applications : "job_id CASCADE"
+    applications ||--o{ documents : "CASCADE"
+    applications ||--o{ email_threads : "CASCADE"
+    applications ||--o{ policy_decisions : "CASCADE"
+    applications ||--o{ executor_actions : "CASCADE"
+    applications ||--o{ event_log : "NO CASCADE (preserved)"
+```
