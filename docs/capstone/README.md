@@ -6,6 +6,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 
 - `mvp-status.md` - concise current implementation status and remaining MVP boundaries.
 - `dashboard-demo-flow.md` - step-by-step runbook for the implemented M1 dashboard demo.
+- `m1-demo-review-checklist.md` - pass/fix checklist for manually reviewing the M1 demo.
 - `process.md` - capstone process scaffold and working agreement.
 - `phase-2-ideas.md` - parking lot for future ideas that are not committed MVP scope.
 
@@ -13,8 +14,9 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 
 1. Read `mvp-status.md` to understand what exists today.
 2. Run `dashboard-demo-flow.md` to exercise the implemented workflow.
-3. Use `process.md` to understand the project discipline behind the work.
-4. Treat `phase-2-ideas.md` as future discussion material only.
+3. Use `m1-demo-review-checklist.md` to record pass/fix observations.
+4. Use `process.md` to understand the project discipline behind the work.
+5. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Scope Reminder
 
