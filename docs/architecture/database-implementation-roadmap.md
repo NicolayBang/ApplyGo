@@ -33,7 +33,7 @@ For exact implemented columns and constraints, use
 ApplyPilot already uses PostgreSQL. The current database is not merely mock data:
 
 - Compose starts a real `postgres:16` server.
-- Alembic migrations `0001` through `0004` create the real M1 tables.
+- Alembic migrations `0001` through `0006` create and harden the real M1 tables.
 - SQLAlchemy writes persisted jobs, applications, policy decisions, executor actions, and events.
 - The demo seed and seed-to-dashboard validator operate against PostgreSQL when it is running.
 
@@ -48,8 +48,8 @@ PostgreSQL image is not needed for normal team sharing.
 
 | Status | Milestone | Database shape |
 |---|---|---|
-| **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0004` |
-| **NEXT** | M1 hardening | Resolve database checks, retention policy, and reproducible migration startup |
+| **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0006` |
+| **NEXT** | M1 hardening | Resolve retention policy and reproducible migration startup |
 | **FUTURE** | M3 | Normalize companies and job ownership |
 | **FUTURE** | M5 | Versioned application packets and reusable answers |
 | **FUTURE** | M7 | Contacts, recruiter threads, and individual messages |
@@ -94,10 +94,10 @@ manual intake
 - `event_log` has no database delete cascade from `applications`.
 - The ORM does not delete or orphan-delete events when an application is removed.
 - Migration `0004` aligns the application state default with `ApplicationCreated`.
+- Migration `0006` enforces stable M1 value sets with named PostgreSQL `CHECK` constraints.
 
 ### Current limitations
 
-- Several enum-like strings are application-validated but have no PostgreSQL `CHECK`.
 - `policy_decisions` and `executor_actions` still cascade with application deletion.
 - `jobs.company` is a nullable string, not a normalized company foreign key.
 - `documents` and `email_threads` are M1 placeholders with one application owner.
@@ -113,32 +113,20 @@ for the constraints and retention behavior that PostgreSQL will enforce.
 
 ### 1. Database value checks
 
-**Status:** PROPOSED IN ADR-0003
+**Status:** DONE BY ADR-0003 AND MIGRATION `0006`
 
-Decide which application-owned enums must also be enforced by PostgreSQL. Candidates include:
+Stable M1 values are enforced by named PostgreSQL `CHECK` constraints for:
 
 - `applications.state`
 - `applications.automation_mode`
-- `applications.confidence`
-- `applications.recommendation`
 - `email_threads.direction`
 - `policy_decisions.mode`
 - `policy_decisions.decision`
 - `executor_actions.execution_mode`
 - `executor_actions.status`
+- `executor_actions.worker`
 
-The contract must specify:
-
-- the exact allowed values
-- whether `NULL` remains valid
-- the behavior for existing invalid rows
-- whether values are represented by `CHECK` constraints or PostgreSQL enums
-- how a future value is added without breaking deployment ordering
-
-Recommended M1 approach: use named `CHECK` constraints for stable, small value sets. PostgreSQL
-enums are harder to evolve and should be chosen only when that tradeoff is intentional.
-
-Proposed decision artifact: `docs/decisions/ADR-0003-m1-database-value-checks.md`.
+Nullable scoring outputs remain application-owned until their vocabulary stabilizes.
 
 ### 2. Policy and executor retention
 

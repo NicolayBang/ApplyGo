@@ -40,6 +40,11 @@ Operational child records cascade with the application. The event log foreign ke
 use database `ON DELETE CASCADE`, and the ORM relationship avoids delete/delete-orphan
 cascade, preserving the audit record at both schema and ORM boundaries.
 
+Stable M1 value sets are also represented in the ORM metadata as named `CheckConstraint`
+definitions. Alembic revision `0006` enforces the matching PostgreSQL `CHECK` constraints for
+application state, automation mode, policy mode/outcome, executor mode/status/worker, and
+email-thread direction.
+
 ## `Tracker`
 
 ### Job and Application Methods

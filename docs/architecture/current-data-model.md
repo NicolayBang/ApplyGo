@@ -114,14 +114,16 @@ Archived
 Migration `0004` aligns the database default with the ORM and implemented state machine value
 `ApplicationCreated`.
 
-State, automation mode, confidence, and recommendation values are validated by application code.
-PostgreSQL does not currently enforce their allowed values with enum or `CHECK` constraints.
+State and automation-mode values are enforced by named PostgreSQL `CHECK` constraints. Confidence
+and recommendation remain application-owned scoring outputs while their vocabulary stabilizes.
 
 Indexes:
 
 ```text
 ix_applications_state(state)
 ix_applications_job_id(job_id)
+ck_applications_state_m1
+ck_applications_automation_mode_m1
 ```
 
 ### `documents`
@@ -165,6 +167,7 @@ Indexes:
 
 ```text
 ix_email_threads_application_id(application_id)
+ck_email_threads_direction_m1
 ```
 
 ### `policy_decisions`
@@ -188,6 +191,8 @@ Indexes:
 
 ```text
 ix_policy_decisions_application_id(application_id)
+ck_policy_decisions_mode_m1
+ck_policy_decisions_decision_m1
 ```
 
 ### `executor_actions`
@@ -217,6 +222,9 @@ Indexes:
 ix_executor_actions_application_id(application_id)
 ix_executor_actions_request_id(request_id)
 ix_executor_actions_idempotency_key(idempotency_key)
+ck_executor_actions_execution_mode_m1
+ck_executor_actions_status_m1
+ck_executor_actions_worker_m1
 ```
 
 ### `event_log`
@@ -275,11 +283,12 @@ Database-enforced:
 - Executor idempotency-key uniqueness.
 - Declared indexes and server defaults.
 - Event-log FK without `ON DELETE CASCADE`.
+- Stable M1 state, mode, policy, executor, worker, and email direction values.
 
 Application-enforced:
 
 - Valid state transitions.
-- Allowed state, mode, confidence, recommendation, decision, execution-mode, and status values.
+- Confidence and recommendation scoring vocabularies.
 - Policy decision before the dry-run executor endpoint.
 - Event append ordering in Tracker/API workflows.
 
@@ -290,7 +299,7 @@ Application-enforced:
 | Application DB default differs from state machine | Resolved by #47 | Migration `0004` and ORM default use `ApplicationCreated` |
 | ORM event delete cascade conflicts with append-only rule | Resolved by #47 | Database FK does not cascade; ORM relationship uses passive deletes |
 | Event contract vocabulary differs from implementation | Resolved by #48 | Contract uses `id`, `event_type`, and implemented event names |
-| Enum-like strings lack PostgreSQL checks | Open | Decide in a dedicated M1 database implementation PR |
+| Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Open | Decide whether operational audit must outlive application deletion |
 | PostgreSQL schema creation is manual | Open | Compose starts PostgreSQL; developers run Alembic separately |
 | Normalized company/document/thread/answer model | Deferred | Proposed in ADR-0002; not approved or implemented |

@@ -16,7 +16,7 @@ manual intake -> parse/classify -> state progression -> scoring
 It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
-The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005`.
+The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006`.
 
 ## Provisioning Boundary
 
@@ -68,8 +68,8 @@ classification fields before persistence, but PostgreSQL does not require them.
 |---|---|---:|---|---|
 | `id` | `uuid` | no | supplied by ORM | PK |
 | `job_id` | `uuid` | no | none | FK -> `jobs.id` (`ON DELETE CASCADE`), `ix_applications_job_id` |
-| `state` | `varchar(64)` | no | `ApplicationCreated` | `ix_applications_state` |
-| `automation_mode` | `varchar(32)` | no | `manual` | |
+| `state` | `varchar(64)` | no | `ApplicationCreated` | `ix_applications_state`, `ck_applications_state_m1` |
+| `automation_mode` | `varchar(32)` | no | `manual` | `ck_applications_automation_mode_m1` |
 | `fit_score` | `integer` | yes | none | |
 | `confidence` | `varchar(16)` | yes | none | |
 | `recommendation` | `varchar(32)` | yes | none | |
@@ -81,8 +81,8 @@ classification fields before persistence, but PostgreSQL does not require them.
 | `updated_at` | `timestamptz` | no | `now()` | |
 
 Migration `0004` and the ORM align the database default with the implemented state-machine value
-`ApplicationCreated`. The seven allowed states are enforced by the application state machine, not
-by a PostgreSQL `CHECK` constraint.
+`ApplicationCreated`. Migration `0006` enforces the stable M1 state and automation-mode vocabularies
+with named PostgreSQL `CHECK` constraints.
 
 ### `documents`
 
@@ -107,7 +107,7 @@ are future work.
 | `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_email_threads_application_id` |
 | `external_thread_id` | `varchar(256)` | yes | none | |
 | `subject` | `varchar(512)` | yes | none | |
-| `direction` | `varchar(16)` | no | `inbound` | |
+| `direction` | `varchar(16)` | no | `inbound` | `ck_email_threads_direction_m1` |
 | `classification` | `varchar(64)` | yes | none | |
 | `raw_body` | `text` | yes | none | |
 | `draft_reply` | `text` | yes | none | |
@@ -123,15 +123,15 @@ No Gmail integration is implemented in M1.
 | `id` | `uuid` | no | supplied by domain | PK |
 | `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_policy_decisions_application_id` |
 | `action_type` | `varchar(64)` | no | none | |
-| `mode` | `varchar(32)` | no | none | |
-| `decision` | `varchar(16)` | no | `review` | |
+| `mode` | `varchar(32)` | no | none | `ck_policy_decisions_mode_m1` |
+| `decision` | `varchar(16)` | no | `review` | `ck_policy_decisions_decision_m1` |
 | `allowed` | `boolean` | no | none | |
 | `reasons` | `jsonb` | yes | none | |
 | `risks` | `jsonb` | yes | none | |
 | `required_overrides` | `jsonb` | yes | none | |
 | `created_at` | `timestamptz` | no | `now()` | |
 
-Mode and decision values are validated by application enums, not PostgreSQL checks. Current delete
+Mode and decision values are enforced by named PostgreSQL `CHECK` constraints. Current delete
 behavior is application-owned cascade; whether decisions must outlive an application remains open.
 
 ### `executor_actions`
@@ -141,11 +141,11 @@ behavior is application-owned cascade; whether decisions must outlive an applica
 | `id` | `uuid` | no | supplied by ORM | PK |
 | `request_id` | `uuid` | no | generated at executor boundary | UNIQUE, `ix_executor_actions_request_id` |
 | `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_executor_actions_application_id` |
-| `worker` | `varchar(32)` | no | none | |
+| `worker` | `varchar(32)` | no | none | `ck_executor_actions_worker_m1` |
 | `idempotency_key` | `varchar(256)` | no | none | UNIQUE, `ix_executor_actions_idempotency_key` |
 | `action_type` | `varchar(64)` | no | none | |
-| `execution_mode` | `varchar(16)` | no | none | |
-| `status` | `varchar(32)` | no | `queued` | |
+| `execution_mode` | `varchar(16)` | no | none | `ck_executor_actions_execution_mode_m1` |
+| `status` | `varchar(32)` | no | `queued` | `ck_executor_actions_status_m1` |
 | `requested_by` | `varchar(64)` | no | none | |
 | `requested_at` | `timestamptz` | no | generated at executor boundary | |
 | `payload` | `jsonb` | yes | none | |
@@ -153,8 +153,9 @@ behavior is application-owned cascade; whether decisions must outlive an applica
 | `created_at` | `timestamptz` | no | `now()` | |
 | `completed_at` | `timestamptz` | yes | none | |
 
-The unique idempotency key and request ID are database-enforced. The dry-run endpoint verifies
-an allowed, application-owned policy decision before recording an action.
+The unique idempotency key, request ID, worker vocabulary, execution mode, and status vocabulary are
+database-enforced. The dry-run endpoint verifies an allowed, application-owned policy decision before
+recording an action.
 
 ### `event_log`
 
@@ -189,8 +190,6 @@ The current dry-run does not automatically advance application state after execu
 
 ## Open Database Decisions
 
-- PostgreSQL value checks for stable enum-like values are proposed in
-  `docs/decisions/ADR-0003-m1-database-value-checks.md`; no migration has implemented them yet.
 - Decide whether `policy_decisions` and `executor_actions` survive application deletion.
 - Decide whether Compose should gain a one-shot migration service; today migration is manual.
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
