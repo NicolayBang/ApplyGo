@@ -136,10 +136,10 @@ const sampleJob = {
   title: "Backend Platform Engineer",
   company: "ApplyPilot Demo Co.",
   location: "Remote",
-  source_url: "https://example.com/jobs/backend-platform-engineer",
+  source_url: "https://jobs.lever.co/applypilot/backend-platform-engineer",
   remote_ok: true,
   raw_text:
-    "Build Python APIs with FastAPI, PostgreSQL, automation workflows, and platform data services. Partner with DevOps and product teams to improve reliable backend delivery.",
+    "Build Python APIs with FastAPI, PostgreSQL, automation workflows, and platform data services. This is a full-time remote role with a salary range of $95,000 - $125,000. Partner with DevOps and product teams to improve reliable backend delivery.",
 };
 
 const elements = {
@@ -250,6 +250,7 @@ function visibleStateTransitions(application) {
 function updateWorkflowReadiness() {
   const hasApplication = hasLoadedApplication();
   const hasScore = Boolean(currentReviewSummary?.ready_for_policy || currentAudit.application?.confidence);
+  const latestPolicy = latestPolicyDecision();
   const hasAllowedPolicy = Boolean(
     currentReviewSummary?.ready_for_dry_run || latestAllowedPolicyDecision(),
   );
@@ -265,17 +266,26 @@ function updateWorkflowReadiness() {
   elements.scoreButton.disabled = !hasApplication;
   elements.policyButton.disabled = !hasApplication || !hasScore;
   elements.dryRunButton.disabled = !hasApplication || !hasAllowedPolicy;
+  elements.dryRunButton.title = !hasApplication
+    ? "Create or load an application before dry-run."
+    : !hasAllowedPolicy
+      ? dryRunBlockReason(latestPolicy)
+      : "Plan the approved follow-up action without side effects.";
 
   if (!hasApplication) {
     elements.workflowHint.textContent = "Create or load an application to begin.";
   } else if (!hasScore) {
     elements.workflowHint.textContent = "Score the application before evaluating policy.";
+  } else if (isApproved && latestPolicy && !hasAllowedPolicy) {
+    elements.workflowHint.textContent = dryRunBlockReason(latestPolicy);
   } else if (isApproved && !hasAllowedPolicy) {
-    elements.workflowHint.textContent = "Evaluate policy before marking submitted.";
+    elements.workflowHint.textContent = "Evaluate policy before dry-run.";
   } else if (isApproved && !hasSubmissionEvidence) {
     elements.workflowHint.textContent = "Dry-run before marking submitted.";
   } else if (isApproved) {
     elements.workflowHint.textContent = "Ready to mark submitted or reject.";
+  } else if (latestPolicy && !hasAllowedPolicy) {
+    elements.workflowHint.textContent = dryRunBlockReason(latestPolicy);
   } else if (!hasAllowedPolicy) {
     elements.workflowHint.textContent = "Evaluate policy before dry-run.";
   } else {
@@ -364,9 +374,7 @@ function renderReviewSummary(summary) {
     {
       label: "Dry-run",
       ready: summary.ready_for_dry_run,
-      detail: latestPolicy
-        ? `${latestPolicy.decision} policy for ${latestPolicy.action_type}`
-        : "Allowed policy decision required.",
+      detail: latestPolicy ? policyDecisionDetail(latestPolicy) : "Allowed policy decision required.",
     },
     {
       label: "Submission",
@@ -790,6 +798,25 @@ function latestAllowedPolicyDecision() {
   return decisions
     .filter((decision) => decision.allowed && decision.action_type === "send_follow_up_email")
     .at(-1);
+}
+
+function latestPolicyDecision() {
+  return (currentAudit.policy_decisions || []).at(-1);
+}
+
+function policyDecisionDetail(decision) {
+  const requiredOverrides = (decision.required_overrides || []).join(", ");
+  const base = `${decision.decision} policy for ${decision.action_type}`;
+  return requiredOverrides ? `${base}; requires ${requiredOverrides}` : base;
+}
+
+function dryRunBlockReason(decision) {
+  if (!decision) return "Evaluate policy before dry-run.";
+  if (decision.allowed) return "Ready for dry-run follow-up.";
+  const requiredOverrides = (decision.required_overrides || []).join(", ");
+  return requiredOverrides
+    ? `Policy requires review before dry-run: ${requiredOverrides}.`
+    : `Policy returned ${decision.decision}; dry-run requires an allowed policy decision.`;
 }
 
 function policyContextFromApplication() {

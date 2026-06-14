@@ -1,6 +1,19 @@
 """Unit tests for deterministic application scoring."""
 
+import uuid
+
+from applypilot.domain.applications.intake import JobIntakeClassifier
+from applypilot.domain.applications.models import JobCreate
 from applypilot.domain.applications.scoring import ApplicationScorer, JobScoringInput
+from applypilot.domain.policy import (
+    AutomationMode,
+    ConfidenceLevel,
+    PolicyContext,
+    PolicyDecisionOutcome,
+    PolicyEngine,
+    PolicyRequest,
+    WorkerType,
+)
 
 
 def test_scorer_recommends_complete_technical_remote_job() -> None:
@@ -105,3 +118,50 @@ def test_scorer_flags_unclassified_source_when_url_is_present() -> None:
     )
 
     assert "ATS/source type was not classified from the posting URL or text." in result.risks
+
+
+def test_dashboard_sample_job_scores_high_and_allows_dry_run_policy() -> None:
+    """The live dashboard sample carries enough deterministic data for the M1 demo path."""
+    job = JobIntakeClassifier().enrich(
+        JobCreate(
+            title="Backend Platform Engineer",
+            company="ApplyPilot Demo Co.",
+            location="Remote",
+            source_url="https://jobs.lever.co/applypilot/backend-platform-engineer",
+            raw_text=(
+                "Build Python APIs with FastAPI, PostgreSQL, automation workflows, and "
+                "platform data services. This is a full-time remote role with a salary "
+                "range of $95,000 - $125,000. Partner with DevOps and product teams to "
+                "improve reliable backend delivery."
+            ),
+            remote_ok=True,
+        )
+    )
+
+    score = ApplicationScorer().score(JobScoringInput(**job.model_dump()))
+    decision = PolicyEngine().evaluate(
+        PolicyRequest(
+            application_id=uuid.uuid4(),
+            current_state="Approved",
+            requested_action="send_follow_up_email",
+            worker=WorkerType.EMAIL,
+            context=PolicyContext(
+                confidence=ConfidenceLevel(score.confidence),
+                fit_score=score.fit_score,
+                recommendation=score.recommendation,
+                reasons=score.reasons,
+                risks=score.risks,
+                missing_data=score.missing_data,
+                red_flags=score.red_flags,
+            ),
+            mode=AutomationMode.DRY_RUN,
+        )
+    )
+
+    assert job.job_type == "full-time"
+    assert job.ats_type == "lever"
+    assert job.salary_raw == "$95,000 - $125,000"
+    assert score.confidence == "high"
+    assert score.missing_data == []
+    assert decision.decision == PolicyDecisionOutcome.ALLOW
+    assert decision.allowed is True
