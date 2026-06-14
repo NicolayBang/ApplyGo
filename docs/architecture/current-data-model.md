@@ -34,6 +34,9 @@ Current migrations:
 2. `0002_policy_decision_outcomes.py`
 3. `0003_preserve_event_log_on_application_delete.py`
 4. `0004_align_application_state_default.py`
+5. `0005_add_executor_contract_metadata.py`
+6. `0006_add_m1_value_check_constraints.py`
+7. `0007_retain_policy_and_executor_audit.py`
 
 ## Core Shape
 
@@ -301,7 +304,7 @@ Application-enforced:
 | Event contract vocabulary differs from implementation | Resolved by #48 | Contract uses `id`, `event_type`, and implemented event names |
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
-| PostgreSQL schema creation is manual | Open | Compose starts PostgreSQL; developers run Alembic separately |
+| PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
 | Normalized company/document/thread/answer model | Deferred | Company identity proposed in ADR-0005; broader model proposed in ADR-0002 |
 
 ## Current Non-Goals
