@@ -238,7 +238,7 @@ happen only after the replacement is populated and consumers have switched.
 The proposed M3 company migration and compatibility boundary is recorded in
 `docs/contracts/m3-company-migration-contract.md`.
 
-Current review state: Nicolay has soft-approved the M3 company identity direction, pending Francis
+Current review state: Nicolay has approved the M3 company identity direction, pending Francis
 review. This is direction-only and does not approve schema implementation. Before any migration
 starts, the team must confirm that the active milestone is ready for company identity work.
 

@@ -1,6 +1,6 @@
 # M3 Company Identity Decision Brief
 
-**Status:** Review brief; Nicolay soft-approved direction pending Francis review
+**Status:** Review brief; Nicolay approved M3 direction pending Francis review
 **Decision needed:** Francis feedback and later implementation-timing confirmation.
 **Decision owners:** Nicolay + Francis
 **Related:** `ADR-0005-m3-company-identity.md`; `docs/contracts/m3-company-migration-contract.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`
@@ -14,8 +14,12 @@ This would move the project from "company as loose text on a job" toward "compan
 identity that jobs can reference." It does not approve implementing recruiter contacts, company
 merge tools, external enrichment, or removing the existing company text field.
 
-Nicolay is for this direction. Francis review is still pending, and the team should review the
+Nicolay approved this M3 direction. Francis review is still pending, and the team should review the
 timing again before opening an implementation PR for the migration.
+
+Do not implement yet unless the implementation PR is limited to deterministic company identity,
+preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder handling, and
+proves PostgreSQL migration plus API/dashboard compatibility.
 
 ## Current State
 
@@ -39,6 +43,7 @@ The conservative identity rules are:
 - use exact normalized name matching only when no domain is available
 - map blank company values to `Unknown Company`
 - map clearly confidential employer values to `Confidential Company`
+- do not infer employer identity from job posting source URLs
 - avoid fuzzy matching, AI matching, and external enrichment during migration
 
 ## Why This Helps

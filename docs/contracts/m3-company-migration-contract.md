@@ -6,7 +6,7 @@
 
 **Authority:** Proposed implementation contract; does not authorize migration until approved
 
-**Review state:** Nicolay soft-approved direction; pending Francis review and later implementation
+**Review state:** Nicolay approved M3 direction; pending Francis review and later implementation
 timing review
 
 **Related:** `docs/decisions/ADR-0005-m3-company-identity.md`,
@@ -16,9 +16,13 @@ This contract defines the safety boundary for the future M3 company identity mig
 implemented schema description. The current M1 source of truth remains `jobs.company` until an
 approved migration changes the database, ORM, API, dashboard, tests, and documentation together.
 
-Nicolay is aligned with this direction for M3, but implementation remains gated. Before any schema
+Nicolay approved this direction for M3, but implementation remains gated. Before any schema
 migration starts, Francis feedback should be reviewed and the team should explicitly confirm that
 the current milestone is ready for company identity work.
+
+Do not implement yet unless the implementation PR is limited to deterministic company identity,
+preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder handling, and
+proves PostgreSQL migration plus API/dashboard compatibility.
 
 ## Starting Point
 
@@ -51,6 +55,8 @@ Backfill must be deterministic:
 - Clearly confidential employer text maps to a seeded `Confidential Company` row.
 - Non-blank company values with the same normalized non-null domain map to the same company.
 - Non-blank company values without a domain deduplicate only by exact `normalized_name`.
+- `jobs.source_url` must not be used to infer employer domain or company identity. It may identify
+  an ATS, job board, or redirect host rather than the employer.
 - Fuzzy matching, AI matching, and external enrichment are out of scope for the migration.
 - Original `jobs.company` text is not overwritten during backfill.
 
@@ -94,6 +100,18 @@ The implementation PR must include runnable validation for:
 
 When local PostgreSQL is unavailable, request Remote Validation Assist and record the result in the
 PR.
+
+## Implementation Entry Conditions
+
+An implementation PR is allowed only after Francis review is considered and the team explicitly
+confirms timing. That PR must remain limited to:
+
+- deterministic company identity migration;
+- preserving `jobs.company`;
+- explicit `Unknown Company` and `Confidential Company` placeholder handling;
+- no source-url domain assumptions;
+- PostgreSQL migration, backfill, and constraint validation;
+- API and dashboard compatibility for existing company display behavior.
 
 ## Approval Checklist
 

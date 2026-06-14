@@ -6,17 +6,20 @@
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
-| **Review state** | Nicolay soft-approved direction; pending Francis review |
+| **Review state** | Nicolay approved M3 direction; pending Francis review |
 | **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
 
 ## Review State
 
-Nicolay is aligned with the proposed M3 company identity direction, pending Francis review and
-feedback.
+Nicolay has approved the proposed M3 company identity direction, pending Francis review and
+feedback. This approval is direction-only and does not authorize implementation yet.
 
-This is not implementation approval. Before the migration is implemented, the team should review
-the ADR and migration contract again in the context of the active milestone and decide whether the
-timing is right.
+Do not implement the migration yet unless the implementation PR is limited to deterministic company
+identity, preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder
+handling, and proves PostgreSQL migration plus API/dashboard compatibility.
+
+Before the migration is implemented, the team should review the ADR and migration contract again in
+the context of the active milestone and decide whether the timing is right.
 
 ## Context
 
@@ -58,6 +61,9 @@ Identity rules:
 - `normalized_domain` is the strongest deduplication key when present.
 - Domain normalization lowercases the host, removes URL schemes, removes paths/query strings, strips
   a leading `www.`, and stores only the registrable company domain when it can be determined safely.
+- Do not infer employer identity from a job posting `source_url`. The source URL may identify an ATS,
+  job board, or redirect host rather than the employer. Use source URLs for ATS/source context only
+  unless a future approved contract adds an explicit employer-domain field.
 - A partial unique index should enforce uniqueness of `normalized_domain` when it is not null.
 - `normalized_name` lowercases, trims whitespace, collapses internal whitespace, and strips common
   legal suffixes only when doing so is deterministic.
@@ -94,6 +100,20 @@ The future M3 implementation PR should:
 
 This ADR does not authorize adding contacts, recruiter threads, document packets, answer libraries,
 or executor retry fields.
+
+## Implementation Entry Conditions
+
+Do not open an implementation PR for this migration until the team confirms timing and Francis
+feedback is reviewed.
+
+When implementation is approved, the PR must stay inside these limits:
+
+- deterministic company identity only;
+- preserve `jobs.company` as source/provenance and dashboard/API display compatibility;
+- no source-url domain assumptions for employer identity;
+- explicit placeholder handling for unknown and confidential company values;
+- PostgreSQL migration and backfill validation;
+- API and dashboard compatibility proof.
 
 ## Validation Required
 
