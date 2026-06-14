@@ -21,17 +21,17 @@ and audit model needed before adding external automation.
   activity.
 - Policy engine with manual, semi-auto, full-auto, and dry-run mode handling.
 - Stub executor that produces side-effect-free dry-run plans.
-- Dashboard view for tracker state, scoring, policy, executor records, and audit timeline.
+- Dashboard view for tracker state, scoring, policy, executor records, review readiness, and audit timeline.
 - Docker Compose PostgreSQL/Redis services, one-shot migration runner, and optional demo seed
   validation.
-- CI gates for backend quality, migrations, tests, and frontend syntax.
+- CI gates for backend quality, migrations, tests, frontend syntax, and dashboard asset contracts.
 
 ## Demo Path
 
 The current reviewer demo is:
 
 ```text
-manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
+manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> review readiness -> audit timeline
 ```
 
 Use `docs/capstone/dashboard-demo-flow.md` for the step-by-step runbook.
@@ -53,6 +53,7 @@ The next architecture-safe direction is to keep implementation contract-first:
 - treat ADR-0005 as approved direction, not implementation approval;
 - review timing again before adding the `companies` schema, ORM/API compatibility, migration, and
   PostgreSQL-backed tests;
+- keep the current M1 reviewer demo stable before starting the first M3 schema migration;
 - keep external side effects behind policy checks, dry-run behavior, and human oversight.
 
 ## Reviewer Signal
