@@ -218,7 +218,7 @@ This should be split by milestone rather than written as one permanently specula
 
 ### C. Migration and compatibility contract
 
-**Status:** APPROVED DIRECTION / IMPLEMENTATION TIMING GATED
+**Status:** APPROVED BASE DIRECTION / PROPOSED 3NF AMENDMENT / IMPLEMENTATION TIMING GATED
 
 Every migration plan must define:
 
@@ -238,13 +238,14 @@ happen only after the replacement is populated and consumers have switched.
 The approved-direction M3 company migration and compatibility boundary is recorded in
 `docs/contracts/m3-company-migration-contract.md`.
 
-Current review state: Nicolay and Francis have approved the M3 company identity direction. This is
-direction-only and does not approve schema implementation. Before any migration starts, the team
-must confirm that the active milestone is ready for company identity work.
+Current review state: Nicolay and Francis approved the base M3 company identity direction. The
+proposed 3NF completion amendment requires their approval and does not approve schema
+implementation. Before any migration starts, the team must approve the amendment and confirm that
+the active milestone is ready for company identity work.
 
 ### D. Company identity and deduplication contract
 
-**Status:** APPROVED DIRECTION IN ADR-0005 / IMPLEMENTATION TIMING GATED
+**Status:** APPROVED BASE DIRECTION / PROPOSED 3NF AMENDMENT IN ADR-0005 / TIMING GATED
 
 The current `jobs.company` string is valid for M1. Before adding `companies`, confirm
 implementation timing for:
@@ -257,6 +258,8 @@ implementation timing for:
 - representation of unknown or confidential companies
 - merge behavior when duplicate companies are discovered
 - whether jobs retain the original source company text for provenance
+- which table owns each company fact and how transitive duplication is prevented
+- when canonical API reads switch from source text to `companies.name`
 
 The approved-direction migration shape is:
 
@@ -268,12 +271,17 @@ add companies
 -> create company rows
 -> backfill jobs.company_id
 -> validate all jobs have a company
--> make jobs.company_id non-null if approved
--> preserve or remove the legacy string only after API compatibility is proven
+-> switch canonical reads and writes to companies
+-> make jobs.company_id non-null after approval
+-> rename jobs.company to jobs.company_source_text
 ```
 
-This is an approved future direction, not approval to run it in M1 or to begin implementation
-before the separate timing gate is opened.
+The base direction is approved; the 3NF completion requirements are proposed. Neither status
+authorizes implementation before the amendment and separate timing gate are approved.
+
+M3 is complete only when `companies` is the sole canonical owner of company facts,
+`jobs.company_id` is required, canonical display reads use `companies.name`, and the retained raw
+source value is explicitly named `jobs.company_source_text`.
 
 ### E. Lifecycle and transition contract
 
@@ -438,7 +446,7 @@ M1 columns.
 
 ### J. API and data compatibility contract
 
-**Status:** APPROVED DIRECTION / IMPLEMENTATION TIMING GATED
+**Status:** APPROVED BASE DIRECTION / PROPOSED 3NF AMENDMENT / IMPLEMENTATION TIMING GATED
 
 Database normalization must not unexpectedly break the current API or dashboard. Before a migration,
 record:
@@ -451,8 +459,9 @@ record:
 - serialization of renamed states and tables
 - error behavior for legacy values
 
-For example, a future normalized company model may continue returning a `company` name string while
-the database stores `jobs.company_id`. The compatibility period and owner must be explicit.
+The normalized company model may continue returning a `company` response string, but after cutover
+that value is projected from `companies.name`. Raw intake text is separately exposed as
+`company_source_text` where required. The compatibility period and owner must be explicit.
 
 The approved-direction M3 company compatibility requirements are recorded in
 `docs/contracts/m3-company-migration-contract.md`.
@@ -507,8 +516,9 @@ The canonical delivery remains migrations, not a database image or volume.
 
 ### Later milestone PRs
 
-- M3: approved company identity direction; migration, ORM/API compatibility, and tests remain gated
-  on explicit implementation-timing approval.
+- M3: approved base company identity direction; proposed 3NF completion amendment, migration,
+  ORM/API compatibility, and tests remain gated on Nicolay and Francis approval plus explicit
+  implementation-timing approval.
 - M5: packet/document/answer contract, migration, services, and tests.
 - M7: contact/thread/message contract, migration, synchronization boundary, and tests.
 - Later: executor attempt/retry/rate-limit contract, migration, scheduler behavior, and tests.

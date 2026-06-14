@@ -129,7 +129,7 @@ erDiagram
 |-------|-----------|-------|--------|
 | **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0007` | **DONE** |
 | **0.5** | M1 hardening | Reproducible migration startup | **DONE** |
-| **1** | M3 | Normalize `companies`; `jobs.company_id` FK; preserve source company text for provenance | **FUTURE — direction approved in ADR-0005; implementation timing gated** |
+| **1** | M3 | Normalize `companies` to a practical 3NF boundary; require `jobs.company_id`; retain raw employer text only as `company_source_text` provenance | **FUTURE — base direction approved in ADR-0005; 3NF amendment and implementation timing gated** |
 | **2** | M5 | `documents`, `document_versions`, `application_documents`, `answer_library`, `application_answers` (the document↔application M—N) | **FUTURE — contract G required first** |
 | **3** | M7 | `contacts`, `threads`, `messages`, `thread_applications`, `threads.conversation_state` (the thread↔application M—N) | **FUTURE — contract H required first** |
 | **4** | Later | Executor hardening: `attempt`, `max_attempts`, `rate_limit_key`, `last_error`, `next_retry_at`, and any `executor_actions → executor_runs` rename | **FUTURE — contract I required first** |
