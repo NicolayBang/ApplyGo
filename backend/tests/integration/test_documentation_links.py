@@ -41,3 +41,12 @@ def test_capstone_index_entries_exist() -> None:
     assert paths
     for relative_path in paths:
         assert (REPO_ROOT / "docs" / "capstone" / relative_path).is_file()
+
+
+def test_dashboard_demo_validation_commands_exist() -> None:
+    demo_flow = _read_repo_file("docs/capstone/dashboard-demo-flow.md")
+
+    assert "python -m pytest tests/integration/test_seed_to_dashboard.py -v" in demo_flow
+    assert (REPO_ROOT / "backend" / "tests" / "integration" / "test_seed_to_dashboard.py").is_file()
+    assert "python -m scripts.validate_seed_to_dashboard" in demo_flow
+    assert (REPO_ROOT / "backend" / "scripts" / "validate_seed_to_dashboard.py").is_file()
