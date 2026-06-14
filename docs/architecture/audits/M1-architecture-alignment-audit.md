@@ -96,15 +96,23 @@ side effects until policy and executor evidence remain visible in the dashboard.
 
 ### Submission Guard Location
 
-The `Submitted` prerequisite check currently lives at the API layer.
+The `Submitted` prerequisite check now lives at the tracker workflow boundary.
 
-Assessment: useful and correct for dashboard/API usage, but the core workflow would be stronger if submission were a dedicated workflow command or tracker method. That would prevent future internal callers from bypassing the same guard by calling a generic state update directly.
+Assessment: resolved after the submitted-transition hardening PR. `Tracker.update_state()` rejects
+direct transitions to `Submitted`, and `Tracker.submit_application()` verifies the required
+evidence before moving an application from `Approved` to `Submitted`.
 
-Recommended follow-up: add a `submit_application` workflow service or tracker method that enforces:
+The enforced path is:
 
 ```text
 Approved + allowed policy decision + matching executor result -> Submitted
 ```
+
+Evidence:
+
+- `backend/src/applypilot/db/tracker.py`
+- `backend/tests/unit/test_tracker_submission_workflow.py`
+- `backend/tests/integration/test_application_api.py`
 
 ### Policy and Executor Retention
 
@@ -148,13 +156,17 @@ The skipped test is the existing PostgreSQL-backed seed-to-dashboard test when l
 Next logical implementation PR:
 
 ```text
-feat(workflow): centralize submitted transition prerequisites
+feat(db): implement approved M3 company identity migration
 ```
 
 Goal:
 
-- Move submission prerequisite enforcement out of the router and into a dedicated workflow boundary.
-- Keep the generic state machine intact.
-- Add runnable tests proving that only the guarded workflow can move an application from `Approved` to `Submitted`.
+- Add the `companies` table and `jobs.company_id` only after human approval of the proposed M3
+  company identity and migration contracts.
+- Preserve `jobs.company` as source/provenance text during the compatibility period.
+- Include PostgreSQL-backed migration, backfill, API/dashboard compatibility, and seed-to-dashboard
+  validation.
 
-This would close the most important remaining architecture gap without expanding M1 scope.
+Do not start this implementation until the proposed M3 contracts are explicitly approved.
+
+This would move ApplyPilot beyond the M1 platform spine only after the required human approval gate.
