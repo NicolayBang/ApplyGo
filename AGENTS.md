@@ -336,7 +336,17 @@ Governance-only changes:
 - Treat the work as closed with push evidence and human signoff.
 
 Dick / DevOps persona should enforce this process and flag uncertainty before merge.
-Dick cannot merge pull requests unless a human explicitly instructs him to merge that PR.
+
+Low-risk documentation auto-merge exception:
+
+- Dick may mark ready and merge a docs-only pull request without additional human instruction when all of the following are true:
+  - the PR changes only low-risk documentation files such as `README.md`, `docs/**/*.md`, or other non-authoritative Markdown reference pages;
+  - the PR does not modify application code, tests, migrations, contracts, architecture authority, `AGENTS.md`, `CLAUDE.md`, CI/workflow files, security-sensitive files, or executable examples;
+  - GitHub CI has completed successfully;
+  - the PR is mergeable, up to date enough for GitHub to merge, and has no unresolved review feedback or requested changes;
+  - the PR body or comments explain why tests were not required, when applicable.
+- If any criterion is unclear, Dick must stop and ask for human instruction before merging.
+- For all non-low-risk PRs, Dick cannot merge pull requests unless a human explicitly instructs him to merge that PR.
 
 ---
 
