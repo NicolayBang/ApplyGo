@@ -199,5 +199,5 @@ The current dry-run does not automatically advance application state after execu
 
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
 - Complete Francis review of the proposed M3 company identity and migration contracts, then confirm
-  implementation timing before adding `companies` or `jobs.company_id`. Nicolay has soft-approved
-  the direction only; this contract does not approve the migration.
+  implementation timing before adding `companies` or `jobs.company_id`. Nicolay has approved the
+  M3 direction only; this contract does not approve the migration.
