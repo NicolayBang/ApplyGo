@@ -379,6 +379,83 @@ def test_invalid_state_transition_returns_400() -> None:
     assert "Invalid transition" in response.json()["detail"]
 
 
+def test_submitted_state_requires_allowed_policy_when_application_is_approved() -> None:
+    tracker = FakeTracker()
+    tracker.application.state = "Approved"
+    client = make_client(tracker)
+
+    response = client.patch(
+        f"/applications/{tracker.application_id}/state",
+        json={"state": "Submitted"},
+    )
+
+    assert response.status_code == 400
+    assert "requires an allowed policy decision" in response.json()["detail"]
+    assert tracker.application.state == "Approved"
+
+
+def test_submitted_state_requires_executor_evidence_for_allowed_policy() -> None:
+    tracker = FakeTracker()
+    tracker.application.state = "Approved"
+    client = make_client(tracker)
+
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {"confidence": "high"},
+        },
+    )
+    response = client.patch(
+        f"/applications/{tracker.application_id}/state",
+        json={"state": "Submitted"},
+    )
+
+    assert policy_response.status_code == 201
+    assert policy_response.json()["allowed"] is True
+    assert response.status_code == 400
+    assert "requires executor evidence" in response.json()["detail"]
+    assert tracker.application.state == "Approved"
+
+
+def test_submitted_state_allows_matching_policy_and_executor_evidence() -> None:
+    tracker = FakeTracker()
+    tracker.application.state = "Approved"
+    client = make_client(tracker)
+
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {"confidence": "high"},
+        },
+    )
+    executor_response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json={
+            "policy_decision_id": policy_response.json()["id"],
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-001",
+        },
+    )
+    response = client.patch(
+        f"/applications/{tracker.application_id}/state",
+        json={"state": "Submitted", "actor": "user"},
+    )
+
+    assert policy_response.status_code == 201
+    assert executor_response.status_code == 201
+    assert response.status_code == 200
+    assert response.json()["state"] == "Submitted"
+    assert tracker.events[-1].event_type == "application.state_changed"
+    assert tracker.events[-1].from_state == "Approved"
+    assert tracker.events[-1].to_state == "Submitted"
+
+
 def test_application_score_is_persisted_and_audited() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)

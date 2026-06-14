@@ -25,7 +25,7 @@ from applypilot.domain.policy import (
     PolicyRequest,
 )
 from applypilot.domain.policy.schemas import PolicyDecisionRead, PolicyEvaluationRequest
-from applypilot.domain.state_machine import InvalidStateTransitionError
+from applypilot.domain.state_machine import ApplicationState, InvalidStateTransitionError
 from applypilot.services.executor_stub import StubExecutor
 
 router = APIRouter()
@@ -104,6 +104,9 @@ def update_application_state(
     unit: TrackerUnitOfWork = Depends(get_tracker_unit),
 ) -> object:
     """Transition an application state through the state machine."""
+    if request.state == ApplicationState.SUBMITTED:
+        _ensure_submission_prerequisites(application_id, unit)
+
     try:
         application = unit.tracker.update_state(
             application_id=application_id,
@@ -119,6 +122,56 @@ def update_application_state(
     unit.commit()
     unit.refresh(application)
     return application
+
+
+def _ensure_submission_prerequisites(
+    application_id: UUID,
+    unit: TrackerUnitOfWork,
+) -> None:
+    application = unit.tracker.get_application(application_id)
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Application {application_id} not found",
+        )
+
+    if application.state != ApplicationState.APPROVED.value:
+        return
+
+    policy_decisions = unit.tracker.get_policy_decisions(application_id)
+    allowed_policy_ids = {
+        str(decision.id)
+        for decision in policy_decisions
+        if getattr(decision, "allowed", False)
+    }
+    if not allowed_policy_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Submitted state requires an allowed policy decision",
+        )
+
+    executor_actions = unit.tracker.get_executor_actions(application_id)
+    has_executor_evidence = any(
+        _executor_matches_allowed_policy(action, allowed_policy_ids)
+        for action in executor_actions
+    )
+    if not has_executor_evidence:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Submitted state requires executor evidence for an allowed policy decision",
+        )
+
+
+def _executor_matches_allowed_policy(
+    action: object,
+    allowed_policy_ids: set[str],
+) -> bool:
+    payload = getattr(action, "payload", None) or {}
+    policy_decision_id = payload.get("policy_decision_id")
+    if policy_decision_id not in allowed_policy_ids:
+        return False
+
+    return bool(getattr(action, "result", None))
 
 
 @router.post(
