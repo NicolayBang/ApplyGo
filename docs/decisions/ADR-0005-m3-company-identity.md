@@ -102,6 +102,20 @@ The implementation PR must prove:
 When local PostgreSQL is unavailable, use Remote Validation Assist for migration and backfill
 validation.
 
+## Approval Checklist
+
+Before changing this ADR from Proposed to Approved, Nicolay and Francis should confirm:
+
+- `companies` should be introduced in M3 before document packet or recruiter-thread normalization.
+- `jobs.company` remains as source/provenance text during the compatibility period.
+- Domain-based deduplication is acceptable only when `normalized_domain` is non-null.
+- Name-only deduplication is exact on `normalized_name`; fuzzy matching stays out of the migration.
+- `Unknown Company` and `Confidential Company` are acceptable deterministic fallback rows.
+- `jobs.company_id` starts nullable for backfill and becomes non-null only after validation and
+  human approval.
+- The implementation PR must include PostgreSQL-backed migration, backfill, API/dashboard
+  compatibility, and seed-to-dashboard validation.
+
 ## Consequences
 
 Positive:

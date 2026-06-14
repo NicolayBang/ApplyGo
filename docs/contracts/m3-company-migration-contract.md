@@ -88,6 +88,18 @@ The implementation PR must include runnable validation for:
 When local PostgreSQL is unavailable, request Remote Validation Assist and record the result in the
 PR.
 
+## Approval Checklist
+
+Before this contract is treated as approved for implementation, Nicolay and Francis should confirm:
+
+- Backfill may create `Unknown Company` and `Confidential Company` rows.
+- The migration preserves original `jobs.company` text.
+- No fuzzy matching, AI matching, or external enrichment runs during backfill.
+- API and dashboard compatibility for the existing company display field is required in the same
+  implementation PR.
+- Making `jobs.company_id` non-null requires validation evidence and explicit human approval.
+- Downgrade limits and backup expectations are documented in the implementation PR.
+
 ## Rollback Boundary
 
 Downgrade support must not silently discard company identity data. If downgrade cannot preserve new
