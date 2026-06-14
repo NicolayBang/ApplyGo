@@ -218,7 +218,7 @@ This should be split by milestone rather than written as one permanently specula
 
 ### C. Migration and compatibility contract
 
-**Status:** PROPOSED FOR M3 COMPANY IDENTITY
+**Status:** APPROVED DIRECTION / IMPLEMENTATION TIMING GATED
 
 Every migration plan must define:
 
@@ -235,7 +235,7 @@ Every migration plan must define:
 Table renames must use rename operations, not drop-and-recreate. Destructive column removal should
 happen only after the replacement is populated and consumers have switched.
 
-The proposed M3 company migration and compatibility boundary is recorded in
+The approved-direction M3 company migration and compatibility boundary is recorded in
 `docs/contracts/m3-company-migration-contract.md`.
 
 Current review state: Nicolay and Francis have approved the M3 company identity direction. This is
@@ -244,7 +244,7 @@ must confirm that the active milestone is ready for company identity work.
 
 ### D. Company identity and deduplication contract
 
-**Status:** PROPOSED IN ADR-0005
+**Status:** APPROVED DIRECTION IN ADR-0005 / IMPLEMENTATION TIMING GATED
 
 The current `jobs.company` string is valid for M1. Before adding `companies`, confirm
 implementation timing for:
@@ -258,7 +258,7 @@ implementation timing for:
 - merge behavior when duplicate companies are discovered
 - whether jobs retain the original source company text for provenance
 
-A proposed migration shape is:
+The approved-direction migration shape is:
 
 ```text
 add companies
@@ -272,7 +272,8 @@ add companies
 -> preserve or remove the legacy string only after API compatibility is proven
 ```
 
-This is a proposed sequence, not approval to run it in M1.
+This is an approved future direction, not approval to run it in M1 or to begin implementation
+before the separate timing gate is opened.
 
 ### E. Lifecycle and transition contract
 
@@ -437,7 +438,7 @@ M1 columns.
 
 ### J. API and data compatibility contract
 
-**Status:** PROPOSED FOR M3 COMPANY IDENTITY
+**Status:** APPROVED DIRECTION / IMPLEMENTATION TIMING GATED
 
 Database normalization must not unexpectedly break the current API or dashboard. Before a migration,
 record:
@@ -453,55 +454,61 @@ record:
 For example, a future normalized company model may continue returning a `company` name string while
 the database stores `jobs.company_id`. The compatibility period and owner must be explicit.
 
-The proposed M3 company compatibility requirements are recorded in
+The approved-direction M3 company compatibility requirements are recorded in
 `docs/contracts/m3-company-migration-contract.md`.
 
-## Proposed Implementation Sequence
+## Implementation Sequence Status
 
-### PR 1: M1 database decision contracts
+The M1 database decision, hardening, and reproducible migration-runner work described below is
+complete. ADR-0003 and migration `0006` enforce stable values; ADR-0004 and migration `0007`
+preserve audit-bearing records; the Compose `migrate` and optional `seed` services provide the
+reproducible PostgreSQL path.
+
+### PR 1: M1 database decision contracts — DONE
 
 **Branch:** `docs/M1-database-hardening-contracts`
 
-Document and obtain approval for:
+Completed decision work:
 
-- database value-check policy
-- application and audit retention policy, proposed in ADR-0004
-- exact constraints to add
-- migration compatibility and rollback
+- ADR-0003 approved the database value-check policy and exact M1 constraints.
+- ADR-0004 approved restrictive deletion for audit-bearing policy and executor records.
+- The migration and rollback boundaries were recorded before implementation.
 
-No models or migrations in this PR.
+This decision stage changed no models or migrations.
 
-### PR 2: M1 database hardening
+### PR 2: M1 database hardening — DONE
 
 **Branch:** `fix/M1-database-schema-hardening`
 
-After approval:
+Completed implementation:
 
-1. Add one deterministic Alembic revision.
-2. Update SQLAlchemy models to match the migration.
-3. Add PostgreSQL-backed constraint and retention tests.
-4. Preserve current API and dashboard behavior.
-5. Update the implemented schema contract and current ER view.
+1. Migration `0004` aligned the application state default and ORM event retention behavior.
+2. Migration `0005` added persisted executor contract metadata.
+3. Migration `0006` added the approved M1 value constraints.
+4. Migration `0007` removed delete cascades from policy and executor audit records.
+5. SQLAlchemy models, PostgreSQL-backed tests, the schema contract, and the current ER view were
+   aligned with the migration chain.
 
-Do not add `companies`, packet substates, recruiter entities, or executor retries here.
+This work did not add `companies`, packet substates, recruiter entities, or executor retries.
 
-### PR 3: Reproducible Compose migration runner
+### PR 3: Reproducible Compose migration runner — DONE
 
 **Branch:** `feature/M1-compose-migration-runner`
 
-Implemented separately from schema hardening:
+Completed separately from schema hardening:
 
-1. Add a small supported-Python backend Dockerfile.
-2. Add the PostgreSQL health check.
-3. Add a one-shot `migrate` service.
-4. Optionally add a profile-gated demo seed service.
-5. Document startup, retry, failure, and cleanup behavior.
+1. Added a supported-Python backend Dockerfile.
+2. Added the PostgreSQL health check.
+3. Added a one-shot `migrate` service.
+4. Added a profile-gated demo seed service.
+5. Documented startup, retry, failure, and cleanup behavior.
 
 The canonical delivery remains migrations, not a database image or volume.
 
 ### Later milestone PRs
 
-- M3: company identity contract, migration, ORM/API compatibility, and tests.
+- M3: approved company identity direction; migration, ORM/API compatibility, and tests remain gated
+  on explicit implementation-timing approval.
 - M5: packet/document/answer contract, migration, services, and tests.
 - M7: contact/thread/message contract, migration, synchronization boundary, and tests.
 - Later: executor attempt/retry/rate-limit contract, migration, scheduler behavior, and tests.

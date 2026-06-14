@@ -161,13 +161,13 @@ feat(db): implement approved M3 company identity migration
 
 Goal:
 
-- Add the `companies` table and `jobs.company_id` only after explicit timing approval and approval
-  of the proposed M3 company identity and migration contracts.
+- Add the `companies` table and `jobs.company_id` only after explicit timing approval. ADR-0005 and
+  the M3 company migration contract approve the direction but do not authorize implementation.
 - Preserve `jobs.company` as source/provenance text during the compatibility period.
 - Include PostgreSQL-backed migration, backfill, API/dashboard compatibility, and seed-to-dashboard
   validation.
 
-Do not start this implementation before the proposed M3 contracts are reviewed in the context of the
-active milestone and explicitly approved for implementation.
+Do not start this implementation until the approved M3 direction is reviewed in the context of the
+active milestone and explicitly approved for implementation timing.
 
 This would move ApplyPilot beyond the M1 platform spine only after the required human approval gate.

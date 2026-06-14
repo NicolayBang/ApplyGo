@@ -305,7 +305,7 @@ Application-enforced:
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
-| Normalized company/document/thread/answer model | Deferred | Company identity proposed in ADR-0005; M3 migration contract proposed in `docs/contracts/m3-company-migration-contract.md`; broader model proposed in ADR-0002 |
+| Normalized company/document/thread/answer model | Deferred | ADR-0005 approves the M3 company identity direction, but implementation timing remains gated; the broader M5/M7 model remains proposed in ADR-0002 |
 
 ## Current Non-Goals
 
@@ -321,7 +321,9 @@ The following are not implemented as separate schema tables in M1:
 - `answer_library`
 - `application_answers`
 
-These may be introduced later through new migrations and architecture review.
+These may be introduced later through new migrations and architecture review. In particular,
+`companies` is an approved M3 direction but is not implemented and is not yet authorized for
+migration.
 
 The proposed phase placement is:
 
@@ -330,4 +332,6 @@ The proposed phase placement is:
   `application_answers`
 - M7: `contacts`, `threads`, `messages`, `thread_applications`
 
-See proposed ADR-0002. No future table is authorized while that ADR remains Proposed.
+ADR-0005 specifically approves the M3 company identity direction while requiring a later
+implementation-timing decision. ADR-0002 remains Proposed for the broader M5/M7 normalization
+direction. No future table listed here is currently authorized for migration.
