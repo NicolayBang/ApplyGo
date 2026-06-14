@@ -82,5 +82,7 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "updateWorkflowReadiness" in script_response.text
     assert "Score the application before evaluating policy." in script_response.text
     assert "Evaluate policy before dry-run." in script_response.text
+    assert "fit_score" in script_response.text
+    assert "recommendation" in script_response.text
     assert "button:disabled" in style_response.text
     assert "clearStateActions" in script_response.text

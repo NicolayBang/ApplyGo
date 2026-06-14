@@ -17,6 +17,8 @@ def make_request(
     *,
     mode: AutomationMode,
     confidence: ConfidenceLevel = ConfidenceLevel.HIGH,
+    fit_score: int | None = None,
+    recommendation: str | None = None,
     risks: list[str] | None = None,
     missing_data: list[str] | None = None,
     red_flags: list[str] | None = None,
@@ -28,6 +30,8 @@ def make_request(
         worker=WorkerType.EMAIL,
         context=PolicyContext(
             confidence=confidence,
+            fit_score=fit_score,
+            recommendation=recommendation,
             risks=risks or [],
             missing_data=missing_data or [],
             red_flags=red_flags or [],
@@ -69,6 +73,43 @@ def test_full_auto_denies_red_flags() -> None:
     assert decision.decision == PolicyDecisionOutcome.DENY
     assert decision.allowed is False
     assert decision.required_overrides == ["manual_override"]
+
+
+def test_full_auto_denies_not_recommended_score() -> None:
+    decision = PolicyEngine().evaluate(
+        make_request(
+            mode=AutomationMode.FULL_AUTO,
+            fit_score=42,
+            recommendation="not_recommended",
+        )
+    )
+
+    assert decision.decision == PolicyDecisionOutcome.DENY
+    assert decision.allowed is False
+    assert decision.required_overrides == ["manual_override"]
+
+
+def test_dry_run_requires_review_for_not_recommended_score() -> None:
+    decision = PolicyEngine().evaluate(
+        make_request(
+            mode=AutomationMode.DRY_RUN,
+            fit_score=42,
+            recommendation="not_recommended",
+        )
+    )
+
+    assert decision.decision == PolicyDecisionOutcome.REVIEW
+    assert decision.allowed is False
+    assert decision.required_overrides == ["human_review"]
+
+
+def test_semi_auto_requires_review_for_low_fit_score() -> None:
+    decision = PolicyEngine().evaluate(
+        make_request(mode=AutomationMode.SEMI_AUTO, fit_score=40)
+    )
+
+    assert decision.decision == PolicyDecisionOutcome.REVIEW
+    assert decision.required_overrides == ["score_review"]
 
 
 def test_semi_auto_requires_review_for_missing_data() -> None:

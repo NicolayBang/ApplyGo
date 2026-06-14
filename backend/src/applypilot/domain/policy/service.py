@@ -35,6 +35,26 @@ class PolicyEngine:
                 required_overrides=["human_review"],
             )
 
+        if context.recommendation == "not_recommended":
+            if request.mode == AutomationMode.FULL_AUTO:
+                return self._deny(
+                    request.mode,
+                    "Not-recommended applications block full-auto execution.",
+                    required_overrides=["manual_override"],
+                )
+            return self._review(
+                request.mode,
+                "Not-recommended applications require human review.",
+                required_overrides=["human_review"],
+            )
+
+        if context.fit_score is not None and context.fit_score < 45:
+            return self._review(
+                request.mode,
+                "Low fit scores require human review before execution.",
+                required_overrides=["score_review"],
+            )
+
         if request.mode == AutomationMode.MANUAL:
             return self._review(
                 request.mode,

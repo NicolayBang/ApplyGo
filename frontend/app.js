@@ -505,6 +505,8 @@ function policyContextFromApplication() {
 
   return {
     confidence: application.confidence,
+    fit_score: application.fit_score,
+    recommendation: application.recommendation,
     reasons: application.score_reasons || [],
     risks: application.score_risks || [],
     missing_data: application.missing_data || [],
