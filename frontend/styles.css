@@ -171,6 +171,83 @@ button:disabled {
   background: var(--accent);
 }
 
+.guided-overview {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.next-action-panel {
+  border-color: #b7d9d4;
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbf9 100%);
+}
+
+.next-action-panel strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.next-action-panel p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.lifecycle-stepper {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lifecycle-step {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lifecycle-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 18px;
+  right: -10px;
+  height: 2px;
+  background: var(--line);
+}
+
+.lifecycle-step.complete:not(:last-child)::after {
+  background: #99d6c9;
+}
+
+.step-dot {
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.lifecycle-step.complete .step-dot,
+.lifecycle-step.active .step-dot {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.lifecycle-step.active {
+  color: var(--brand-dark);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr 1fr;
@@ -220,6 +297,14 @@ button:disabled {
 .recent-application strong,
 .recent-application .meta {
   display: block;
+}
+
+.recent-application-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
 }
 
 .workflow-panel {
@@ -379,6 +464,18 @@ button:disabled {
   background: #dcfce7;
 }
 
+.score-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .timeline-panel {
   margin-top: 16px;
 }
@@ -429,6 +526,7 @@ button:disabled {
 
 @media (max-width: 920px) {
   .toolbar,
+  .guided-overview,
   .summary-grid,
   .readiness-list,
   .recent-filters,
@@ -438,6 +536,24 @@ button:disabled {
 
   .controls {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .lifecycle-stepper {
+    grid-template-columns: 1fr;
+  }
+
+  .lifecycle-step {
+    grid-template-columns: 18px 1fr;
+    align-items: center;
+  }
+
+  .lifecycle-step:not(:last-child)::after {
+    top: 18px;
+    bottom: -10px;
+    left: 8px;
+    width: 2px;
+    height: auto;
+    right: auto;
   }
 }
 

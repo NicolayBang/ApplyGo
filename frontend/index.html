@@ -32,6 +32,24 @@
         <p id="status-message">Using local demo data until a backend application ID is provided.</p>
       </section>
 
+      <section class="guided-overview" aria-label="Guided workflow overview">
+        <article class="panel next-action-panel">
+          <div class="section-heading">
+            <h2>Next action</h2>
+            <span id="next-action-status">Demo guidance</span>
+          </div>
+          <strong id="next-action-title">Create or load an application</strong>
+          <p id="next-action-detail">Use demo data, load recent applications, or create a sample job to begin.</p>
+        </article>
+        <article class="panel lifecycle-panel">
+          <div class="section-heading">
+            <h2>Application progress</h2>
+            <span>Existing states only</span>
+          </div>
+          <ol class="lifecycle-stepper" id="lifecycle-stepper"></ol>
+        </article>
+      </section>
+
       <section class="panel recent-panel" aria-label="Recent applications">
         <div class="section-heading">
           <h2>Recent applications</h2>
@@ -76,7 +94,7 @@
           </label>
         </form>
         <div class="recent-applications-list" id="recent-applications-list">
-          <p class="empty">No live applications loaded.</p>
+          <p class="empty">Load recent applications or create a sample job to start a guided review.</p>
         </div>
       </section>
 
@@ -121,7 +139,7 @@
 
       <section class="panel workflow-panel" aria-label="Workflow actions">
         <div class="section-heading">
-          <h2>Workflow actions</h2>
+          <h2>Guided actions</h2>
           <span>State, score, policy, and dry-run</span>
         </div>
         <p class="workflow-hint" id="workflow-hint">Create or load an application to begin.</p>
@@ -129,7 +147,7 @@
         <div class="workflow-actions">
           <button type="button" id="score-button">Score application</button>
           <button type="button" id="policy-button">Evaluate policy</button>
-          <button type="button" id="dry-run-button">Dry-run follow-up</button>
+          <button type="button" id="dry-run-button">Preview action</button>
         </div>
       </section>
 
