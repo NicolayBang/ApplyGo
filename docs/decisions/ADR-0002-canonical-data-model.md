@@ -127,7 +127,7 @@ erDiagram
 | Phase | Milestone | Scope | Status |
 |-------|-----------|-------|--------|
 | **0** | M1 (now) | Seven-table aggregate, migrations `0001` through `0006` | **DONE** |
-| **0.5** | M1 hardening | Policy/executor retention; reproducible migration startup | **NEXT — decisions required first** |
+| **0.5** | M1 hardening | Policy/executor retention; reproducible migration startup | **NEXT — retention proposed in ADR-0004** |
 | **1** | M3 | Normalize `companies`; `jobs.company_id` FK; preserve source company text for provenance | **FUTURE — contract D required first** |
 | **2** | M5 | `documents`, `document_versions`, `application_documents`, `answer_library`, `application_answers` (the document↔application M—N) | **FUTURE — contract G required first** |
 | **3** | M7 | `contacts`, `threads`, `messages`, `thread_applications`, `threads.conversation_state` (the thread↔application M—N) | **FUTURE — contract H required first** |
@@ -154,9 +154,9 @@ Do not pull M3, M5, M7, or executor hardening into an M1 hardening migration.
 ### Decisions still required before M1 hardening (Phase 0.5)
 
 - **Policy/executor retention** — `policy_decisions` and `executor_actions` currently cascade on
-  application deletion, which weakens audit. Recommended: restrict physical deletion or soft-delete
-  applications, and preserve events, policy decisions, and executor records. Exact mechanism belongs
-  in the audit/retention contract with tests.
+  application deletion, which weakens audit. ADR-0004 proposes restrictive physical deletion for M1
+  and preserving events, policy decisions, and executor records. Implementation still requires a
+  dedicated migration and tests.
 
 ---
 

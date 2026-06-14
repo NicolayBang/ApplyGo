@@ -190,6 +190,8 @@ The current dry-run does not automatically advance application state after execu
 
 ## Open Database Decisions
 
-- Decide whether `policy_decisions` and `executor_actions` survive application deletion.
+- Decide whether to approve the proposed M1 retention contract in
+  `docs/decisions/ADR-0004-m1-audit-retention.md`; today `policy_decisions` and
+  `executor_actions` still cascade with application deletion.
 - Decide whether Compose should gain a one-shot migration service; today migration is manual.
 - Approve or reject the normalized future model through ADR-0002 before adding tables.

@@ -49,7 +49,7 @@ PostgreSQL image is not needed for normal team sharing.
 | Status | Milestone | Database shape |
 |---|---|---|
 | **DONE** | M1 | Seven-table application aggregate and migrations `0001`-`0006` |
-| **NEXT** | M1 hardening | Resolve retention policy and reproducible migration startup |
+| **NEXT** | M1 hardening | Review proposed retention policy and add reproducible migration startup |
 | **FUTURE** | M3 | Normalize companies and job ownership |
 | **FUTURE** | M5 | Versioned application packets and reusable answers |
 | **FUTURE** | M7 | Contacts, recruiter threads, and individual messages |
@@ -130,7 +130,7 @@ Nullable scoring outputs remain application-owned until their vocabulary stabili
 
 ### 2. Policy and executor retention
 
-**Status:** DECISION REQUIRED
+**Status:** PROPOSED IN ADR-0004
 
 Current event rows are preserved, but policy decisions and executor actions are deleted with their
 application. That weakens the long-term audit story.
@@ -142,8 +142,9 @@ Choose one application deletion policy:
 2. **Soft-delete applications:** add deletion metadata and exclude deleted rows from normal reads.
 3. **Retain detached audit records:** make selected foreign keys nullable and preserve snapshots.
 
-Recommended direction: soft-delete or restrict applications, and preserve events, policy
-decisions, and executor records. The final choice needs an approved retention contract and tests.
+Proposed M1 direction: restrict physical deletion and preserve events, policy decisions, and
+executor records. Do not add soft-delete columns or detached audit records in M1. The proposed
+decision artifact is `docs/decisions/ADR-0004-m1-audit-retention.md`.
 
 ### 3. PostgreSQL startup and migration ownership
 
@@ -462,7 +463,7 @@ the database stores `jobs.company_id`. The compatibility period and owner must b
 Document and obtain approval for:
 
 - database value-check policy
-- application and audit retention policy
+- application and audit retention policy, proposed in ADR-0004
 - exact constraints to add
 - migration compatibility and rollback
 
