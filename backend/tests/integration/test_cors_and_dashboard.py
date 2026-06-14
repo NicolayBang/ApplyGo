@@ -144,6 +144,9 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert "Side effects" in script_response.text
     assert "button:disabled" in style_response.text
     assert "clearStateActions" in script_response.text
+    assert "focusLatestTimelineEvent" in script_response.text
+    assert 'loadAudit({ focusTimeline: true })' in script_response.text
+    assert "scrollIntoView" in script_response.text
 
 
 def test_dashboard_renders_review_summary_readiness() -> None:

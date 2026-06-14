@@ -542,6 +542,16 @@ function renderTimeline(events) {
     .join("");
 }
 
+function focusLatestTimelineEvent() {
+  const latestEvent = elements.timeline.querySelector("li:last-child");
+
+  if (!latestEvent || latestEvent.classList.contains("empty")) {
+    return;
+  }
+
+  latestEvent.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 function renderRecentApplications(applications) {
   if (!applications.length) {
     elements.recentApplicationsList.innerHTML = '<p class="empty">No applications found.</p>';
@@ -713,7 +723,7 @@ async function createManualApplication() {
     });
 
     elements.applicationId.value = application.id;
-    await loadAudit();
+    await loadAudit({ focusTimeline: true });
     await loadRecentApplications({ quiet: true });
     setStatus("", "Created", "Manual application created and audit trail loaded.");
   } catch (error) {
@@ -851,7 +861,7 @@ async function scoreApplication() {
       method: "POST",
       body: JSON.stringify({ actor: "user" }),
     });
-    await loadAudit();
+    await loadAudit({ focusTimeline: true });
     setStatus("", "Scored", "Application score recorded in the audit trail.");
   } catch (error) {
     const hint =
@@ -883,7 +893,7 @@ async function transitionApplicationState(targetState) {
         },
       }),
     });
-    await loadAudit();
+    await loadAudit({ focusTimeline: true });
     setStatus("", "State updated", `Application moved to ${targetState}.`);
   } catch (error) {
     const hint =
@@ -917,7 +927,7 @@ async function evaluatePolicy() {
         context: policyContextFromApplication(),
       }),
     });
-    await loadAudit();
+    await loadAudit({ focusTimeline: true });
     setStatus("", "Policy logged", "Policy decision recorded in the audit trail.");
   } catch (error) {
     const hint =
@@ -956,7 +966,7 @@ async function dryRunFollowUp() {
         },
       }),
     });
-    await loadAudit();
+    await loadAudit({ focusTimeline: true });
     setStatus("", "Dry-run logged", "Executor dry-run result recorded in the audit trail.");
   } catch (error) {
     const hint =
@@ -967,7 +977,7 @@ async function dryRunFollowUp() {
   }
 }
 
-async function loadAudit() {
+async function loadAudit({ focusTimeline = false } = {}) {
   const applicationId = currentApplicationId();
   const base = apiBase();
   elements.apiBase.value = base;
@@ -992,6 +1002,9 @@ async function loadAudit() {
       fetchJson(`${base}/applications/${applicationId}/review-summary`),
     ]);
     renderAudit(audit, reviewSummary);
+    if (focusTimeline) {
+      focusLatestTimelineEvent();
+    }
     setStatus("", "Live data", "Audit summary loaded from the backend.");
   } catch (error) {
     renderAudit(demoAudit, demoReviewSummary);
