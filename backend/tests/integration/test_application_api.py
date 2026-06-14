@@ -67,6 +67,7 @@ class FakeTracker:
         ]
         self.policy_decisions = []
         self.executor_actions = []
+        self.last_list_filters = None
 
     def create_job(self, data):
         self.job.title = data.title
@@ -91,10 +92,47 @@ class FakeTracker:
     def get_application(self, application_id):
         return self.application if application_id == self.application_id else None
 
-    def list_applications(self, state=None, limit=50, offset=0):
+    def list_applications(
+        self,
+        state=None,
+        recommendation=None,
+        company=None,
+        created_from=None,
+        created_to=None,
+        sort_by="created_at",
+        sort_dir="desc",
+        limit=50,
+        offset=0,
+    ):
+        self.last_list_filters = {
+            "state": state,
+            "recommendation": recommendation,
+            "company": company,
+            "created_from": created_from,
+            "created_to": created_to,
+            "sort_by": sort_by,
+            "sort_dir": sort_dir,
+            "limit": limit,
+            "offset": offset,
+        }
+        if sort_by not in {"created_at", "updated_at", "state", "recommendation", "fit_score"}:
+            raise ValueError(f"Unsupported application sort field: {sort_by}")
+        if sort_dir not in {"asc", "desc"}:
+            raise ValueError(f"Unsupported application sort direction: {sort_dir}")
+
         applications = [self.application]
         if state is not None:
             applications = [item for item in applications if item.state == state]
+        if recommendation is not None:
+            applications = [
+                item for item in applications if item.recommendation == recommendation
+            ]
+        if company is not None:
+            applications = [
+                item
+                for item in applications
+                if item.job and item.job.company and company.lower() in item.job.company.lower()
+            ]
         return applications[offset : offset + limit]
 
     def update_state(self, application_id, new_state, actor="system", payload=None):
@@ -433,6 +471,53 @@ def test_application_flow_creates_lists_transitions_and_returns_events() -> None
     ]
     assert events[1]["from_state"] == "ApplicationCreated"
     assert events[1]["to_state"] == "Draft"
+
+
+def test_list_applications_passes_filters_and_sorting_to_tracker() -> None:
+    tracker = FakeTracker()
+    tracker.application.state = "Approved"
+    tracker.application.recommendation = "recommended"
+    client = make_client(tracker)
+
+    response = client.get(
+        "/applications",
+        params={
+            "state": "Approved",
+            "recommendation": "recommended",
+            "company": "apply",
+            "created_from": "2026-06-01T00:00:00Z",
+            "created_to": "2026-06-30T23:59:59Z",
+            "sort_by": "updated_at",
+            "sort_dir": "asc",
+            "limit": 10,
+            "offset": 0,
+        },
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert tracker.last_list_filters is not None
+    assert tracker.last_list_filters["state"] == "Approved"
+    assert tracker.last_list_filters["recommendation"] == "recommended"
+    assert tracker.last_list_filters["company"] == "apply"
+    assert tracker.last_list_filters["created_from"] == datetime(2026, 6, 1, tzinfo=UTC)
+    assert tracker.last_list_filters["created_to"] == datetime(
+        2026, 6, 30, 23, 59, 59, tzinfo=UTC
+    )
+    assert tracker.last_list_filters["sort_by"] == "updated_at"
+    assert tracker.last_list_filters["sort_dir"] == "asc"
+    assert tracker.last_list_filters["limit"] == 10
+    assert tracker.last_list_filters["offset"] == 0
+
+
+def test_list_applications_returns_400_for_invalid_sort() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.get("/applications", params={"sort_by": "unknown"})
+
+    assert response.status_code == 400
+    assert "Unsupported application sort field" in response.json()["detail"]
 
 
 def test_create_application_returns_404_when_job_missing() -> None:
