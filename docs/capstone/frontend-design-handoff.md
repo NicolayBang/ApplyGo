@@ -18,6 +18,13 @@ Sample job -> Create -> Score -> state progression -> Policy -> Dry-run -> audit
 
 The UI should feel like a clean, modern SaaS workflow tool, not a marketing page or mass-apply bot.
 
+## Brand Naming
+
+The intended product brand direction is ApplyGo, but implemented repository naming remains
+ApplyPilot until a separate rename PR is approved.
+
+Use `docs/brand/applygo-transition.md` for the current naming rule.
+
 ## Preferred Direction
 
 The strongest MVP direction is a hybrid of:
@@ -32,6 +39,7 @@ demo flow before M1 is complete.
 ## Must Preserve
 
 - Existing backend API contracts.
+- Existing implemented ApplyPilot naming.
 - Existing dashboard route behavior.
 - Existing state names and transition constraints.
 - Policy-before-executor ordering.
