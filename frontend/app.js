@@ -164,6 +164,10 @@ function updateWorkflowReadiness() {
   const hasScore = Boolean(currentAudit.application?.confidence);
   const hasAllowedPolicy = Boolean(latestAllowedPolicyDecision());
 
+  if (!hasApplication) {
+    clearStateActions();
+  }
+
   elements.scoreButton.disabled = !hasApplication;
   elements.policyButton.disabled = !hasApplication || !hasScore;
   elements.dryRunButton.disabled = !hasApplication || !hasAllowedPolicy;
@@ -201,11 +205,15 @@ function renderSummary(application) {
     .join("");
 }
 
+function clearStateActions() {
+  elements.stateActions.innerHTML = "";
+}
+
 function renderStateActions(application) {
   const transitions = stateTransitions[application.state] || [];
 
   if (!hasLoadedApplication() || !transitions.length) {
-    elements.stateActions.innerHTML = "";
+    clearStateActions();
     return;
   }
 
