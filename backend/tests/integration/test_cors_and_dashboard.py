@@ -56,6 +56,20 @@ def test_dashboard_manual_intake_collects_job_description() -> None:
     assert "salary_raw" in script_response.text
 
 
+def test_dashboard_can_prefill_sample_job_for_demo() -> None:
+    """The static dashboard can prefill sample job data for faster demos."""
+    index_response = client.get("/ui/index.html")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert script_response.status_code == 200
+    assert 'id="sample-job-button"' in index_response.text
+    assert "sampleJob" in script_response.text
+    assert "loadSampleJob" in script_response.text
+    assert "Backend Platform Engineer" in script_response.text
+    assert "ApplyPilot Demo Co." in script_response.text
+
+
 def test_dashboard_exposes_state_progression_controls() -> None:
     """The static dashboard can advance applications through governed states."""
     index_response = client.get("/ui/index.html")

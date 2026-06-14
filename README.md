@@ -26,7 +26,7 @@ Milestone 1 focuses on the platform spine:
 - Stub executor that logs planned actions, safeguards, and side-effect status
 - Minimal dashboard for tracker, workflow state, scoring, policy, dry-run, and audit visibility
 
-No Gmail, browser automation, LLM integration, or business logic is implemented yet.
+No Gmail, browser automation, LLM integration, or real external submission behavior is implemented yet.
 
 ## M1 demo path
 
@@ -42,6 +42,8 @@ Useful reviewer entry points:
 - `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
 - `docs/devops/codespaces.md`: Codespaces and DB-backed validation workflow
 - `docs/architecture/locked-plan.md`: architecture authority and M1 scope
+
+The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
 
 ## Repository layout
 
