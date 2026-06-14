@@ -1,6 +1,7 @@
 """Top-level API router for milestone-1 scaffolding."""
 
 from uuid import UUID
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -85,12 +86,31 @@ def create_application(
 )
 def list_applications(
     state: str | None = None,
+    recommendation: str | None = None,
+    company: str | None = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
     limit: int = 50,
     offset: int = 0,
     unit: TrackerUnitOfWork = Depends(get_tracker_unit),
 ) -> list[object]:
-    """List application records, optionally filtered by state."""
-    return unit.tracker.list_applications(state=state, limit=limit, offset=offset)
+    """List application records with lightweight tracker filters."""
+    try:
+        return unit.tracker.list_applications(
+            state=state,
+            recommendation=recommendation,
+            company=company,
+            created_from=created_from,
+            created_to=created_to,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.patch(

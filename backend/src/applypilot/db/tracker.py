@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
 from applypilot.db.models import Application, EventLogEntry, ExecutorAction, Job
@@ -73,13 +74,42 @@ class Tracker:
     def list_applications(
         self,
         state: str | None = None,
+        recommendation: str | None = None,
+        company: str | None = None,
+        created_from: datetime | None = None,
+        created_to: datetime | None = None,
+        sort_by: str = "created_at",
+        sort_dir: str = "desc",
         limit: int = 50,
         offset: int = 0,
     ) -> list[Application]:
         query = self._session.query(Application)
         if state:
             query = query.filter(Application.state == state)
-        return query.order_by(Application.created_at.desc()).limit(limit).offset(offset).all()
+        if recommendation:
+            query = query.filter(Application.recommendation == recommendation)
+        if company:
+            query = query.join(Application.job).filter(Job.company.ilike(f"%{company}%"))
+        if created_from:
+            query = query.filter(Application.created_at >= created_from)
+        if created_to:
+            query = query.filter(Application.created_at <= created_to)
+
+        sort_columns = {
+            "created_at": Application.created_at,
+            "updated_at": Application.updated_at,
+            "state": Application.state,
+            "recommendation": Application.recommendation,
+            "fit_score": Application.fit_score,
+        }
+        sort_column = sort_columns.get(sort_by)
+        if sort_column is None:
+            raise ValueError(f"Unsupported application sort field: {sort_by}")
+        if sort_dir not in {"asc", "desc"}:
+            raise ValueError(f"Unsupported application sort direction: {sort_dir}")
+
+        order_by = asc(sort_column) if sort_dir == "asc" else desc(sort_column)
+        return query.order_by(order_by).limit(limit).offset(offset).all()
 
     def update_state(
         self,
