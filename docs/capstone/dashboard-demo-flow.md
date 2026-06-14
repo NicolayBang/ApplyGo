@@ -80,21 +80,23 @@ The dashboard should show:
 
 ### 1. Create A Manual Application
 
-In the manual intake form, enter sample data:
+For the fastest reviewer path, click `Sample job` in the manual intake form. The built-in sample
+fills the current M1 happy-path data:
 
 ```text
 Role title: Backend Platform Engineer
 Company: ApplyPilot Demo Co.
 Location: Remote
-Job URL: https://example.com/jobs/backend-platform-engineer
+Job URL: https://jobs.lever.co/applypilot/backend-platform-engineer
 Remote ok: checked
 ```
 
-Paste a job description:
+The sample job description includes enough deterministic signals for classification and scoring:
 
 ```text
 Build Python APIs with FastAPI, PostgreSQL, automation workflows, and platform data services.
-Partner with DevOps and product teams to improve reliable backend delivery.
+This is a full-time remote role with a salary range of $95,000 - $125,000. Partner with DevOps and
+product teams to improve reliable backend delivery.
 ```
 
 Click `Create`.
@@ -106,10 +108,15 @@ Expected result:
 - recent applications can be refreshed and selected without copying the ID manually
 - application summary loads with state `ApplicationCreated`
 - review readiness shows whether policy, dry-run, and submission evidence are ready
-- application summary shows parsed/classified job metadata, including remote marker, job type, ATS, and salary when inferred
+- application summary shows parsed/classified job metadata, including remote marker, job type,
+  Lever ATS source, and salary range
 - audit timeline includes `application.created`
 
-The current parser/classifier is deterministic. It fills missing job metadata from the manual intake fields and does not call an LLM.
+The current parser/classifier is deterministic. It fills missing job metadata from the manual intake
+fields and does not call an LLM.
+
+If you enter sparse custom data instead of using `Sample job`, policy may correctly require review
+before dry-run. That is governed behavior, not a failed demo.
 
 ### 2. Progress Workflow State
 
