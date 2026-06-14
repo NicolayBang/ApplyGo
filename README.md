@@ -1,6 +1,6 @@
 # ApplyPilot
 
-ApplyPilot is a governed job application automation platform scaffolded from the locked OpenClaw architecture baseline.
+ApplyPilot is a governed job application automation platform built from the locked OpenClaw architecture baseline.
 
 ## Locked architecture principles
 
@@ -14,7 +14,7 @@ ApplyPilot is a governed job application automation platform scaffolded from the
 
 ## Milestone 1 scope
 
-This repository currently contains scaffolding only.
+This repository currently contains the Milestone 1 platform spine.
 
 Milestone 1 focuses on the platform spine:
 
@@ -24,15 +24,29 @@ Milestone 1 focuses on the platform spine:
 - Policy engine and automation modes
 - Executor contract with `execute` and `dry_run`
 - Stub executor that logs planned actions
-- Minimal dashboard placeholder for tracker and audit visibility
+- Minimal dashboard for tracker, workflow state, scoring, policy, dry-run, and audit visibility
 
 No Gmail, browser automation, LLM integration, or business logic is implemented yet.
+
+## M1 demo path
+
+The current dashboard demo flow is:
+
+```text
+manual intake -> state progression -> scoring -> policy check -> dry-run executor -> audit timeline
+```
+
+Useful reviewer entry points:
+
+- `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
+- `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
+- `docs/devops/codespaces.md`: Codespaces and DB-backed validation workflow
+- `docs/architecture/locked-plan.md`: architecture authority and M1 scope
 
 ## Repository layout
 
 - `backend/`: FastAPI backend, domain boundaries, and worker placeholders
-- `frontend/`: placeholder for the future dashboard app
-- `infra/`: local infrastructure notes and container support files
+- `frontend/`: static M1 audit dashboard served by the backend at `/ui`
 - `docs/architecture/`: implementation notes tied to the locked plan
 
 ## Initial stack
