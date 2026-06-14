@@ -6,7 +6,17 @@
 | **Date** | 2026-06-14 |
 | **Owner** | Nicolay |
 | **Reviewers required** | Nicolay + Francis |
+| **Review state** | Nicolay soft-approved direction; pending Francis review |
 | **Related** | `docs/decisions/ADR-0002-canonical-data-model.md`; `docs/architecture/database-implementation-roadmap.md`; `docs/architecture/current-data-model.md`; `docs/contracts/database-schema-contract.md` |
+
+## Review State
+
+Nicolay is aligned with the proposed M3 company identity direction, pending Francis review and
+feedback.
+
+This is not implementation approval. Before the migration is implemented, the team should review
+the ADR and migration contract again in the context of the active milestone and decide whether the
+timing is right.
 
 ## Context
 
@@ -101,6 +111,20 @@ The implementation PR must prove:
 
 When local PostgreSQL is unavailable, use Remote Validation Assist for migration and backfill
 validation.
+
+## Approval Checklist
+
+Before changing this ADR from Proposed to Approved, Nicolay and Francis should confirm:
+
+- `companies` should be introduced in M3 before document packet or recruiter-thread normalization.
+- `jobs.company` remains as source/provenance text during the compatibility period.
+- Domain-based deduplication is acceptable only when `normalized_domain` is non-null.
+- Name-only deduplication is exact on `normalized_name`; fuzzy matching stays out of the migration.
+- `Unknown Company` and `Confidential Company` are acceptable deterministic fallback rows.
+- `jobs.company_id` starts nullable for backfill and becomes non-null only after validation and
+  human approval.
+- The implementation PR must include PostgreSQL-backed migration, backfill, API/dashboard
+  compatibility, and seed-to-dashboard validation.
 
 ## Consequences
 

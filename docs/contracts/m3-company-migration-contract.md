@@ -6,12 +6,19 @@
 
 **Authority:** Proposed implementation contract; does not authorize migration until approved
 
+**Review state:** Nicolay soft-approved direction; pending Francis review and later implementation
+timing review
+
 **Related:** `docs/decisions/ADR-0005-m3-company-identity.md`,
 `docs/contracts/database-schema-contract.md`, `docs/architecture/database-implementation-roadmap.md`
 
 This contract defines the safety boundary for the future M3 company identity migration. It is not an
 implemented schema description. The current M1 source of truth remains `jobs.company` until an
 approved migration changes the database, ORM, API, dashboard, tests, and documentation together.
+
+Nicolay is aligned with this direction for M3, but implementation remains gated. Before any schema
+migration starts, Francis feedback should be reviewed and the team should explicitly confirm that
+the current milestone is ready for company identity work.
 
 ## Starting Point
 
@@ -87,6 +94,18 @@ The implementation PR must include runnable validation for:
 
 When local PostgreSQL is unavailable, request Remote Validation Assist and record the result in the
 PR.
+
+## Approval Checklist
+
+Before this contract is treated as approved for implementation, Nicolay and Francis should confirm:
+
+- Backfill may create `Unknown Company` and `Confidential Company` rows.
+- The migration preserves original `jobs.company` text.
+- No fuzzy matching, AI matching, or external enrichment runs during backfill.
+- API and dashboard compatibility for the existing company display field is required in the same
+  implementation PR.
+- Making `jobs.company_id` non-null requires validation evidence and explicit human approval.
+- Downgrade limits and backup expectations are documented in the implementation PR.
 
 ## Rollback Boundary
 
