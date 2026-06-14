@@ -7,6 +7,15 @@
 Use this checklist when manually reviewing the M1 dashboard demo. It is a quick pass/fix aid, not a
 new scope document.
 
+## Review Record
+
+- Date:
+- Reviewer:
+- Environment: local Docker / Codespaces
+- Commit or PR:
+- Result: pass / fix needed
+- Follow-up notes:
+
 ## Setup
 
 - [ ] PostgreSQL and Redis start with Docker Compose.
