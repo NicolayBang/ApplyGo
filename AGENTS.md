@@ -122,6 +122,43 @@ Must follow approved architecture and contracts.
 
 ---
 
+## Agent Change Visibility
+
+Agents must make repository state and change scope explicit while they work.
+
+Before any material action, including branch changes, file edits, commits, pushes, pull requests,
+migrations, or destructive commands, the agent must state:
+
+- the current branch or explicitly state that the action is read-only
+- the branch that will be modified
+- the files, systems, or behavior expected to change
+- what will remain intact and outside the task scope
+- whether the action is proposed, in progress, completed, or blocked
+
+When the working branch changes, the agent must announce the change before running the command and
+confirm the resulting branch afterward. Work from another branch or pull request must not be
+described as modified when it is only being inspected or used as context.
+
+Before editing files, the agent must identify the exact intended edit scope. After editing, the
+agent must report the actual changed files and call out any difference from the stated scope.
+
+Before committing or pushing, the agent must summarize what is staged and explicitly confirm that
+unrelated files, branches, commits, and open pull requests remain intact. Final responses must state
+the branch modified, commit or PR status when applicable, validation performed, and untouched scope.
+
+Agents must distinguish observed state from intended or proposed state. Do not describe a proposed
+change as implemented, a running check as passed, or an unmerged branch as part of `main`.
+
+ALL CAPS may be used sparingly to draw attention to sensitive operations such as destructive
+commands, direct changes to `main`, migration execution, secret handling, force pushes, branch
+replacement, or scope changes. Routine progress should use normal capitalization so sensitive
+warnings remain visually meaningful.
+
+If the agent cannot determine the active branch, change scope, or preservation boundary, it must
+stop and verify before modifying the repository.
+
+---
+
 ## Virtual Team Routing
 
 Virtual personas advise only.
