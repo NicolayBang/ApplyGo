@@ -17,6 +17,9 @@ class JobScoringInput:
     source_url: str | None = None
     raw_text: str | None = None
     remote_ok: bool = False
+    job_type: str | None = None
+    ats_type: str | None = None
+    salary_raw: str | None = None
 
 
 class ApplicationScorer:
@@ -70,8 +73,33 @@ class ApplicationScorer:
             score += 5
             reasons.append("Remote compatibility is marked.")
 
+        if job.job_type:
+            score += 5
+            reasons.append("Job type was classified for screening.")
+        else:
+            missing_data.append("job type")
+
+        if job.ats_type:
+            reasons.append("ATS source was classified for traceability.")
+
+        if job.salary_raw:
+            score += 5
+            reasons.append("Compensation information is available for review.")
+        else:
+            missing_data.append("compensation range")
+
         searchable_text = " ".join(
-            part for part in [job.title, job.company, job.location, job.raw_text] if part
+            part
+            for part in [
+                job.title,
+                job.company,
+                job.location,
+                job.raw_text,
+                job.job_type,
+                job.ats_type,
+                job.salary_raw,
+            ]
+            if part
         ).lower()
         matched_keywords = sorted(
             keyword for keyword in self._TECHNICAL_KEYWORDS if keyword in searchable_text

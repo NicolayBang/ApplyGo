@@ -140,6 +140,9 @@ class Tracker:
                 source_url=job.source_url,
                 raw_text=job.raw_text,
                 remote_ok=job.remote_ok,
+                job_type=job.job_type,
+                ats_type=job.ats_type,
+                salary_raw=job.salary_raw,
             )
         )
 
