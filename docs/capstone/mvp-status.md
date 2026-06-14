@@ -34,7 +34,8 @@ The current reviewer demo is:
 manual intake -> parse/classify -> state progression -> scoring -> policy check -> dry-run executor -> review readiness -> audit timeline
 ```
 
-Use `docs/capstone/dashboard-demo-flow.md` for the step-by-step runbook.
+Use `docs/capstone/dashboard-demo-flow.md` for the step-by-step runbook and
+`docs/capstone/m1-demo-review-checklist.md` to record manual pass/fix observations.
 
 ## Not Implemented Yet
 

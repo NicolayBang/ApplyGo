@@ -218,6 +218,16 @@ Expected result:
 - dashboard audit endpoint returns application, policy, executor, and event records
 - dashboard review-summary endpoint returns readiness flags and guarded next states
 
+## Manual Review Closeout
+
+After running the demo, record the result in `docs/capstone/m1-demo-review-checklist.md`.
+
+Use a simple pass/fix decision:
+
+- Pass when the workflow completes, dry-run remains side-effect free, and the dashboard explains the
+  audit evidence without database inspection.
+- Fix before MVP when any stop condition in the checklist appears.
+
 ## What This Demo Proves
 
 - The database owns durable truth.
