@@ -178,6 +178,22 @@ When Experiment Mode is active, the agent should divide the work into clear para
   broad refactors, or merge pull requests unless a human explicitly allows it.
 - Results from delegated agents are advisory until reviewed and reconciled by Codex or a human.
 
+For the next five pull requests that use Experiment Mode, track execution time lightly in a PR
+comment:
+
+- Start time when the PR or task is selected.
+- Local implementation or validation complete time.
+- Copilot delegated validation complete time, if used.
+- Merge time.
+- Notes on blockers, such as CI delay or missing local PostgreSQL.
+
+Document each of those five PRs with the same basic workflow summary used on PR #56: what Codex
+owned, what Copilot or another agent was delegated, validation performed, timing, result, and
+whether the split workflow helped.
+
+After five Experiment Mode PRs, stop using Experiment Mode by default, tell the humans the trial is
+complete, and ask whether to continue, adjust, or retire the workflow.
+
 Experiment Mode does not override architecture authority, human final decision-making, PR
 discipline, testing requirements, security boundaries, or merge rules.
 
