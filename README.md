@@ -50,6 +50,7 @@ Useful reviewer entry points:
 - `docs/capstone/m1-demo-review-checklist.md`: manual pass/fix checklist for reviewing the M1 demo
 - `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
 - `docs/architecture/database-implementation-roadmap.md`: done/next/future PostgreSQL plan and contract readiness
+- `docs/roadmap/m2-kickoff-plan.md`: proposed M2 direction after the M1 MVP-ready baseline
 - `docs/contracts/database-schema-contract.md`: exact M1 PostgreSQL table and constraint contract
 - `docs/diagrams/README.md`: diagram index and diagram authority reminder
 - `docs/diagrams/database-schema.md`: separate implemented and planned ER views
