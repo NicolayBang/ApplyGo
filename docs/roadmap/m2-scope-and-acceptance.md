@@ -115,6 +115,12 @@ remains read-only, and does not call an LLM or create external side effects.
 Implementation note: the dashboard now provides separate copy actions for the full application
 packet and the deterministic cover-note draft so reviewers can reuse either artifact manually.
 
+Implementation note: human packet review persistence is now implemented. The dashboard can record
+approve, request-changes, and reject decisions; the backend persists `application_packet_reviews`,
+appends `application_packet.reviewed`, and exposes `latest_packet_review` in the review summary.
+This remains side-effect free: it does not send email, open browser automation, submit
+applications, call an LLM, or require OpenClaw.
+
 ## Validation Plan
 
 For docs-only PRs:
