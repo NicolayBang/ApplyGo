@@ -186,6 +186,7 @@ const elements = {
   policyList: document.querySelector("#policy-list"),
   executorList: document.querySelector("#executor-list"),
   packetPreview: document.querySelector("#packet-preview"),
+  copyCoverNoteButton: document.querySelector("#copy-cover-note-button"),
   copyPacketButton: document.querySelector("#copy-packet-button"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewSummaryStatus: document.querySelector("#review-summary-status"),
@@ -1420,6 +1421,23 @@ elements.copyPacketButton.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(packetText);
       setStatus("success", "Packet copied", "Application packet preview copied to clipboard.");
+    } catch {
+      setStatus("error", "Copy unavailable", "Clipboard permission was denied by the browser.");
+    }
+    return;
+  }
+
+  setStatus("error", "Copy unavailable", "Clipboard access is not available in this browser.");
+});
+
+elements.copyCoverNoteButton.addEventListener("click", async () => {
+  const application = currentAudit.application || {};
+  const coverNoteText = buildCoverNoteDraft(application, application.job || {});
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(coverNoteText);
+      setStatus("success", "Cover note copied", "Deterministic cover-note draft copied to clipboard.");
     } catch {
       setStatus("error", "Copy unavailable", "Clipboard permission was denied by the browser.");
     }
