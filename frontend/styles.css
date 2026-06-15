@@ -491,11 +491,19 @@ button:disabled {
   border-radius: 8px;
   padding: 12px;
   background: #fbfdff;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .readiness-item strong {
   display: block;
   margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .readiness-item .badge {
@@ -624,27 +632,63 @@ button:disabled {
   border-radius: 9px;
   padding: 11px;
   background: #fbfdff;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .summary-signal-row span,
 .detail-list dt {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 650;
 }
 
-.summary-signal-row strong,
+.summary-signal-row strong {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 700;
+}
+
 .detail-list dd {
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
-  font-weight: 700;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .detail-list {
   display: grid;
   grid-template-columns: 112px 1fr;
-  gap: 9px 12px;
+  gap: 0 12px;
   margin: 0;
+}
+
+.detail-list dt,
+.detail-list dd {
+  border-radius: 6px;
+  padding: 6px 7px;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.detail-list dt:nth-of-type(odd),
+.detail-list dd:nth-of-type(odd) {
+  background: #f8fbff;
+}
+
+.detail-list dt:hover,
+.detail-list dt:hover + dd,
+.detail-list dd:hover {
+  color: var(--brand-dark);
+  background: #eef6ff;
 }
 
 .technical-details {
@@ -674,11 +718,44 @@ button:disabled {
   border-radius: 8px;
   padding: 10px;
   background: #fbfdff;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .compact-item strong {
   display: block;
   margin-bottom: 4px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.recent-application,
+.timeline li {
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.summary-signal-row > div:hover,
+.compact-item:hover,
+.readiness-item:hover,
+.timeline li:hover {
+  border-color: #b8d7ff;
+  background: #f3f8ff;
+  box-shadow: 0 10px 22px rgba(29, 123, 242, 0.08);
+  transform: translateY(-1px);
+}
+
+.recent-application:hover,
+.recent-application:focus {
+  box-shadow: 0 10px 22px rgba(29, 123, 242, 0.08);
+  transform: translateY(-1px);
 }
 
 .score-hero {
@@ -750,6 +827,7 @@ button:disabled {
 .meta {
   color: var(--muted);
   font-size: 13px;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
