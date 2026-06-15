@@ -525,6 +525,70 @@ def test_m2_packet_review_tracker_appends_audit_event(db_session) -> None:
     assert "packet_text" not in event.payload
 
 
+def test_m2_packet_review_api_updates_summary_and_timeline(db_session) -> None:
+    """API path records packet review evidence visible to dashboard read models."""
+    from fastapi.testclient import TestClient
+
+    from applypilot.db.dependencies import TrackerUnitOfWork, get_tracker_unit
+    from applypilot.main import app
+
+    def override_tracker_unit():
+        yield TrackerUnitOfWork(db_session)
+
+    app.dependency_overrides[get_tracker_unit] = override_tracker_unit
+    try:
+        client = TestClient(app)
+        job_response = client.post(
+            "/jobs",
+            json={
+                "title": "Packet Review Engineer",
+                "company": "ApplyPilot Test Co.",
+                "location": "Remote",
+                "raw_text": "Build reviewed application packets with audit-safe workflows.",
+            },
+        )
+        assert job_response.status_code == 201
+
+        application_response = client.post(
+            "/applications",
+            json={
+                "job_id": job_response.json()["id"],
+                "automation_mode": "manual",
+            },
+        )
+        assert application_response.status_code == 201
+        application_id = application_response.json()["id"]
+
+        packet_review_response = client.post(
+            f"/applications/{application_id}/packet-reviews",
+            json={
+                "decision": "changes_requested",
+                "reviewed_by": "human",
+                "source": "dashboard",
+                "notes": "Clarify one requirement before manual use.",
+            },
+        )
+        assert packet_review_response.status_code == 201
+        packet_review = packet_review_response.json()
+
+        summary_response = client.get(f"/applications/{application_id}/review-summary")
+        assert summary_response.status_code == 200
+        summary = summary_response.json()
+        assert summary["latest_packet_review"]["id"] == packet_review["id"]
+        assert summary["latest_packet_review"]["decision"] == "changes_requested"
+        assert summary["latest_packet_review"]["notes"] == "Clarify one requirement before manual use."
+
+        events_response = client.get(f"/applications/{application_id}/events")
+        assert events_response.status_code == 200
+        event = events_response.json()[-1]
+        assert event["event_type"] == "application_packet.reviewed"
+        assert event["payload"]["packet_review_id"] == packet_review["id"]
+        assert event["payload"]["decision"] == "changes_requested"
+        assert "packet_text" not in event["payload"]
+    finally:
+        app.dependency_overrides.pop(get_tracker_unit, None)
+
+
 def test_audit_records_prevent_application_delete(db_session) -> None:
     """PostgreSQL prevents deleting applications with retained audit evidence."""
 
