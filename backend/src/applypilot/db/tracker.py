@@ -12,9 +12,13 @@ from datetime import datetime, timezone
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from applypilot.db.models import Application, EventLogEntry, ExecutorAction, Job
+from applypilot.db.models import Application, ApplicationPacketReview, EventLogEntry, ExecutorAction, Job
 from applypilot.db.models import PolicyDecision as PolicyDecisionRecord
-from applypilot.domain.applications.models import ApplicationCreate, JobCreate
+from applypilot.domain.applications.models import (
+    ApplicationCreate,
+    ApplicationPacketReviewCreate,
+    JobCreate,
+)
 from applypilot.domain.applications.intake import JobIntakeClassifier
 from applypilot.domain.applications.scoring import ApplicationScorer, JobScoringInput
 from applypilot.domain.executor import ExecutorRequest, ExecutorResult
@@ -304,6 +308,41 @@ class Tracker:
             },
         )
         return app
+
+    # ------------------------------------------------------------------
+    # Packet reviews
+    # ------------------------------------------------------------------
+
+    def record_packet_review(
+        self,
+        application_id: uuid.UUID,
+        data: ApplicationPacketReviewCreate,
+    ) -> ApplicationPacketReview:
+        """Persist human packet review evidence without side effects."""
+        app = self._session.get(Application, application_id)
+        if app is None:
+            raise ValueError(f"Application {application_id} not found")
+
+        review = ApplicationPacketReview(
+            application_id=application_id,
+            decision=data.decision,
+            reviewed_by=data.reviewed_by,
+            source=data.source,
+            packet_text=data.packet_text,
+            notes=data.notes,
+        )
+        self._session.add(review)
+        self._session.flush()
+        return review
+
+    def get_packet_reviews(self, application_id: uuid.UUID) -> list[ApplicationPacketReview]:
+        """Return packet reviews recorded for an application."""
+        return (
+            self._session.query(ApplicationPacketReview)
+            .filter(ApplicationPacketReview.application_id == application_id)
+            .order_by(ApplicationPacketReview.created_at.asc())
+            .all()
+        )
 
     # ------------------------------------------------------------------
     # Policy decisions
