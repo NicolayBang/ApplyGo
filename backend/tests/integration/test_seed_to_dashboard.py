@@ -469,6 +469,62 @@ def test_m2_packet_review_constraints_reject_invalid_values(db_session) -> None:
                 db_session.execute(text(statement), params)
 
 
+def test_m2_packet_review_tracker_appends_audit_event(db_session) -> None:
+    """Tracker writes packet review evidence and the audit event in one unit of work."""
+    from applypilot.db.tracker import Tracker
+    from applypilot.domain.applications.models import ApplicationPacketReviewCreate
+
+    job_id = uuid.uuid4()
+    application_id = uuid.uuid4()
+
+    db_session.execute(
+        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
+        {"job_id": str(job_id)},
+    )
+    db_session.execute(
+        text(
+            """
+            INSERT INTO applications (id, job_id, state, automation_mode)
+            VALUES (
+                CAST(:application_id AS uuid),
+                CAST(:job_id AS uuid),
+                'ApplicationCreated',
+                'manual'
+            )
+            """
+        ),
+        {"application_id": str(application_id), "job_id": str(job_id)},
+    )
+
+    tracker = Tracker(db_session)
+    review = tracker.record_packet_review(
+        application_id,
+        ApplicationPacketReviewCreate(
+            decision="approved",
+            reviewed_by="human",
+            source="dashboard",
+            packet_text="Generated packet text should not be copied into the event.",
+            notes="Reviewed for manual use.",
+        ),
+    )
+    events = tracker.get_events(application_id)
+
+    assert review.application_id == application_id
+    assert review.packet_text == "Generated packet text should not be copied into the event."
+    assert [event.event_type for event in events] == ["application_packet.reviewed"]
+    event = events[0]
+    assert event.actor == "human"
+    assert event.payload == {
+        "packet_review_id": str(review.id),
+        "decision": "approved",
+        "reviewed_by": "human",
+        "source": "dashboard",
+        "notes_present": True,
+        "packet_text_persisted": True,
+    }
+    assert "packet_text" not in event.payload
+
+
 def test_audit_records_prevent_application_delete(db_session) -> None:
     """PostgreSQL prevents deleting applications with retained audit evidence."""
 
