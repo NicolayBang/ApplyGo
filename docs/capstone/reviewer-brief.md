@@ -37,6 +37,19 @@ M1.
 - `Submitted` is guarded behind approved workflow state plus policy/executor evidence.
 - Planned future architecture is kept separate from implemented M1 behavior.
 
+## Key Tradeoffs
+
+- **Dry-run before execution:** M1 proves the executor contract and audit trail without sending
+  email, opening browsers, or submitting applications externally.
+- **Policy before executor:** Executor actions require recorded policy decisions so reviewers can
+  see why an action was allowed, blocked, or sent to human review.
+- **Deterministic first pass:** Classification and scoring are rule-based for M1 so the demo is
+  repeatable and testable before adding LLM-assisted extraction or drafting.
+- **Small monolith over microservices:** The current FastAPI app keeps domain boundaries explicit
+  while avoiding premature distributed-system complexity.
+- **Documentation with boundaries:** Future ideas are documented, but implemented M1 behavior is
+  called out separately to avoid overstating the product.
+
 ## Validation Evidence
 
 Current validation covers:
