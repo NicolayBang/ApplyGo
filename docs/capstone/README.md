@@ -15,6 +15,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 - `m1-manual-demo-validation-2026-06-14.md` - summary of the live M1 manual validation result.
 - `m1-local-mvp-validation-2026-06-15.md` - final local Docker/frontend-backend MVP validation.
 - `m2-packet-preview-validation.md` - draft checklist for validating the current read-only M2 packet preview.
+- `m2-packet-review-validation.md` - draft checklist for validating persisted human packet review decisions.
 - `frontend-design-handoff.md` - guardrails for dashboard sketching and future visual polish.
 - `presentation-backlog.md` - optional recruiter/instructor presentation improvements.
 - `process.md` - capstone process scaffold and working agreement.
@@ -32,11 +33,12 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 8. Use `m1-demo-review-checklist.md` to record pass/fix observations.
 9. Read `m1-local-mvp-validation-2026-06-15.md` for the final local MVP validation evidence.
 10. Read `m1-manual-demo-validation-2026-06-14.md` for the earlier live manual validation result.
-11. Use `m2-packet-preview-validation.md` when validating the current read-only packet preview.
-12. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-13. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
-14. Use `process.md` to understand the project discipline behind the work.
-15. Treat `phase-2-ideas.md` as future discussion material only.
+11. Use `m2-packet-preview-validation.md` when validating the deterministic packet preview.
+12. Use `m2-packet-review-validation.md` when validating persisted human packet review decisions.
+13. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
+14. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+15. Use `process.md` to understand the project discipline behind the work.
+16. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 
