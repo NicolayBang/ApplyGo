@@ -1,6 +1,6 @@
 # ApplyPilot Reviewer Brief
 
-**Status:** Milestone 1 capstone MVP candidate  
+**Status:** Milestone 1 MVP-presentable capstone baseline
 **Audience:** recruiters, instructors, and technical reviewers
 
 ApplyPilot is a governed job application automation platform. The current milestone proves the
@@ -60,12 +60,15 @@ Current validation covers:
 - Alembic migration execution against PostgreSQL in CI;
 - DB-backed seed-to-dashboard validation through Docker/Codespaces;
 - manual demo runbook and pass/fix checklist under `docs/capstone/`.
+- final local frontend-backend validation recorded in `docs/capstone/m1-local-mvp-validation-2026-06-15.md`.
 
 Recommended reviewer path:
 
 1. Read `docs/capstone/mvp-status.md`.
-2. Run `docs/capstone/dashboard-demo-flow.md`.
-3. Record pass/fix notes with `docs/capstone/m1-demo-review-checklist.md`.
+2. Read `docs/capstone/m1-release-notes.md`.
+3. Use `docs/capstone/m1-demo-script.md` for a live walkthrough.
+4. Run `docs/capstone/dashboard-demo-flow.md` for detailed validation.
+5. Record pass/fix notes with `docs/capstone/m1-demo-review-checklist.md`.
 
 ## AI-Assisted Development Disclosure
 
