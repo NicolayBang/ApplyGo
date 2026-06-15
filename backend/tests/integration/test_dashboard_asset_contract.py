@@ -60,6 +60,55 @@ def test_dashboard_review_summary_contract_is_wired() -> None:
     assert ".readiness-item" in style_response.text
 
 
+def test_dashboard_guided_workflow_ui_contract_is_wired() -> None:
+    """The MVP dashboard exposes the guided workflow affordances from PR #115."""
+    index_response = client.get("/ui/index.html")
+    style_response = client.get("/ui/styles.css")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert style_response.status_code == 200
+    assert script_response.status_code == 200
+
+    markup = index_response.text
+    styles = style_response.text
+    script = script_response.text
+
+    assert 'id="next-action-status"' in markup
+    assert 'id="next-action-title"' in markup
+    assert 'id="next-action-detail"' in markup
+    assert 'id="lifecycle-stepper"' in markup
+    assert "Next action" in markup
+    assert "Application, fit, policy, and preview" in markup
+
+    assert "renderNextAction" in script
+    assert "renderLifecycleStepper" in script
+    assert "workflowReadiness" in script
+    assert "Preview action" in script
+    assert "Dry-run plans the approved follow-up" in script
+    assert "Submission is available only after approved policy and executor preview evidence." in script
+    assert "side_effects ? \"yes\" : \"no\"" in script
+    assert " - dry-run only" in script
+
+    assert ".next-action-panel" in styles
+    assert ".lifecycle-stepper" in styles
+    assert ".score-hero" in styles
+    assert ".side-effect-banner.safe" in styles
+
+
+def test_dashboard_preserves_applypilot_m1_branding_until_rename_is_explicit() -> None:
+    """Frontend polish must not silently rename the implemented product."""
+    index_response = client.get("/ui/index.html")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert script_response.status_code == 200
+    assert "ApplyPilot" in index_response.text
+    assert "ApplyPilot Demo Co." in script_response.text
+    assert "ApplyGo" not in index_response.text
+    assert "ApplyGo" not in script_response.text
+
+
 def test_dashboard_fetch_paths_are_backed_by_api_routes() -> None:
     """Every dashboard API path stays inside the supported M1 route contract."""
     script_response = client.get("/ui/app.js")

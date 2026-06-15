@@ -888,6 +888,49 @@ def test_executor_dry_run_requires_recorded_policy_decision() -> None:
     assert "policy decision is required" in response.json()["detail"]
 
 
+def test_executor_dry_run_rejects_policy_decision_that_requires_review() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+    policy_response = client.post(
+        f"/applications/{tracker.application_id}/policy-decisions",
+        json={
+            "requested_action": "send_follow_up_email",
+            "worker": "email",
+            "mode": "dry_run",
+            "context": {
+                "confidence": "low",
+                "fit_score": 87,
+                "recommendation": "recommended",
+                "reasons": ["Enough detail to score, but confidence remains low."],
+                "risks": [],
+                "missing_data": ["human review"],
+                "red_flags": [],
+            },
+        },
+    )
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/executor-actions/dry-run",
+        json={
+            "policy_decision_id": policy_response.json()["id"],
+            "worker": "email",
+            "action_type": "send_follow_up_email",
+            "idempotency_key": "dry-run-review-blocked",
+        },
+    )
+
+    assert policy_response.status_code == 201
+    assert policy_response.json()["decision"] == "review"
+    assert policy_response.json()["allowed"] is False
+    assert response.status_code == 400
+    assert "does not allow execution" in response.json()["detail"]
+    assert tracker.executor_actions == []
+    assert [event.event_type for event in tracker.events] == [
+        "application.created",
+        "policy_decision_logged",
+    ]
+
+
 def test_application_audit_summary_returns_application_events_policy_and_executor_records() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)
