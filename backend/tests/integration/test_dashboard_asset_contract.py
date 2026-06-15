@@ -15,6 +15,7 @@ EXPECTED_DASHBOARD_API_PATHS = {
     "/applications",
     "/applications/{application_id}/state",
     "/applications/{application_id}/score",
+    "/applications/{application_id}/packet-reviews",
     "/applications/{application_id}/policy-decisions",
     "/applications/{application_id}/executor-actions/dry-run",
     "/applications/{application_id}/audit",
@@ -74,11 +75,17 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert 'href="#application-packet"' in index_response.text
     assert 'id="application-packet"' in index_response.text
     assert 'id="packet-readiness"' in index_response.text
+    assert 'id="packet-review-form"' in index_response.text
+    assert 'id="packet-review-status"' in index_response.text
+    assert 'id="packet-review-notes"' in index_response.text
     assert 'id="packet-preview"' in index_response.text
     assert 'id="copy-cover-note-button"' in index_response.text
     assert 'id="copy-packet-button"' in index_response.text
     assert 'id="download-packet-button"' in index_response.text
     assert "renderPacketReadiness" in script_response.text
+    assert "renderPacketReviewControls" in script_response.text
+    assert "recordPacketReview" in script_response.text
+    assert "/applications/${applicationId}/packet-reviews" in script_response.text
     assert "buildPacketPreview" in script_response.text
     assert "buildCoverNoteDraft" in script_response.text
     assert "downloadTextFile" in script_response.text
@@ -86,9 +93,10 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert "Deterministic cover-note draft copied to clipboard." in script_response.text
     assert "Deterministic Cover Note Draft" in script_response.text
     assert "renderPacketPreview" in script_response.text
-    assert "Preview only. No email, browser automation, external submission" in script_response.text
+    assert "Recording packet review does not send email, open a browser, or submit an application." in script_response.text
     assert ".packet-panel" in style_response.text
     assert ".packet-readiness" in style_response.text
+    assert ".packet-review-form" in style_response.text
     assert ".packet-preview" in style_response.text
 
 
@@ -117,6 +125,7 @@ def test_dashboard_fetch_methods_match_m1_route_contract() -> None:
     _assert_fetch_method(script, "/applications", "POST")
     _assert_fetch_method(script, "/applications/${applicationId}/state", "PATCH")
     _assert_fetch_method(script, "/applications/${applicationId}/score", "POST")
+    _assert_fetch_method(script, "/applications/${applicationId}/packet-reviews", "POST")
     _assert_fetch_method(script, "/applications/${applicationId}/policy-decisions", "POST")
     _assert_fetch_method(script, "/applications/${applicationId}/executor-actions/dry-run", "POST")
     assert "fetchJson(`${base}/applications?${recentApplicationQuery()}`)" in script

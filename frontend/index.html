@@ -227,6 +227,25 @@
           Preview only. This does not save packet content, send email, open a browser, or submit an application.
         </p>
         <div class="packet-readiness" id="packet-readiness"></div>
+        <form class="packet-review-form" id="packet-review-form">
+          <div>
+            <strong>Human packet review</strong>
+            <p id="packet-review-status">No packet review recorded.</p>
+          </div>
+          <label>
+            <span>Reviewer notes</span>
+            <textarea
+              id="packet-review-notes"
+              rows="3"
+              placeholder="Optional notes for the audit record"
+            ></textarea>
+          </label>
+          <div class="packet-review-actions">
+            <button type="submit" name="decision" value="approved">Approve packet</button>
+            <button type="submit" name="decision" value="changes_requested">Request changes</button>
+            <button type="submit" name="decision" value="rejected">Reject packet</button>
+          </div>
+        </form>
         <pre id="packet-preview" class="packet-preview"></pre>
       </section>
 
