@@ -840,6 +840,13 @@ button:disabled {
   align-items: center;
 }
 
+.packet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .packet-note {
   margin: 8px 0 12px;
   color: var(--muted);
