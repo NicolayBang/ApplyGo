@@ -712,6 +712,35 @@ function packetLine(label, value) {
   return `${label}: ${value || "Not recorded"}`;
 }
 
+function primaryFitReason(application) {
+  return (application.score_reasons || []).find(Boolean) || "the available role evidence is ready for review";
+}
+
+function primaryFitRisk(application) {
+  return (application.score_risks || []).find(Boolean) || (application.missing_data || []).find(Boolean);
+}
+
+function buildCoverNoteDraft(application, job) {
+  const role = job.title || "this role";
+  const company = job.company || "your team";
+  const recommendation = recommendationDisplay(application.recommendation) || "pending review";
+  const score = scoreNumberDisplay(application);
+  const reason = primaryFitReason(application);
+  const risk = primaryFitRisk(application);
+  const riskSentence = risk
+    ? `Before sending, I would review one concern: ${risk}.`
+    : "I do not see a recorded blocker in the current packet evidence.";
+
+  return [
+    `Hello ${company} team,`,
+    "",
+    `I am interested in the ${role} opportunity. ApplyPilot's current review packet marks this application as ${recommendation}${score ? ` with a ${score} fit score` : ""}.`,
+    `The strongest recorded fit signal is that ${reason}.`,
+    riskSentence,
+    "I would like a human reviewer to confirm the packet before any external follow-up is sent.",
+  ].join("\n");
+}
+
 function buildPacketPreview() {
   const application = currentAudit.application || {};
   const job = application.job || {};
@@ -749,6 +778,10 @@ function buildPacketPreview() {
     ),
     packetLine("Safeguards", listText(result.requires)),
     packetLine("Planned steps", listText(result.planned_steps)),
+    "",
+    "Deterministic Cover Note Draft",
+    "------------------------------",
+    buildCoverNoteDraft(application, job),
     "",
     "Next Human Action",
     "-----------------",

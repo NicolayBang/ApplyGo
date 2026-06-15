@@ -74,6 +74,8 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert 'id="packet-preview"' in index_response.text
     assert 'id="copy-packet-button"' in index_response.text
     assert "buildPacketPreview" in script_response.text
+    assert "buildCoverNoteDraft" in script_response.text
+    assert "Deterministic Cover Note Draft" in script_response.text
     assert "renderPacketPreview" in script_response.text
     assert "Preview only. No email, browser automation, external submission" in script_response.text
     assert ".packet-panel" in style_response.text
