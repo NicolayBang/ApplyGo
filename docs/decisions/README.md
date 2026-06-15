@@ -55,3 +55,4 @@ Authority order:
 ## Review Briefs
 - `m3-company-identity-decision-brief.md` (Review brief)
 - `ADR-0005-final-review.md` (Direction approved; implementation timing gated)
+- `m2-packet-review-retention-brief.md` (Review brief)
