@@ -71,6 +71,8 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert script_response.status_code == 200
 
     assert 'aria-label="Application packet preview"' in index_response.text
+    assert 'href="#application-packet"' in index_response.text
+    assert 'id="application-packet"' in index_response.text
     assert 'id="packet-readiness"' in index_response.text
     assert 'id="packet-preview"' in index_response.text
     assert 'id="copy-cover-note-button"' in index_response.text
