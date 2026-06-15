@@ -102,6 +102,9 @@ application data:
 
 This can prove the M2 review experience before adding new persistence or migrations.
 
+The draft packet boundary is recorded in
+`docs/contracts/m2-application-packet-contract.md`.
+
 ## Validation Plan
 
 For docs-only PRs:

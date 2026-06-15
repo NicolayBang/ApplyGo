@@ -14,6 +14,7 @@ Roadmap docs are planning aids. They do not override:
 
 - `m2-kickoff-plan.md` - proposed M2 direction after M1 MVP readiness.
 - `m2-scope-and-acceptance.md` - proposed M2 scope, demo path, acceptance criteria, and stop conditions.
+- `../contracts/m2-application-packet-contract.md` - draft M2 packet boundary for the first implementation slice.
 
 ## Guardrail
 
