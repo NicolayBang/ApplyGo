@@ -1,10 +1,10 @@
 # MVP Status
 
-**Status:** Milestone 1 platform spine implemented
+**Status:** Milestone 1 MVP-presentable
 
 **Audience:** reviewers, instructors, recruiters, and contributors
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-15
 
 ApplyPilot is currently a governed job application automation platform spine, not a finished job
 application product. The implemented system proves the core workflow, persistence, policy, dry-run,
@@ -24,6 +24,7 @@ and audit model needed before adding external automation.
 - Dashboard view for tracker state, scoring, policy, executor records, review readiness, and audit timeline.
 - Docker Compose PostgreSQL/Redis services, one-shot migration runner, and optional demo seed
   validation.
+- Docker Compose `app` profile for packaged local backend/dashboard validation.
 - CI gates for backend quality, migrations, tests, frontend syntax, and dashboard asset contracts.
 
 ## Demo Path
@@ -36,6 +37,9 @@ manual intake -> parse/classify -> state progression -> scoring -> policy check 
 
 Use `docs/capstone/dashboard-demo-flow.md` for the step-by-step runbook and
 `docs/capstone/m1-demo-review-checklist.md` to record manual pass/fix observations.
+
+The final local MVP validation is recorded in
+`docs/capstone/m1-local-mvp-validation-2026-06-15.md`.
 
 ## Not Implemented Yet
 
@@ -67,3 +71,4 @@ This repository currently demonstrates:
 - CI and Compose-based validation;
 - auditability and policy enforcement;
 - careful separation between implemented behavior and planned future capabilities.
+- frontend-to-backend validation through the packaged local Docker dashboard.

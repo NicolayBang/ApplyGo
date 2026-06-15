@@ -9,8 +9,9 @@ automation behavior.
 
 ## Highest Impact Before Sharing Widely
 
-- [ ] Merge the M1 dashboard workflow validation PR after manual validation is accepted.
-- [ ] Run one final manual demo on current `main`.
+- [x] Close the M1 dashboard workflow validation PR after manual validation is accepted.
+- [x] Run one final local validation on current `main`.
+- [x] Record a dated final local M1 validation note.
 - [x] Record a dated M1 validation note after the first live manual demo pass.
 - [ ] Add one dashboard screenshot or short GIF to the README.
 - [x] Add a GitHub Actions CI badge to the README.
