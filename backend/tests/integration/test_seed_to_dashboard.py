@@ -331,6 +331,144 @@ def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
                 db_session.execute(text(statement), params)
 
 
+def test_m2_packet_review_constraints_allow_nullable_packet_text(db_session) -> None:
+    """PostgreSQL accepts valid packet reviews without storing packet text."""
+    job_id = uuid.uuid4()
+    application_id = uuid.uuid4()
+
+    db_session.execute(
+        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
+        {"job_id": str(job_id)},
+    )
+    db_session.execute(
+        text(
+            """
+            INSERT INTO applications (id, job_id, state, automation_mode)
+            VALUES (
+                CAST(:application_id AS uuid),
+                CAST(:job_id AS uuid),
+                'ApplicationCreated',
+                'manual'
+            )
+            """
+        ),
+        {"application_id": str(application_id), "job_id": str(job_id)},
+    )
+    db_session.execute(
+        text(
+            """
+            INSERT INTO application_packet_reviews (
+                id,
+                application_id,
+                decision,
+                reviewed_by,
+                source,
+                packet_text,
+                notes
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'approved',
+                'human',
+                'dashboard',
+                NULL,
+                :notes
+            )
+            """
+        ),
+        {"application_id": str(application_id), "notes": "Looks ready for manual use."},
+    )
+
+    row = db_session.execute(
+        text(
+            """
+            SELECT decision, reviewed_by, source, packet_text, notes
+            FROM application_packet_reviews
+            WHERE application_id = CAST(:application_id AS uuid)
+            """
+        ),
+        {"application_id": str(application_id)},
+    ).one()
+
+    assert row.decision == "approved"
+    assert row.reviewed_by == "human"
+    assert row.source == "dashboard"
+    assert row.packet_text is None
+    assert row.notes == "Looks ready for manual use."
+
+
+def test_m2_packet_review_constraints_reject_invalid_values(db_session) -> None:
+    """PostgreSQL rejects packet review decisions outside the M2 contract."""
+    job_id = uuid.uuid4()
+    application_id = uuid.uuid4()
+
+    db_session.execute(
+        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
+        {"job_id": str(job_id)},
+    )
+    db_session.execute(
+        text(
+            """
+            INSERT INTO applications (id, job_id, state, automation_mode)
+            VALUES (
+                CAST(:application_id AS uuid),
+                CAST(:job_id AS uuid),
+                'ApplicationCreated',
+                'manual'
+            )
+            """
+        ),
+        {"application_id": str(application_id), "job_id": str(job_id)},
+    )
+
+    invalid_writes = [
+        (
+            """
+            INSERT INTO application_packet_reviews (
+                id,
+                application_id,
+                decision,
+                reviewed_by,
+                source
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'maybe',
+                'human',
+                'dashboard'
+            )
+            """,
+            {"application_id": str(application_id)},
+        ),
+        (
+            """
+            INSERT INTO application_packet_reviews (
+                id,
+                application_id,
+                decision,
+                reviewed_by,
+                source
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'approved',
+                'human',
+                'browser'
+            )
+            """,
+            {"application_id": str(application_id)},
+        ),
+    ]
+
+    for statement, params in invalid_writes:
+        with pytest.raises(IntegrityError):
+            with db_session.begin_nested():
+                db_session.execute(text(statement), params)
+
+
 def test_audit_records_prevent_application_delete(db_session) -> None:
     """PostgreSQL prevents deleting applications with retained audit evidence."""
 
@@ -434,10 +572,34 @@ def test_audit_records_prevent_application_delete(db_session) -> None:
         {"application_id": event_application_id},
     )
 
+    packet_review_application_id = create_application()
+    db_session.execute(
+        text(
+            """
+            INSERT INTO application_packet_reviews (
+                id,
+                application_id,
+                decision,
+                reviewed_by,
+                source
+            )
+            VALUES (
+                gen_random_uuid(),
+                CAST(:application_id AS uuid),
+                'approved',
+                'human',
+                'dashboard'
+            )
+            """
+        ),
+        {"application_id": packet_review_application_id},
+    )
+
     for application_id in (
         policy_application_id,
         executor_application_id,
         event_application_id,
+        packet_review_application_id,
     ):
         with pytest.raises(IntegrityError):
             with db_session.begin_nested():

@@ -4,6 +4,7 @@ from sqlalchemy import CheckConstraint
 
 from applypilot.db.models import (
     Application,
+    ApplicationPacketReview,
     Document,
     EmailThread,
     EventLogEntry,
@@ -36,6 +37,7 @@ def test_audit_records_do_not_cascade_delete_with_application() -> None:
     assert application_fk_ondelete(EventLogEntry) is None
     assert application_fk_ondelete(PolicyDecision) is None
     assert application_fk_ondelete(ExecutorAction) is None
+    assert application_fk_ondelete(ApplicationPacketReview) is None
 
     assert "delete" not in Application.events.property.cascade
     assert "delete-orphan" not in Application.events.property.cascade
@@ -48,6 +50,10 @@ def test_audit_records_do_not_cascade_delete_with_application() -> None:
     assert "delete" not in Application.executor_actions.property.cascade
     assert "delete-orphan" not in Application.executor_actions.property.cascade
     assert Application.executor_actions.property.passive_deletes == "all"
+
+    assert "delete" not in Application.packet_reviews.property.cascade
+    assert "delete-orphan" not in Application.packet_reviews.property.cascade
+    assert Application.packet_reviews.property.passive_deletes == "all"
 
 
 def test_application_state_default_matches_state_machine() -> None:
@@ -80,6 +86,26 @@ def test_event_log_has_replay_indexes() -> None:
     assert "ix_executor_actions_request_id" in {
         index.name for index in ExecutorAction.__table__.indexes
     }
+
+
+def test_application_packet_review_schema_matches_m2_contract() -> None:
+    table = ApplicationPacketReview.__table__
+
+    assert table.c.decision.nullable is False
+    assert table.c.reviewed_by.nullable is False
+    assert table.c.source.nullable is False
+    assert table.c.packet_text.nullable is True
+    assert table.c.notes.nullable is True
+
+    assert {
+        "ck_application_packet_reviews_decision_m2",
+        "ck_application_packet_reviews_source_m2",
+    }.issubset(check_constraint_names(ApplicationPacketReview))
+
+    assert {
+        "ix_application_packet_reviews_application_id",
+        "ix_application_packet_reviews_created_at",
+    }.issubset({index.name for index in ApplicationPacketReview.__table__.indexes})
 
 
 def test_m1_value_check_constraints_are_declared_on_models() -> None:
