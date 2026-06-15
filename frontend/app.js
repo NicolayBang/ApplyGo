@@ -185,6 +185,7 @@ const elements = {
   scoreList: document.querySelector("#score-list"),
   policyList: document.querySelector("#policy-list"),
   executorList: document.querySelector("#executor-list"),
+  packetReadiness: document.querySelector("#packet-readiness"),
   packetPreview: document.querySelector("#packet-preview"),
   copyCoverNoteButton: document.querySelector("#copy-cover-note-button"),
   copyPacketButton: document.querySelector("#copy-packet-button"),
@@ -794,7 +795,51 @@ function buildPacketPreview() {
   ].join("\n");
 }
 
+function packetReadinessItems() {
+  const application = currentAudit.application || {};
+  const policy = latestPolicyDecision();
+  const executor = latestExecutorAction();
+
+  return [
+    {
+      label: "Application",
+      ready: Boolean(application.id),
+      detail: application.id ? "Loaded" : "Create or load an application",
+    },
+    {
+      label: "Score",
+      ready: Boolean(application.confidence || application.fit_score),
+      detail: application.confidence ? `${application.confidence} confidence` : "Score before review",
+    },
+    {
+      label: "Policy",
+      ready: Boolean(policy),
+      detail: policy ? `${policy.decision} decision` : "Evaluate policy",
+    },
+    {
+      label: "Dry-run",
+      ready: Boolean(executor),
+      detail: executor ? `${executor.status} ${executor.execution_mode}` : "Preview action",
+    },
+  ];
+}
+
+function renderPacketReadiness() {
+  elements.packetReadiness.innerHTML = packetReadinessItems()
+    .map(
+      (item) => `
+        <div class="packet-readiness-item ${item.ready ? "ready" : "pending"}">
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${item.ready ? "Ready" : "Pending"}</strong>
+          <small>${escapeHtml(item.detail)}</small>
+        </div>
+      `,
+    )
+    .join("");
+}
+
 function renderPacketPreview() {
+  renderPacketReadiness();
   elements.packetPreview.textContent = buildPacketPreview();
 }
 
