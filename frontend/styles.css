@@ -832,6 +832,36 @@ button:disabled {
   background: #fee2e2;
 }
 
+.packet-panel {
+  margin-top: 16px;
+}
+
+.packet-panel .section-heading {
+  align-items: center;
+}
+
+.packet-note {
+  margin: 8px 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.packet-preview {
+  overflow: auto;
+  max-height: 360px;
+  border: 1px solid #d8e5f2;
+  border-radius: 10px;
+  margin: 0;
+  padding: 14px;
+  color: #0f1f36;
+  background: #f8fbff;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .meta {
   color: var(--muted);
   font-size: 13px;
