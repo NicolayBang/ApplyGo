@@ -88,7 +88,8 @@ The packet preview is intentionally read-only:
 - it does not open browser automation;
 - it does not submit an application.
 
-Use **Copy packet** to copy the generated packet text for manual review. Clipboard access depends on
+Use **Copy packet** to copy the full generated packet text for manual review. Use **Copy cover
+note** when the reviewer only needs the deterministic cover-note draft. Clipboard access depends on
 browser permissions; if the browser denies access, the dashboard shows a non-blocking status message.
 
 ## Manual intake

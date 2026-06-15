@@ -112,6 +112,9 @@ Implementation note: the first deterministic cover-note draft is now implemented
 dashboard packet preview. It uses the loaded application, job, score, policy, and executor evidence,
 remains read-only, and does not call an LLM or create external side effects.
 
+Implementation note: the dashboard now provides separate copy actions for the full application
+packet and the deterministic cover-note draft so reviewers can reuse either artifact manually.
+
 ## Validation Plan
 
 For docs-only PRs:

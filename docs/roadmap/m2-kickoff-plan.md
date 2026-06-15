@@ -58,6 +58,8 @@ M2 should focus on:
    - Log generation or review events if persisted.
    - Status: first read-only deterministic cover-note draft implemented in the dashboard packet
      preview without persistence, LLM calls, or external side effects.
+   - Status: the dashboard can copy either the full packet or only the deterministic cover-note
+     draft for manual review.
 
 5. **Validation and demo update**
    - Extend the demo script/checklist only after implemented behavior exists.
