@@ -129,6 +129,11 @@ def test_dashboard_exposes_demo_readiness_guards() -> None:
     assert script_response.status_code == 200
     assert 'id="workflow-hint"' in index_response.text
     assert "updateWorkflowReadiness" in script_response.text
+    assert "setActionMetadata" in script_response.text
+    assert "Create or load an application before scoring." in script_response.text
+    assert "Create or load an application before policy evaluation." in script_response.text
+    assert "Score the application to generate reviewer evidence." in script_response.text
+    assert "Evaluate whether policy allows the dry-run preview." in script_response.text
     assert "Score the application before evaluating policy." in script_response.text
     assert "Evaluate policy before dry-run." in script_response.text
     assert "Policy requires review before dry-run:" in script_response.text
