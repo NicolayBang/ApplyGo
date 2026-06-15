@@ -75,9 +75,12 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert 'id="packet-preview"' in index_response.text
     assert 'id="copy-cover-note-button"' in index_response.text
     assert 'id="copy-packet-button"' in index_response.text
+    assert 'id="download-packet-button"' in index_response.text
     assert "renderPacketReadiness" in script_response.text
     assert "buildPacketPreview" in script_response.text
     assert "buildCoverNoteDraft" in script_response.text
+    assert "downloadTextFile" in script_response.text
+    assert "Application packet preview downloaded as a text file." in script_response.text
     assert "Deterministic cover-note draft copied to clipboard." in script_response.text
     assert "Deterministic Cover Note Draft" in script_response.text
     assert "renderPacketPreview" in script_response.text

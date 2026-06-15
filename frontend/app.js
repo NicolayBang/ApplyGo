@@ -189,6 +189,7 @@ const elements = {
   packetPreview: document.querySelector("#packet-preview"),
   copyCoverNoteButton: document.querySelector("#copy-cover-note-button"),
   copyPacketButton: document.querySelector("#copy-packet-button"),
+  downloadPacketButton: document.querySelector("#download-packet-button"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewSummaryStatus: document.querySelector("#review-summary-status"),
   timeline: document.querySelector("#timeline"),
@@ -843,6 +844,25 @@ function renderPacketPreview() {
   elements.packetPreview.textContent = buildPacketPreview();
 }
 
+function packetFileName() {
+  const application = currentAudit.application || {};
+  const job = application.job || {};
+  const company = String(job.company || "company").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+  const role = String(job.title || "role").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+  const suffix = String(application.id || "demo").slice(0, 8);
+  return `applypilot-packet-${company || "company"}-${role || "role"}-${suffix}.txt`.toLowerCase();
+}
+
+function downloadTextFile(fileName, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function eventSummary(event) {
   const payload = event.payload || {};
 
@@ -1490,6 +1510,11 @@ elements.copyCoverNoteButton.addEventListener("click", async () => {
   }
 
   setStatus("error", "Copy unavailable", "Clipboard access is not available in this browser.");
+});
+
+elements.downloadPacketButton.addEventListener("click", () => {
+  downloadTextFile(packetFileName(), buildPacketPreview());
+  setStatus("success", "Packet downloaded", "Application packet preview downloaded as a text file.");
 });
 
 elements.demoButton.addEventListener("click", () => {
