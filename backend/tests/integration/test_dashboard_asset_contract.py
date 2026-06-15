@@ -71,9 +71,11 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert script_response.status_code == 200
 
     assert 'aria-label="Application packet preview"' in index_response.text
+    assert 'id="packet-readiness"' in index_response.text
     assert 'id="packet-preview"' in index_response.text
     assert 'id="copy-cover-note-button"' in index_response.text
     assert 'id="copy-packet-button"' in index_response.text
+    assert "renderPacketReadiness" in script_response.text
     assert "buildPacketPreview" in script_response.text
     assert "buildCoverNoteDraft" in script_response.text
     assert "Deterministic cover-note draft copied to clipboard." in script_response.text
@@ -81,6 +83,7 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert "renderPacketPreview" in script_response.text
     assert "Preview only. No email, browser automation, external submission" in script_response.text
     assert ".packet-panel" in style_response.text
+    assert ".packet-readiness" in style_response.text
     assert ".packet-preview" in style_response.text
 
 
