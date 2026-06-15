@@ -5,10 +5,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY pyproject.toml alembic.ini ./
-COPY src ./src
-COPY alembic ./alembic
-COPY scripts ./scripts
+COPY backend/pyproject.toml backend/alembic.ini ./
+COPY backend/src ./src
+COPY backend/alembic ./alembic
+COPY backend/scripts ./scripts
+COPY frontend ../frontend
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir -e ".[dev]"

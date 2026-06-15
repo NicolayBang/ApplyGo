@@ -113,6 +113,14 @@ pip install -e .
 uvicorn applypilot.main:app --reload
 ```
 
+To run the packaged backend and dashboard through Docker after migrations:
+
+```powershell
+docker compose --profile app up -d api
+```
+
+Then open `http://localhost:8000/ui/`.
+
 ## Validation
 
 For DB-backed validation in Codespaces or local Docker, use `docs/devops/codespaces.md`.
