@@ -5,6 +5,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 ## Start Here
 
 - `reviewer-brief.md` - concise capstone/recruiter overview.
+- `codespaces-demo.md` - quick Codespaces demo path for reviewers.
 - `mvp-status.md` - concise current implementation status and remaining MVP boundaries.
 - `m1-mvp-readiness-summary.md` - current readiness summary and final M1 completion checklist.
 - `dashboard-demo-flow.md` - step-by-step runbook for the implemented M1 dashboard demo.
@@ -18,15 +19,16 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 ## Reading Order
 
 1. Read `reviewer-brief.md` for the shortest capstone overview.
-2. Read `mvp-status.md` to understand what exists today.
-3. Read `m1-mvp-readiness-summary.md` to understand what remains before calling M1 complete.
-4. Run `dashboard-demo-flow.md` to exercise the implemented workflow.
-5. Use `m1-demo-review-checklist.md` to record pass/fix observations.
-6. Read `m1-manual-demo-validation-2026-06-14.md` for the latest recorded validation evidence.
-7. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-8. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
-9. Use `process.md` to understand the project discipline behind the work.
-10. Treat `phase-2-ideas.md` as future discussion material only.
+2. Use `codespaces-demo.md` for the fastest cloud demo path.
+3. Read `mvp-status.md` to understand what exists today.
+4. Read `m1-mvp-readiness-summary.md` to understand what remains before calling M1 complete.
+5. Run `dashboard-demo-flow.md` to exercise the implemented workflow in detail.
+6. Use `m1-demo-review-checklist.md` to record pass/fix observations.
+7. Read `m1-manual-demo-validation-2026-06-14.md` for the latest recorded validation evidence.
+8. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
+9. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+10. Use `process.md` to understand the project discipline behind the work.
+11. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 

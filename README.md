@@ -41,6 +41,7 @@ manual intake -> parse/classify -> state progression -> scoring -> policy check 
 Useful reviewer entry points:
 
 - `docs/capstone/reviewer-brief.md`: concise capstone/recruiter overview
+- `docs/capstone/codespaces-demo.md`: quick Codespaces demo path for reviewers
 - `docs/capstone/README.md`: capstone documentation index and suggested reading order
 - `docs/capstone/mvp-status.md`: concise current implementation status and remaining MVP boundaries
 - `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
