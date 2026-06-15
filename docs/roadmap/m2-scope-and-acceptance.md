@@ -105,6 +105,9 @@ This can prove the M2 review experience before adding new persistence or migrati
 The draft packet boundary is recorded in
 `docs/contracts/m2-application-packet-contract.md`.
 
+Implementation note: the first dashboard-only packet preview slice is now implemented. It remains
+read-only, uses existing audit data, and does not add persistence or migrations.
+
 ## Validation Plan
 
 For docs-only PRs:

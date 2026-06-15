@@ -50,6 +50,7 @@ M2 should focus on:
 3. **Dashboard packet review design**
    - Add a reviewer-facing packet section or wireframe.
    - Keep it backed by current data or clearly label it as proposed before implementation.
+   - Status: first read-only packet preview slice implemented without persistence or migrations.
 
 4. **Deterministic draft artifact proof**
    - Add a small deterministic cover-note or application-summary draft generator.

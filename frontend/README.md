@@ -75,6 +75,22 @@ path is the preferred manual demo route.
 The dashboard will display the application record, review readiness, policy decisions, executor
 actions, and full audit timeline fetched from the backend.
 
+## Application packet preview
+
+The dashboard includes an M2 application packet preview. It is generated from the currently loaded
+application, job, score, policy, executor, and next-action evidence.
+
+The packet preview is intentionally read-only:
+
+- it does not persist packet content;
+- it does not create `documents` rows;
+- it does not send email;
+- it does not open browser automation;
+- it does not submit an application.
+
+Use **Copy packet** to copy the generated packet text for manual review. Clipboard access depends on
+browser permissions; if the browser denies access, the dashboard shows a non-blocking status message.
+
 ## Manual intake
 
 With the backend running, the dashboard can create a manual application directly:
@@ -109,6 +125,10 @@ explains the required review or override. That is expected governed behavior, no
 
 Executor details include side-effect status, planned steps, and required safeguards so reviewers can
 inspect what would happen without triggering external automation.
+
+The application packet preview updates from the same loaded audit data. After scoring, policy, and
+dry-run, the packet text includes fit evidence, governance evidence, safeguards, planned steps, and
+the next human action.
 
 ## API endpoint
 
