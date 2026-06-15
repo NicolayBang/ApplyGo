@@ -298,6 +298,25 @@ class FakeTracker:
             created_at=datetime.now(tz=UTC),
         )
         self.packet_reviews.append(record)
+        self.events.append(
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                application_id=application_id,
+                event_type="application_packet.reviewed",
+                actor=record.reviewed_by,
+                from_state=None,
+                to_state=None,
+                payload={
+                    "packet_review_id": str(record.id),
+                    "decision": record.decision,
+                    "reviewed_by": record.reviewed_by,
+                    "source": record.source,
+                    "notes_present": bool(record.notes),
+                    "packet_text_persisted": bool(record.packet_text),
+                },
+                created_at=datetime.now(tz=UTC),
+            )
+        )
         return record
 
     def record_executor_result(self, request, result, actor="worker"):
@@ -707,10 +726,9 @@ def test_policy_decision_is_evaluated_persisted_and_audited() -> None:
     assert events[-1]["payload"]["decision"] == "review"
 
 
-def test_packet_review_is_recorded_without_audit_event() -> None:
+def test_packet_review_is_recorded_and_audited() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)
-    event_count = len(tracker.events)
 
     response = client.post(
         f"/applications/{tracker.application_id}/packet-reviews",
@@ -732,7 +750,19 @@ def test_packet_review_is_recorded_without_audit_event() -> None:
     assert body["packet_text"] is None
     assert body["notes"] == "Ready for manual use."
     assert len(tracker.packet_reviews) == 1
-    assert len(tracker.events) == event_count
+
+    events_response = client.get(f"/applications/{tracker.application_id}/events")
+    assert events_response.status_code == 200
+    event = events_response.json()[-1]
+    assert event["event_type"] == "application_packet.reviewed"
+    assert event["actor"] == "Nicolay"
+    assert event["payload"]["packet_review_id"] == body["id"]
+    assert event["payload"]["decision"] == "approved"
+    assert event["payload"]["reviewed_by"] == "Nicolay"
+    assert event["payload"]["source"] == "dashboard"
+    assert event["payload"]["notes_present"] is True
+    assert event["payload"]["packet_text_persisted"] is False
+    assert "packet_text" not in event["payload"]
 
 
 def test_packet_review_rejects_invalid_decision() -> None:

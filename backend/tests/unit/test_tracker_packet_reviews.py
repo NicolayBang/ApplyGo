@@ -67,7 +67,7 @@ def make_application() -> SimpleNamespace:
     return SimpleNamespace(id=uuid.uuid4())
 
 
-def test_record_packet_review_persists_human_review_without_event() -> None:
+def test_record_packet_review_persists_human_review_and_audit_event() -> None:
     application = make_application()
     session = FakeSession(application)
     tracker = Tracker(session)  # type: ignore[arg-type]
@@ -89,9 +89,22 @@ def test_record_packet_review_persists_human_review_without_event() -> None:
     assert review.source == "dashboard"
     assert review.packet_text is None
     assert review.notes == "Ready for manual use."
-    assert session.flush_count == 1
+    assert session.flush_count == 2
     assert isinstance(session.added[0], ApplicationPacketReview)
-    assert not any(isinstance(item, EventLogEntry) for item in session.added)
+
+    [event] = [item for item in session.added if isinstance(item, EventLogEntry)]
+    assert event.application_id == application.id
+    assert event.event_type == "application_packet.reviewed"
+    assert event.actor == "Nicolay"
+    assert event.payload == {
+        "packet_review_id": str(review.id),
+        "decision": "approved",
+        "reviewed_by": "Nicolay",
+        "source": "dashboard",
+        "notes_present": True,
+        "packet_text_persisted": False,
+    }
+    assert "packet_text" not in event.payload
 
 
 def test_record_packet_review_rejects_missing_application() -> None:

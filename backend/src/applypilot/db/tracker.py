@@ -333,6 +333,20 @@ class Tracker:
         )
         self._session.add(review)
         self._session.flush()
+
+        self._append_event(
+            application_id=application_id,
+            event_type="application_packet.reviewed",
+            actor=data.reviewed_by,
+            payload={
+                "packet_review_id": str(review.id),
+                "decision": review.decision,
+                "reviewed_by": review.reviewed_by,
+                "source": review.source,
+                "notes_present": bool(review.notes),
+                "packet_text_persisted": bool(review.packet_text),
+            },
+        )
         return review
 
     def get_packet_reviews(self, application_id: uuid.UUID) -> list[ApplicationPacketReview]:
