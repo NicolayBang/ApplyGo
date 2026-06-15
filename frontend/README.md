@@ -130,6 +130,10 @@ The application packet preview updates from the same loaded audit data. After sc
 dry-run, the packet text includes fit evidence, governance evidence, safeguards, planned steps, and
 the next human action.
 
+The packet also includes a deterministic cover-note draft generated from the current application,
+job, score, policy, and executor evidence. The draft is intended for human review only: it is not
+persisted, it does not call an LLM, and it does not send external follow-up.
+
 ## API endpoint
 
 The dashboard fetches audit and review data from:

@@ -108,6 +108,10 @@ The draft packet boundary is recorded in
 Implementation note: the first dashboard-only packet preview slice is now implemented. It remains
 read-only, uses existing audit data, and does not add persistence or migrations.
 
+Implementation note: the first deterministic cover-note draft is now implemented inside the
+dashboard packet preview. It uses the loaded application, job, score, policy, and executor evidence,
+remains read-only, and does not call an LLM or create external side effects.
+
 ## Validation Plan
 
 For docs-only PRs:
