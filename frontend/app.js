@@ -365,7 +365,7 @@ function renderSummary(application) {
     <div class="summary-signal-row">
       <div>
         <span>Fit score</span>
-        <strong>${escapeHtml(scoreDisplay(application) || "Not recorded")}</strong>
+        <strong>${escapeHtml(scoreNumberDisplay(application) || "Not recorded")}</strong>
       </div>
       <div>
         <span>Status</span>
@@ -396,6 +396,10 @@ function scoreDisplay(application) {
     ? ` - ${recommendationDisplay(application.recommendation)}`
     : "";
   return `${application.fit_score}${recommendation}`;
+}
+
+function scoreNumberDisplay(application) {
+  return application.fit_score ? `${application.fit_score}/100` : null;
 }
 
 function recommendationDisplay(value) {

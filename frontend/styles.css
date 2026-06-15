@@ -641,9 +641,9 @@ button:disabled {
 
 .summary-signal-row span,
 .detail-list dt {
-  color: var(--muted);
+  color: #475569;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .summary-signal-row strong {
@@ -658,9 +658,9 @@ button:disabled {
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #334155;
+  color: #64748b;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .detail-list {
@@ -728,9 +728,9 @@ button:disabled {
 .compact-item strong {
   display: block;
   margin-bottom: 4px;
-  color: var(--ink-soft);
+  color: #334155;
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 650;
 }
 
 .recent-application,
@@ -802,9 +802,17 @@ button:disabled {
   align-items: center;
 }
 
+.stage-card-header strong {
+  margin-bottom: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 650;
+}
+
 .stage-meta {
   color: var(--muted);
   font-size: 13px;
+  font-weight: 500;
 }
 
 .side-effect-banner {
@@ -831,6 +839,11 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.meta strong {
+  color: #475569;
+  font-weight: 650;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -848,6 +861,21 @@ button:disabled {
   background: #fef3c7;
 }
 
+.badge.applicationcreated,
+.badge.draft,
+.badge.scoring,
+.badge.queued {
+  color: var(--brand-dark);
+  background: #dbeafe;
+}
+
+.badge.readyforreview,
+.badge.needs_review,
+.badge.pendingreview {
+  color: var(--warn);
+  background: #fef3c7;
+}
+
 .badge.deny,
 .badge.blocked,
 .badge.failed {
@@ -858,9 +886,17 @@ button:disabled {
 .badge.planned,
 .badge.allow,
 .badge.completed,
-.badge.ready {
+.badge.ready,
+.badge.approved,
+.badge.submitted,
+.badge.recommended {
   color: var(--ok);
   background: #ddf8ec;
+}
+
+.badge.archived {
+  color: #475569;
+  background: #e2e8f0;
 }
 
 .score-chip {
