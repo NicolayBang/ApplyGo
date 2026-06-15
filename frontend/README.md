@@ -34,14 +34,12 @@ pip install -e ".[dev]"
 ### 3. Run database migrations
 
 ```bash
-cd backend
 alembic upgrade head
 ```
 
 ### 4. Seed demo data
 
 ```bash
-cd backend
 python -m applypilot.dev.demo_seed
 ```
 
@@ -50,7 +48,6 @@ This prints identifiers including an **Application ID** UUID.
 ### 5. Start the backend API
 
 ```bash
-cd backend
 uvicorn applypilot.main:app --reload
 ```
 
