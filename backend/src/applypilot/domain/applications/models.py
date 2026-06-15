@@ -127,6 +127,39 @@ class ApplicationScoreRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Application packet review schemas
+# ---------------------------------------------------------------------------
+
+class ApplicationPacketReviewCreate(BaseModel):
+    decision: str = Field(pattern="^(approved|rejected|changes_requested)$")
+    reviewed_by: str = Field(min_length=1, max_length=64)
+    source: str = Field(default="dashboard", pattern="^dashboard$")
+    packet_text: str | None = None
+    notes: str | None = None
+
+    @field_validator("reviewed_by", "packet_text", "notes", mode="before")
+    @classmethod
+    def _normalize_optional_text(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        return normalized or None
+
+
+class ApplicationPacketReviewRead(BaseModel):
+    id: uuid.UUID
+    application_id: uuid.UUID
+    decision: str
+    reviewed_by: str
+    source: str
+    packet_text: str | None = None
+    notes: str | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
 # Confidence/explanation schema  (locked architecture sec. 8)
 # ---------------------------------------------------------------------------
 
