@@ -58,6 +58,8 @@ Useful reviewer entry points:
 
 The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
 
+![ApplyPilot M1 dashboard](docs/capstone/assets/m1-dashboard.png)
+
 ## Implemented M1 architecture
 
 ```mermaid
