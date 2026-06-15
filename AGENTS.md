@@ -1,5 +1,9 @@
 # AGENTS.md — ApplyPilot
 
+This file contains repository-wide instructions for AI coding agents and review assistants. It is
+not product documentation, a user guide, or a claim that virtual personas are implemented product
+features. Reviewer-facing capstone material lives under `docs/capstone/`.
+
 ## Project Identity
 
 ApplyPilot is a governed job application automation platform.

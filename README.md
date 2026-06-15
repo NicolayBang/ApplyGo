@@ -38,6 +38,7 @@ manual intake -> parse/classify -> state progression -> scoring -> policy check 
 
 Useful reviewer entry points:
 
+- `docs/capstone/reviewer-brief.md`: concise capstone/recruiter overview
 - `docs/capstone/README.md`: capstone documentation index and suggested reading order
 - `docs/capstone/mvp-status.md`: concise current implementation status and remaining MVP boundaries
 - `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
@@ -48,7 +49,6 @@ Useful reviewer entry points:
 - `docs/diagrams/README.md`: diagram index and diagram authority reminder
 - `docs/diagrams/database-schema.md`: separate implemented and planned ER views
 - `docs/devops/codespaces.md`: Codespaces and DB-backed validation workflow
-- `docs/team/README.md`: virtual team persona index and advisory boundaries
 - `docs/architecture/locked-plan.md`: architecture authority and M1 scope
 
 The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
@@ -131,3 +131,10 @@ docker compose --profile demo run --rm seed
 - Unsupported ATS flows
 - Full event sourcing
 - LLM access to credentials
+
+## AI-assisted development
+
+AI tools were used for pair programming, review, documentation drafting, and validation prompts.
+Final architecture decisions, scope control, testing expectations, and merge decisions were
+human-owned. The repository keeps implemented behavior separate from proposed future work through
+contracts, ADRs, CI checks, and capstone validation docs.
