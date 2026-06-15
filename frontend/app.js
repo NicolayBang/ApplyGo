@@ -185,6 +185,8 @@ const elements = {
   scoreList: document.querySelector("#score-list"),
   policyList: document.querySelector("#policy-list"),
   executorList: document.querySelector("#executor-list"),
+  packetPreview: document.querySelector("#packet-preview"),
+  copyPacketButton: document.querySelector("#copy-packet-button"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewSummaryStatus: document.querySelector("#review-summary-status"),
   timeline: document.querySelector("#timeline"),
@@ -697,6 +699,71 @@ function compactMeta(label, values) {
   return `<div class="meta"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(items.join(", "))}</div>`;
 }
 
+function latestExecutorAction() {
+  return (currentAudit.executor_actions || []).at(-1);
+}
+
+function listText(values, fallback = "None recorded") {
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  return items.length ? items.join("; ") : fallback;
+}
+
+function packetLine(label, value) {
+  return `${label}: ${value || "Not recorded"}`;
+}
+
+function buildPacketPreview() {
+  const application = currentAudit.application || {};
+  const job = application.job || {};
+  const policy = latestPolicyDecision();
+  const executor = latestExecutorAction();
+  const result = executor?.result || {};
+  const nextActionText = nextAction();
+
+  return [
+    "Application Packet Preview",
+    "==========================",
+    packetLine("Role", job.title),
+    packetLine("Company", job.company),
+    packetLine("Location", summaryMeta(job)),
+    packetLine("Source", job.source_url),
+    "",
+    "Fit Evidence",
+    "------------",
+    packetLine("Fit score", scoreNumberDisplay(application)),
+    packetLine("Confidence", application.confidence),
+    packetLine("Recommendation", recommendationDisplay(application.recommendation)),
+    packetLine("Reasons", listText(application.score_reasons)),
+    packetLine("Risks", listText(application.score_risks)),
+    packetLine("Missing data", listText(application.missing_data)),
+    packetLine("Red flags", listText(application.red_flags)),
+    "",
+    "Governance",
+    "----------",
+    packetLine("Policy decision", policy ? policyDecisionDetail(policy) : "Evaluate policy before preview."),
+    packetLine(
+      "Dry-run evidence",
+      executor
+        ? `${executor.status} ${executor.execution_mode}; side effects: ${result.side_effects === false ? "false" : "not recorded"}`
+        : "No executor preview recorded.",
+    ),
+    packetLine("Safeguards", listText(result.requires)),
+    packetLine("Planned steps", listText(result.planned_steps)),
+    "",
+    "Next Human Action",
+    "-----------------",
+    `${nextActionText.title} - ${nextActionText.detail}`,
+    "",
+    "Boundary",
+    "--------",
+    "Preview only. No email, browser automation, external submission, or packet persistence occurs here.",
+  ].join("\n");
+}
+
+function renderPacketPreview() {
+  elements.packetPreview.textContent = buildPacketPreview();
+}
+
 function eventSummary(event) {
   const payload = event.payload || {};
 
@@ -859,6 +926,7 @@ function renderAudit(data, reviewSummary = null) {
   renderScoreDetails(data.application);
   renderPolicy(data.policy_decisions || []);
   renderExecutor(data.executor_actions || []);
+  renderPacketPreview();
   renderTimeline(data.events || []);
   updateWorkflowReadiness();
 }
@@ -1310,6 +1378,22 @@ elements.policyButton.addEventListener("click", () => {
 
 elements.dryRunButton.addEventListener("click", () => {
   dryRunFollowUp();
+});
+
+elements.copyPacketButton.addEventListener("click", async () => {
+  const packetText = buildPacketPreview();
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(packetText);
+      setStatus("success", "Packet copied", "Application packet preview copied to clipboard.");
+    } catch {
+      setStatus("error", "Copy unavailable", "Clipboard permission was denied by the browser.");
+    }
+    return;
+  }
+
+  setStatus("error", "Copy unavailable", "Clipboard access is not available in this browser.");
 });
 
 elements.demoButton.addEventListener("click", () => {

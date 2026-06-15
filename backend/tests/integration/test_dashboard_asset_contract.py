@@ -60,6 +60,26 @@ def test_dashboard_review_summary_contract_is_wired() -> None:
     assert ".readiness-item" in style_response.text
 
 
+def test_dashboard_packet_preview_contract_is_wired() -> None:
+    """The dashboard exposes the M2 packet preview without adding backend routes."""
+    index_response = client.get("/ui/index.html")
+    style_response = client.get("/ui/styles.css")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert style_response.status_code == 200
+    assert script_response.status_code == 200
+
+    assert 'aria-label="Application packet preview"' in index_response.text
+    assert 'id="packet-preview"' in index_response.text
+    assert 'id="copy-packet-button"' in index_response.text
+    assert "buildPacketPreview" in script_response.text
+    assert "renderPacketPreview" in script_response.text
+    assert "Preview only. No email, browser automation, external submission" in script_response.text
+    assert ".packet-panel" in style_response.text
+    assert ".packet-preview" in style_response.text
+
+
 def test_dashboard_fetch_paths_are_backed_by_api_routes() -> None:
     """Every dashboard API path stays inside the supported M1 route contract."""
     script_response = client.get("/ui/app.js")
