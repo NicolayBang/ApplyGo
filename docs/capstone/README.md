@@ -11,6 +11,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 - `m1-demo-review-checklist.md` - pass/fix checklist for manually reviewing the M1 demo.
 - `m1-manual-demo-validation-2026-06-14.md` - summary of the live M1 manual validation result.
 - `frontend-design-handoff.md` - guardrails for dashboard sketching and future visual polish.
+- `presentation-backlog.md` - optional recruiter/instructor presentation improvements.
 - `process.md` - capstone process scaffold and working agreement.
 - `phase-2-ideas.md` - parking lot for future ideas that are not committed MVP scope.
 
@@ -23,8 +24,9 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 5. Use `m1-demo-review-checklist.md` to record pass/fix observations.
 6. Read `m1-manual-demo-validation-2026-06-14.md` for the latest recorded validation evidence.
 7. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-8. Use `process.md` to understand the project discipline behind the work.
-9. Treat `phase-2-ideas.md` as future discussion material only.
+8. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+9. Use `process.md` to understand the project discipline behind the work.
+10. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 
