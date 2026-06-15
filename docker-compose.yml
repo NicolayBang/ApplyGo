@@ -1,8 +1,28 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    profiles:
+      - app
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-applypilot}:${POSTGRES_PASSWORD:-applypilot}@postgres:5432/${POSTGRES_DB:-applypilot}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    command: ["python", "-m", "uvicorn", "applypilot.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
   migrate:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: "no"
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-applypilot}:${POSTGRES_PASSWORD:-applypilot}@postgres:5432/${POSTGRES_DB:-applypilot}
@@ -13,8 +33,8 @@ services:
 
   seed:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: "no"
     profiles:
       - demo
