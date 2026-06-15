@@ -13,6 +13,7 @@ Roadmap docs are planning aids. They do not override:
 ## Current Milestones
 
 - `m2-kickoff-plan.md` - proposed M2 direction after M1 MVP readiness.
+- `m2-scope-and-acceptance.md` - proposed M2 scope, demo path, acceptance criteria, and stop conditions.
 
 ## Guardrail
 
