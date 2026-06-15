@@ -8,6 +8,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 - `codespaces-demo.md` - quick Codespaces demo path for reviewers.
 - `mvp-status.md` - concise current implementation status and remaining MVP boundaries.
 - `m1-demo-script.md` - short presentation script for walking reviewers through the M1 demo.
+- `m1-release-notes.md` - M1 release marker with summary, validation evidence, boundaries, and handoff notes.
 - `m1-mvp-readiness-summary.md` - current readiness summary and final M1 completion checklist.
 - `dashboard-demo-flow.md` - step-by-step runbook for the implemented M1 dashboard demo.
 - `m1-demo-review-checklist.md` - pass/fix checklist for manually reviewing the M1 demo.
@@ -24,15 +25,16 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 2. Use `codespaces-demo.md` for the fastest cloud demo path.
 3. Read `mvp-status.md` to understand what exists today.
 4. Use `m1-demo-script.md` when presenting the demo live.
-5. Read `m1-mvp-readiness-summary.md` to understand what remains before calling M1 complete.
-6. Run `dashboard-demo-flow.md` to exercise the implemented workflow in detail.
-7. Use `m1-demo-review-checklist.md` to record pass/fix observations.
-8. Read `m1-local-mvp-validation-2026-06-15.md` for the final local MVP validation evidence.
-9. Read `m1-manual-demo-validation-2026-06-14.md` for the earlier live manual validation result.
-10. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-11. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
-12. Use `process.md` to understand the project discipline behind the work.
-13. Treat `phase-2-ideas.md` as future discussion material only.
+5. Read `m1-release-notes.md` for the current M1 release marker and handoff summary.
+6. Read `m1-mvp-readiness-summary.md` to understand what remains before calling M1 complete.
+7. Run `dashboard-demo-flow.md` to exercise the implemented workflow in detail.
+8. Use `m1-demo-review-checklist.md` to record pass/fix observations.
+9. Read `m1-local-mvp-validation-2026-06-15.md` for the final local MVP validation evidence.
+10. Read `m1-manual-demo-validation-2026-06-14.md` for the earlier live manual validation result.
+11. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
+12. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+13. Use `process.md` to understand the project discipline behind the work.
+14. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 

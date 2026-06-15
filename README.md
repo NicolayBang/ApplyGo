@@ -45,6 +45,7 @@ Useful reviewer entry points:
 - `docs/capstone/README.md`: capstone documentation index and suggested reading order
 - `docs/capstone/mvp-status.md`: concise current implementation status and remaining MVP boundaries
 - `docs/capstone/m1-demo-script.md`: short presentation script for the live M1 demo
+- `docs/capstone/m1-release-notes.md`: M1 release marker, validation evidence, and handoff summary
 - `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
 - `docs/capstone/m1-demo-review-checklist.md`: manual pass/fix checklist for reviewing the M1 demo
 - `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
