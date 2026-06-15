@@ -132,6 +132,14 @@ const stateTransitions = {
   Archived: [],
 };
 
+const lifecycleSteps = [
+  { state: "ApplicationCreated", label: "Created" },
+  { state: "Draft", label: "Draft" },
+  { state: "ReadyForReview", label: "Review" },
+  { state: "Approved", label: "Approved" },
+  { state: "Submitted", label: "Submitted" },
+];
+
 const sampleJob = {
   title: "Backend Platform Engineer",
   company: "ApplyPilot Demo Co.",
@@ -167,6 +175,10 @@ const elements = {
   demoButton: document.querySelector("#demo-button"),
   statusPill: document.querySelector("#status-pill"),
   statusMessage: document.querySelector("#status-message"),
+  nextActionStatus: document.querySelector("#next-action-status"),
+  nextActionTitle: document.querySelector("#next-action-title"),
+  nextActionDetail: document.querySelector("#next-action-detail"),
+  lifecycleStepper: document.querySelector("#lifecycle-stepper"),
   workflowHint: document.querySelector("#workflow-hint"),
   stateActions: document.querySelector("#state-actions"),
   applicationSummary: document.querySelector("#application-summary"),
@@ -238,16 +250,7 @@ function hasSubmissionExecutorEvidence() {
   });
 }
 
-function visibleStateTransitions(application) {
-  const transitions = stateTransitions[application.state] || [];
-  if (application.state !== "Approved") return transitions;
-
-  return transitions.filter(
-    (transition) => transition.state !== "Submitted" || hasSubmissionExecutorEvidence(),
-  );
-}
-
-function updateWorkflowReadiness() {
+function workflowReadiness() {
   const hasApplication = hasLoadedApplication();
   const hasScore = Boolean(currentReviewSummary?.ready_for_policy || currentAudit.application?.confidence);
   const latestPolicy = latestPolicyDecision();
@@ -258,6 +261,35 @@ function updateWorkflowReadiness() {
     currentReviewSummary?.ready_for_submission || hasSubmissionExecutorEvidence(),
   );
   const isApproved = currentAudit.application?.state === "Approved";
+
+  return {
+    hasApplication,
+    hasScore,
+    latestPolicy,
+    hasAllowedPolicy,
+    hasSubmissionEvidence,
+    isApproved,
+  };
+}
+
+function visibleStateTransitions(application) {
+  const transitions = stateTransitions[application.state] || [];
+  if (application.state !== "Approved") return transitions;
+
+  return transitions.filter(
+    (transition) => transition.state !== "Submitted" || hasSubmissionExecutorEvidence(),
+  );
+}
+
+function updateWorkflowReadiness() {
+  const {
+    hasApplication,
+    hasScore,
+    latestPolicy,
+    hasAllowedPolicy,
+    hasSubmissionEvidence,
+    isApproved,
+  } = workflowReadiness();
 
   if (!hasApplication) {
     clearStateActions();
@@ -291,6 +323,9 @@ function updateWorkflowReadiness() {
   } else {
     elements.workflowHint.textContent = "Ready for dry-run follow-up.";
   }
+
+  renderNextAction();
+  renderLifecycleStepper(currentAudit.application || {});
 }
 
 function renderSummary(application) {
@@ -298,33 +333,104 @@ function renderSummary(application) {
   const nextStates = visibleStateTransitions(application)
     .map((transition) => transition.state)
     .join(", ");
-  const rows = [
-    ["Application", application.id],
-    ["Job", application.job_id],
-    ["Role", job.title],
-    ["Company", job.company],
+  const overviewRows = [
     ["Location", job.location],
     ["Remote", job.remote_ok ? "Yes" : null],
     ["Job type", job.job_type],
-    ["ATS", job.ats_type],
     ["Salary", job.salary_raw],
     ["State", application.state],
     ["Next states", nextStates || "None"],
     ["Mode", application.automation_mode],
-    ["Fit score", application.fit_score],
     ["Confidence", application.confidence],
-    ["Recommendation", application.recommendation],
     ["Missing data", (application.missing_data || []).join(", ")],
     ["Red flags", (application.red_flags || []).join(", ")],
     ["Created", formatDate(application.created_at)],
     ["Updated", formatDate(application.updated_at)],
   ];
+  const technicalRows = [
+    ["Application", application.id],
+    ["Job", application.job_id],
+    ["ATS", job.ats_type],
+  ];
 
-  elements.applicationSummary.innerHTML = rows
-    .map(
-      ([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
-    )
-    .join("");
+  elements.applicationSummary.innerHTML = `
+    <div class="application-hero">
+      <div class="avatar-tile">${escapeHtml(initials(job.company || job.title || "AP"))}</div>
+      <div>
+        <strong>${escapeHtml(job.title || "Untitled role")}</strong>
+        <span>${escapeHtml(job.company || "Unknown company")}</span>
+        <div class="hero-meta">${escapeHtml(summaryMeta(job))}</div>
+      </div>
+    </div>
+    <div class="summary-signal-row">
+      <div>
+        <span>Fit score</span>
+        <strong>${escapeHtml(scoreNumberDisplay(application) || "Not recorded")}</strong>
+      </div>
+      <div>
+        <span>Status</span>
+        ${badge(application.state)}
+      </div>
+    </div>
+    <div class="summary-signal-row">
+      <div>
+        <span>Recommendation</span>
+        ${badge(recommendationDisplay(application.recommendation) || "Not recorded")}
+      </div>
+      <div>
+        <span>Next state</span>
+        <strong>${escapeHtml(nextStates || "None")}</strong>
+      </div>
+    </div>
+    ${detailRows(overviewRows)}
+    <details class="technical-details">
+      <summary>Technical identifiers</summary>
+      ${detailRows(technicalRows)}
+    </details>
+  `;
+}
+
+function scoreDisplay(application) {
+  if (!application.fit_score) return null;
+  const recommendation = application.recommendation
+    ? ` - ${recommendationDisplay(application.recommendation)}`
+    : "";
+  return `${application.fit_score}${recommendation}`;
+}
+
+function scoreNumberDisplay(application) {
+  return application.fit_score ? `${application.fit_score}/100` : null;
+}
+
+function recommendationDisplay(value) {
+  return String(value || "").replace(/_/g, " ");
+}
+
+function initials(value) {
+  return String(value || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+}
+
+function summaryMeta(job) {
+  return [job.location, job.job_type, job.salary_raw].filter(Boolean).join(" - ") || "Details pending";
+}
+
+function detailRows(rows) {
+  return `
+    <dl class="detail-list">
+      ${rows
+        .map(
+          ([label, value]) =>
+            `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
+        )
+        .join("")}
+    </dl>
+  `;
 }
 
 function clearStateActions() {
@@ -347,6 +453,126 @@ function renderStateActions(application) {
         </button>
       `,
     )
+    .join("");
+}
+
+function nextAction() {
+  const {
+    hasApplication,
+    hasScore,
+    latestPolicy,
+    hasAllowedPolicy,
+    hasSubmissionEvidence,
+    isApproved,
+  } = workflowReadiness();
+  const state = currentAudit.application?.state;
+
+  if (!hasApplication) {
+    return {
+      status: "Setup",
+      title: "Create or load an application",
+      detail: "Use Sample job, Create, or Load recent to start the guided workflow.",
+    };
+  }
+
+  if (!hasScore) {
+    return {
+      status: "Assess",
+      title: "Score this application",
+      detail: "A score unlocks policy evaluation and gives reviewers fit context.",
+    };
+  }
+
+  if (state === "ApplicationCreated") {
+    return {
+      status: "State",
+      title: "Move the application to draft",
+      detail: "Use the state control when the application is ready for draft review.",
+    };
+  }
+
+  if (state === "Draft") {
+    return {
+      status: "Review",
+      title: "Mark ready for review",
+      detail: "Advance when the draft has enough evidence for approval review.",
+    };
+  }
+
+  if (state === "ReadyForReview") {
+    return {
+      status: "Approval",
+      title: "Approve or reject the application",
+      detail: "Human approval remains the gate before any submission path.",
+    };
+  }
+
+  if (isApproved && !hasAllowedPolicy) {
+    return {
+      status: "Policy",
+      title: latestPolicy && !latestPolicy.allowed ? "Resolve policy review" : "Evaluate policy",
+      detail: latestPolicy && !latestPolicy.allowed
+        ? dryRunBlockReason(latestPolicy)
+        : "Policy must allow the follow-up before previewing executor work.",
+    };
+  }
+
+  if (isApproved && !hasSubmissionEvidence) {
+    return {
+      status: "Preview",
+      title: "Preview action",
+      detail: "Dry-run plans the approved follow-up and records audit evidence with no external side effects.",
+    };
+  }
+
+  if (isApproved) {
+    return {
+      status: "Submit",
+      title: "Mark submitted when ready",
+      detail: "Submission is available only after approved policy and executor preview evidence.",
+    };
+  }
+
+  if (state === "Submitted") {
+    return {
+      status: "Complete",
+      title: "Review the audit timeline",
+      detail: "The workflow has submission evidence. Keep the timeline for audit review.",
+    };
+  }
+
+  return {
+    status: "Audit",
+    title: "Review application evidence",
+    detail: "Use the readiness cards, policy decisions, executor actions, and audit timeline.",
+  };
+}
+
+function renderNextAction() {
+  const action = nextAction();
+  elements.nextActionStatus.textContent = action.status;
+  elements.nextActionTitle.textContent = action.title;
+  elements.nextActionDetail.textContent = action.detail;
+}
+
+function renderLifecycleStepper(application) {
+  const currentIndex = lifecycleSteps.findIndex((step) => step.state === application.state);
+
+  elements.lifecycleStepper.innerHTML = lifecycleSteps
+    .map((step, index) => {
+      const isActive = index === currentIndex;
+      const isComplete = currentIndex > index;
+      const classes = ["lifecycle-step"];
+      if (isActive) classes.push("active");
+      if (isComplete) classes.push("complete");
+
+      return `
+        <li class="${classes.join(" ")}">
+          <span class="step-dot" aria-hidden="true"></span>
+          <span>${escapeHtml(step.label)}</span>
+        </li>
+      `;
+    })
     .join("");
 }
 
@@ -416,17 +642,29 @@ function renderScoreDetails(application) {
     ["Red flags", application.red_flags || []],
   ];
 
-  elements.scoreList.innerHTML = groups
-    .map(([label, values]) => {
-      const content = values.length ? values.join(", ") : "None";
-      return `
-        <div class="compact-item">
-          <strong>${escapeHtml(label)}</strong>
-          <div class="meta">${escapeHtml(content)}</div>
-        </div>
-      `;
-    })
-    .join("");
+  elements.scoreList.innerHTML = `
+    <div class="score-hero">
+      <div class="score-value">
+        <strong>${escapeHtml(application.fit_score || "-")}</strong>
+        <span>/100</span>
+      </div>
+      <div>
+        ${badge(recommendationDisplay(application.recommendation) || "No recommendation")}
+        <div class="meta">${escapeHtml(application.confidence || "unknown")} confidence</div>
+      </div>
+    </div>
+    ${groups
+      .map(([label, values]) => {
+        const content = values.length ? values.join(", ") : "None";
+        return `
+          <div class="compact-item evidence-item ${values.length ? "has-evidence" : "empty-evidence"}">
+            <strong>${escapeHtml(label)}</strong>
+            <div class="meta">${escapeHtml(content)}</div>
+          </div>
+        `;
+      })
+      .join("")}
+  `;
 }
 
 function badge(value) {
@@ -476,10 +714,12 @@ function renderPolicy(decisions) {
   elements.policyList.innerHTML = decisions
     .map(
       (decision) => `
-        <div class="compact-item">
-          <strong>${escapeHtml(decision.action_type)}</strong>
-          ${badge(decision.decision)}
-          <div class="meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
+        <div class="compact-item stage-card">
+          <div class="stage-card-header">
+            <strong>${escapeHtml(decision.action_type)}</strong>
+            ${badge(decision.decision)}
+          </div>
+          <div class="stage-meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
           ${compactMeta("Reasons", decision.reasons)}
           ${compactMeta("Risks", decision.risks)}
           ${compactMeta("Required overrides", decision.required_overrides)}
@@ -500,14 +740,16 @@ function renderExecutor(actions) {
       const result = action.result || {};
       const sideEffects =
         typeof result.side_effects === "boolean"
-          ? `<div class="meta"><strong>Side effects:</strong> ${result.side_effects ? "yes" : "no"}</div>`
+          ? `<div class="side-effect-banner ${result.side_effects ? "warning" : "safe"}"><strong>Side effects:</strong> ${result.side_effects ? "yes" : "no"}${result.side_effects ? "" : " - dry-run only"}</div>`
           : "";
 
       return `
-        <div class="compact-item">
-          <strong>${escapeHtml(action.action_type)}</strong>
-          ${badge(action.status)}
-          <div class="meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
+        <div class="compact-item stage-card">
+          <div class="stage-card-header">
+            <strong>${escapeHtml(action.action_type)}</strong>
+            ${badge(action.status)}
+          </div>
+          <div class="stage-meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
           ${sideEffects}
           ${compactMeta("Planned steps", result.planned_steps)}
           ${compactMeta("Requires", result.requires)}
@@ -554,7 +796,8 @@ function focusLatestTimelineEvent() {
 
 function renderRecentApplications(applications) {
   if (!applications.length) {
-    elements.recentApplicationsList.innerHTML = '<p class="empty">No applications found.</p>';
+    elements.recentApplicationsList.innerHTML =
+      '<p class="empty">No applications found. Adjust filters or create a sample job to continue the guided review.</p>';
     return;
   }
 
@@ -575,7 +818,10 @@ function renderRecentApplications(applications) {
             <strong>${escapeHtml(title)}</strong>
             <span class="meta">${escapeHtml(company)} - ${escapeHtml(updated)}</span>
           </span>
-          ${badge(application.state)}
+          <span class="recent-application-meta">
+            ${application.fit_score ? `<span class="score-chip">Fit ${escapeHtml(application.fit_score)}</span>` : ""}
+            ${badge(application.state)}
+          </span>
         </button>
       `;
     })

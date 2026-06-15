@@ -8,10 +8,34 @@
   </head>
   <body>
     <main class="shell">
+      <aside class="sidebar" aria-label="Dashboard navigation">
+        <div class="sidebar-brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>ApplyPilot</span>
+        </div>
+        <nav class="sidebar-nav" aria-label="Primary">
+          <a class="active" href="#audit-form">Dashboard</a>
+          <a href="#recent-applications-list">Applications</a>
+          <a href="#intake-form">Manual intake</a>
+          <a href="#review-summary">Review</a>
+          <a href="#timeline">Timeline</a>
+        </nav>
+        <div class="sidebar-footer">
+          <span>Dry-run safe</span>
+          <strong>No external side effects</strong>
+        </div>
+      </aside>
+
       <section class="toolbar" aria-label="Audit dashboard controls">
-        <div>
-          <p class="eyebrow">ApplyPilot</p>
-          <h1>Application audit dashboard</h1>
+        <div class="toolbar-title">
+          <div class="brand-lockup">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="wordmark">Apply<span>Pilot</span></span>
+          </div>
+          <div>
+            <p class="eyebrow">Guided workflow</p>
+            <h1>Application audit dashboard</h1>
+          </div>
         </div>
         <form class="controls" id="audit-form">
           <label>
@@ -30,6 +54,24 @@
       <section class="status-row" aria-live="polite">
         <div class="status-pill" id="status-pill">Demo mode</div>
         <p id="status-message">Using local demo data until a backend application ID is provided.</p>
+      </section>
+
+      <section class="guided-overview" aria-label="Guided workflow overview">
+        <article class="panel next-action-panel">
+          <div class="section-heading">
+            <h2>Next action</h2>
+            <span id="next-action-status">Demo guidance</span>
+          </div>
+          <strong id="next-action-title">Create or load an application</strong>
+          <p id="next-action-detail">Use demo data, load recent applications, or create a sample job to begin.</p>
+        </article>
+        <article class="panel lifecycle-panel">
+          <div class="section-heading">
+            <h2>Application progress</h2>
+            <span>Existing states only</span>
+          </div>
+          <ol class="lifecycle-stepper" id="lifecycle-stepper"></ol>
+        </article>
       </section>
 
       <section class="panel recent-panel" aria-label="Recent applications">
@@ -76,7 +118,7 @@
           </label>
         </form>
         <div class="recent-applications-list" id="recent-applications-list">
-          <p class="empty">No live applications loaded.</p>
+          <p class="empty">Load recent applications or create a sample job to start a guided review.</p>
         </div>
       </section>
 
@@ -121,7 +163,7 @@
 
       <section class="panel workflow-panel" aria-label="Workflow actions">
         <div class="section-heading">
-          <h2>Workflow actions</h2>
+          <h2>Guided actions</h2>
           <span>State, score, policy, and dry-run</span>
         </div>
         <p class="workflow-hint" id="workflow-hint">Create or load an application to begin.</p>
@@ -129,7 +171,7 @@
         <div class="workflow-actions">
           <button type="button" id="score-button">Score application</button>
           <button type="button" id="policy-button">Evaluate policy</button>
-          <button type="button" id="dry-run-button">Dry-run follow-up</button>
+          <button type="button" id="dry-run-button">Preview action</button>
         </div>
       </section>
 
@@ -141,10 +183,18 @@
         <div class="readiness-list" id="review-summary"></div>
       </section>
 
-      <section class="summary-grid" aria-label="Application summary">
+      <section class="review-evidence-heading" aria-label="Review evidence overview">
+        <div>
+          <p class="eyebrow">Review evidence</p>
+          <h2>Application, fit, policy, and preview</h2>
+        </div>
+        <span>Human-readable first. Audit details stay visible.</span>
+      </section>
+
+      <section class="summary-grid" aria-label="Review evidence">
         <article class="panel summary-panel">
           <h2>Application</h2>
-          <dl class="summary-list" id="application-summary"></dl>
+          <div class="summary-list" id="application-summary"></div>
         </article>
         <article class="panel">
           <h2>Score details</h2>

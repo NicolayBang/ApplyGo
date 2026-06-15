@@ -101,7 +101,7 @@ full-time job type, compensation range, remote marker, and detailed job text.
 With an application loaded, the dashboard can continue the M1 dry-run workflow:
 
 1. Click **Evaluate policy** to call `POST /applications/{application_id}/policy-decisions`.
-2. Click **Dry-run follow-up** to call `POST /applications/{application_id}/executor-actions/dry-run`.
+2. Click **Preview action** to call `POST /applications/{application_id}/executor-actions/dry-run`.
 3. The audit panel reloads and shows the policy decision plus executor attempt/result events.
 
 The dry-run action requires an allowed policy decision. If no allowed decision exists, the dashboard
