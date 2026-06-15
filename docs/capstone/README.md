@@ -11,6 +11,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 - `dashboard-demo-flow.md` - step-by-step runbook for the implemented M1 dashboard demo.
 - `m1-demo-review-checklist.md` - pass/fix checklist for manually reviewing the M1 demo.
 - `m1-manual-demo-validation-2026-06-14.md` - summary of the live M1 manual validation result.
+- `m1-local-mvp-validation-2026-06-15.md` - final local Docker/frontend-backend MVP validation.
 - `frontend-design-handoff.md` - guardrails for dashboard sketching and future visual polish.
 - `presentation-backlog.md` - optional recruiter/instructor presentation improvements.
 - `process.md` - capstone process scaffold and working agreement.
@@ -24,11 +25,12 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 4. Read `m1-mvp-readiness-summary.md` to understand what remains before calling M1 complete.
 5. Run `dashboard-demo-flow.md` to exercise the implemented workflow in detail.
 6. Use `m1-demo-review-checklist.md` to record pass/fix observations.
-7. Read `m1-manual-demo-validation-2026-06-14.md` for the latest recorded validation evidence.
-8. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-9. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
-10. Use `process.md` to understand the project discipline behind the work.
-11. Treat `phase-2-ideas.md` as future discussion material only.
+7. Read `m1-local-mvp-validation-2026-06-15.md` for the final local MVP validation evidence.
+8. Read `m1-manual-demo-validation-2026-06-14.md` for the earlier live manual validation result.
+9. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
+10. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+11. Use `process.md` to understand the project discipline behind the work.
+12. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 
