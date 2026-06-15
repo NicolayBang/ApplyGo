@@ -67,6 +67,10 @@ Before persisting packet data, approve a follow-up implementation contract that 
 Until this is approved, packet preview may be generated from existing API data without writing new
 records.
 
+Proposed persistence direction is documented in
+`docs/contracts/m2-packet-persistence-contract.md`. That proposal requires Nicolay + Francis review
+before implementation.
+
 ## Current `documents` Boundary
 
 The M1 `documents` table is an application-owned placeholder:
