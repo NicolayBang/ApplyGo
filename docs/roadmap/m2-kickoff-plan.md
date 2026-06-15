@@ -56,6 +56,8 @@ M2 should focus on:
    - Add a small deterministic cover-note or application-summary draft generator.
    - Keep it human-reviewed and non-external.
    - Log generation or review events if persisted.
+   - Status: first read-only deterministic cover-note draft implemented in the dashboard packet
+     preview without persistence, LLM calls, or external side effects.
 
 5. **Validation and demo update**
    - Extend the demo script/checklist only after implemented behavior exists.
