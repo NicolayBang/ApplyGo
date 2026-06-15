@@ -272,6 +272,11 @@ function workflowReadiness() {
   };
 }
 
+function setActionMetadata(button, label, hint) {
+  button.title = hint;
+  button.setAttribute("aria-label", `${label}. ${hint}`);
+}
+
 function visibleStateTransitions(application) {
   const transitions = stateTransitions[application.state] || [];
   if (application.state !== "Approved") return transitions;
@@ -298,11 +303,24 @@ function updateWorkflowReadiness() {
   elements.scoreButton.disabled = !hasApplication;
   elements.policyButton.disabled = !hasApplication || !hasScore;
   elements.dryRunButton.disabled = !hasApplication || !hasAllowedPolicy;
-  elements.dryRunButton.title = !hasApplication
+
+  const scoreHint = hasApplication
+    ? "Score the application to generate reviewer evidence."
+    : "Create or load an application before scoring.";
+  const policyHint = !hasApplication
+    ? "Create or load an application before policy evaluation."
+    : !hasScore
+      ? "Score the application before evaluating policy."
+      : "Evaluate whether policy allows the dry-run preview.";
+  const dryRunHint = !hasApplication
     ? "Create or load an application before dry-run."
     : !hasAllowedPolicy
       ? dryRunBlockReason(latestPolicy)
       : "Plan the approved follow-up action without side effects.";
+
+  setActionMetadata(elements.scoreButton, "Score application", scoreHint);
+  setActionMetadata(elements.policyButton, "Evaluate policy", policyHint);
+  setActionMetadata(elements.dryRunButton, "Preview action", dryRunHint);
 
   if (!hasApplication) {
     elements.workflowHint.textContent = "Create or load an application to begin.";
