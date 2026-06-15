@@ -1,5 +1,7 @@
 # ApplyPilot
 
+[![CI](https://github.com/NicolayBang/ApplyPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/NicolayBang/ApplyPilot/actions/workflows/ci.yml)
+
 ApplyPilot is a governed job application automation platform built from the locked OpenClaw architecture baseline.
 
 ## Locked architecture principles
@@ -52,6 +54,25 @@ Useful reviewer entry points:
 - `docs/architecture/locked-plan.md`: architecture authority and M1 scope
 
 The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
+
+## Implemented M1 architecture
+
+```mermaid
+flowchart LR
+    Dashboard["Dashboard /ui"] --> API["FastAPI API"]
+    API --> Tracker["Tracker repository"]
+    Tracker --> DB[("PostgreSQL")]
+    Tracker --> Events["Event log"]
+    API --> State["State machine"]
+    API --> Policy["Policy engine"]
+    API --> Executor["Dry-run executor stub"]
+    Executor --> Events
+    Policy --> Events
+    State --> Events
+```
+
+This diagram shows implemented M1 behavior only. Future Gmail, browser, LLM, authentication, and
+production deployment work is intentionally excluded from the current MVP.
 
 ## Repository layout
 
