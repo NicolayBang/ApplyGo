@@ -484,6 +484,46 @@ When the Auto-Merge Mode stop condition is reached, Derek/Codex must stop auto-m
 finished branches when safe, report the merged PRs and any issues encountered, and return to normal
 human-confirmed merge behavior.
 
+### High-Risk PR Alert Mode
+
+High-Risk PR Alert Mode is separate from Auto-Merge Mode. It starts only when a human explicitly
+asks Derek/Codex to work through high-risk PRs and alert at the merge gate.
+
+Use this mode for work that may involve:
+
+- Alembic migrations or database schema behavior;
+- contracts that authorize implementation;
+- policy, executor, event-log, or state-machine behavior;
+- architecture authority or approved ADRs;
+- `AGENTS.md` or `CLAUDE.md`;
+- CI/workflow files;
+- security-sensitive files;
+- secrets, credentials, deployment permissions, or production-facing configuration.
+
+In High-Risk PR Alert Mode, Derek/Codex may plan, implement, test, push, open PRs, request Copilot
+or remote validation, review CI, and reconcile feedback for the explicitly approved scope.
+
+High-Risk PR Alert Mode must stop before merge. Derek/Codex must not merge the PR unless a human
+gives a fresh, explicit merge instruction after reviewing the merge-gate alert.
+
+The merge-gate alert must include:
+
+- PR number and link;
+- why the PR is high risk;
+- files and behavior changed;
+- validation completed and any validation still missing;
+- CI status;
+- unresolved questions, review feedback, or residual risk;
+- the exact human decision needed.
+
+If email alerting is available and Nicolay has explicitly authorized sending the alert, Derek/Codex
+may send the merge-gate alert by email. Otherwise, Derek/Codex must provide the alert in chat and,
+when useful, as a PR comment. Email alerts must not include secrets, credentials, private tokens, or
+other sensitive data.
+
+High-Risk PR Alert Mode does not override human authority, architecture authority, security
+boundaries, or the requirement to preserve auditability and deterministic behavior.
+
 ---
 
 ## Dev Environment
