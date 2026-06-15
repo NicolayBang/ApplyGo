@@ -105,6 +105,7 @@ const demoReviewSummary = {
   application: demoAudit.application,
   latest_policy_decision: demoAudit.policy_decisions.at(-1),
   latest_executor_action: demoAudit.executor_actions.at(-1),
+  latest_packet_review: null,
   event_count: demoAudit.events.length,
   next_states: ["Draft"],
   ready_for_policy: true,
@@ -187,6 +188,9 @@ const elements = {
   executorList: document.querySelector("#executor-list"),
   packetReadiness: document.querySelector("#packet-readiness"),
   packetPreview: document.querySelector("#packet-preview"),
+  packetReviewForm: document.querySelector("#packet-review-form"),
+  packetReviewStatus: document.querySelector("#packet-review-status"),
+  packetReviewNotes: document.querySelector("#packet-review-notes"),
   copyCoverNoteButton: document.querySelector("#copy-cover-note-button"),
   copyPacketButton: document.querySelector("#copy-packet-button"),
   downloadPacketButton: document.querySelector("#download-packet-button"),
@@ -613,6 +617,7 @@ function renderReviewSummary(summary) {
   elements.reviewSummaryStatus.textContent = `${summary.event_count || 0} audit events`;
   const latestPolicy = summary.latest_policy_decision;
   const latestExecutor = summary.latest_executor_action;
+  const latestPacketReview = summary.latest_packet_review;
   const nextStates = (summary.next_states || []).join(", ") || "None";
   const items = [
     {
@@ -631,6 +636,13 @@ function renderReviewSummary(summary) {
       detail: latestExecutor
         ? `${latestExecutor.status} ${latestExecutor.execution_mode} evidence recorded.`
         : "Executor evidence required.",
+    },
+    {
+      label: "Packet review",
+      ready: Boolean(latestPacketReview),
+      detail: latestPacketReview
+        ? `${packetDecisionLabel(latestPacketReview.decision)} by ${latestPacketReview.reviewed_by}`
+        : "Human packet review not recorded.",
     },
     {
       label: "Next states",
@@ -704,6 +716,19 @@ function compactMeta(label, values) {
 
 function latestExecutorAction() {
   return (currentAudit.executor_actions || []).at(-1);
+}
+
+function latestPacketReview() {
+  return currentReviewSummary?.latest_packet_review || null;
+}
+
+function packetDecisionLabel(value) {
+  const labels = {
+    approved: "Approved",
+    rejected: "Rejected",
+    changes_requested: "Changes requested",
+  };
+  return labels[value] || recommendationDisplay(value);
 }
 
 function listText(values, fallback = "None recorded") {
@@ -792,7 +817,7 @@ function buildPacketPreview() {
     "",
     "Boundary",
     "--------",
-    "Preview only. No email, browser automation, external submission, or packet persistence occurs here.",
+    "Preview generation only. Recording packet review does not send email, open a browser, or submit an application.",
   ].join("\n");
 }
 
@@ -841,7 +866,36 @@ function renderPacketReadiness() {
 
 function renderPacketPreview() {
   renderPacketReadiness();
+  renderPacketReviewControls();
   elements.packetPreview.textContent = buildPacketPreview();
+}
+
+function renderPacketReviewControls() {
+  const review = latestPacketReview();
+  const hasApplication = hasLoadedApplication();
+  const buttons = elements.packetReviewForm.querySelectorAll("button[type='submit']");
+
+  buttons.forEach((button) => {
+    button.disabled = !hasApplication;
+    button.title = hasApplication
+      ? "Record a human packet review decision without external side effects."
+      : "Create or load an application before recording packet review.";
+  });
+  elements.packetReviewNotes.disabled = !hasApplication;
+
+  if (!hasApplication) {
+    elements.packetReviewStatus.textContent =
+      "Create or load an application before recording packet review.";
+    return;
+  }
+
+  if (!review) {
+    elements.packetReviewStatus.textContent =
+      "No packet review recorded. This does not send email, open a browser, or submit an application.";
+    return;
+  }
+
+  elements.packetReviewStatus.textContent = `${packetDecisionLabel(review.decision)} by ${review.reviewed_by} from ${review.source}.`;
 }
 
 function packetFileName() {
@@ -884,6 +938,10 @@ function eventSummary(event) {
 
   if (event.event_type === "executor_result_logged") {
     return `Executor result: ${payload.status || "unknown status"}`;
+  }
+
+  if (event.event_type === "application_packet.reviewed") {
+    return `Packet review: ${packetDecisionLabel(payload.decision)} by ${payload.reviewed_by || "human"}`;
   }
 
   return "Audit event recorded.";
@@ -1046,6 +1104,7 @@ function reviewSummaryFromAudit(data) {
     application,
     latest_policy_decision: policyDecisions.at(-1) || null,
     latest_executor_action: executorActions.at(-1) || null,
+    latest_packet_review: data.latest_packet_review || null,
     event_count: (data.events || []).length,
     next_states: visibleStateTransitions(application).map((transition) => transition.state),
     ready_for_policy: Boolean(application.confidence),
@@ -1412,6 +1471,41 @@ async function dryRunFollowUp() {
   }
 }
 
+async function recordPacketReview(decision) {
+  const applicationId = requireApplicationId();
+  const base = apiBase();
+
+  if (!applicationId) return;
+
+  setStatus("loading", "Review", "Recording human packet review decision.");
+
+  try {
+    elements.apiBase.value = base;
+    await fetchJson(`${base}/applications/${applicationId}/packet-reviews`, {
+      method: "POST",
+      body: JSON.stringify({
+        decision,
+        reviewed_by: "human",
+        source: "dashboard",
+        notes: elements.packetReviewNotes.value.trim() || null,
+      }),
+    });
+    elements.packetReviewNotes.value = "";
+    await loadAudit({ focusTimeline: true });
+    setStatus(
+      "success",
+      "Review recorded",
+      "Packet review recorded. No email, browser action, or submission occurred.",
+    );
+  } catch (error) {
+    const hint =
+      error.message.includes("Failed to fetch") || error.message.includes("NetworkError")
+        ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
+        : "";
+    setStatus("error", "Review failed", `${error.message}.${hint}`);
+  }
+}
+
 async function loadAudit({ focusTimeline = false } = {}) {
   const applicationId = currentApplicationId();
   const base = apiBase();
@@ -1515,6 +1609,13 @@ elements.copyCoverNoteButton.addEventListener("click", async () => {
 elements.downloadPacketButton.addEventListener("click", () => {
   downloadTextFile(packetFileName(), buildPacketPreview());
   setStatus("success", "Packet downloaded", "Application packet preview downloaded as a text file.");
+});
+
+elements.packetReviewForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const decision = event.submitter?.value;
+  if (!decision) return;
+  recordPacketReview(decision);
 });
 
 elements.demoButton.addEventListener("click", () => {

@@ -481,7 +481,7 @@ button:disabled {
 
 .readiness-list {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
 }
 
@@ -893,6 +893,46 @@ button:disabled {
   background: #f8fafc;
 }
 
+.packet-review-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(260px, 1fr);
+  gap: 12px;
+  align-items: end;
+  border: 1px solid #d8e5f2;
+  border-radius: 10px;
+  margin: 0 0 12px;
+  padding: 12px;
+  background: #fbfdff;
+}
+
+.packet-review-form strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ink-soft);
+}
+
+.packet-review-form p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.packet-review-form label {
+  min-width: 0;
+}
+
+.packet-review-form textarea {
+  min-height: 82px;
+}
+
+.packet-review-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .packet-preview {
   overflow: auto;
   max-height: 360px;
@@ -1113,6 +1153,10 @@ button:disabled {
 
   .packet-readiness {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .packet-review-form {
+    grid-template-columns: 1fr;
   }
 }
 
