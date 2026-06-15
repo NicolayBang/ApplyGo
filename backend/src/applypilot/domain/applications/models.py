@@ -201,6 +201,7 @@ class ApplicationReviewSummaryRead(BaseModel):
     application: ApplicationRead
     latest_policy_decision: PolicyDecisionRead | None = None
     latest_executor_action: ExecutorActionRead | None = None
+    latest_packet_review: ApplicationPacketReviewRead | None = None
     event_count: int
     next_states: list[str]
     ready_for_policy: bool

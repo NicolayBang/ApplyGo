@@ -283,6 +283,11 @@ class FakeTracker:
             return []
         return self.policy_decisions
 
+    def get_packet_reviews(self, application_id):
+        if application_id != self.application_id:
+            return []
+        return self.packet_reviews
+
     def record_packet_review(self, application_id, data):
         if application_id != self.application_id:
             raise ValueError(f"Application {application_id} not found")
@@ -1062,17 +1067,30 @@ def test_application_review_summary_returns_compact_readiness_view() -> None:
             "idempotency_key": "dry-run-001",
         },
     )
+    packet_review_response = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "approved",
+            "reviewed_by": "human",
+            "source": "dashboard",
+            "notes": "Packet approved for manual use.",
+        },
+    )
 
     response = client.get(f"/applications/{tracker.application_id}/review-summary")
 
     assert score_response.status_code == 200
     assert policy_response.status_code == 201
     assert executor_response.status_code == 201
+    assert packet_review_response.status_code == 201
     assert response.status_code == 200
     body = response.json()
     assert body["application"]["id"] == str(tracker.application_id)
     assert body["latest_policy_decision"]["id"] == policy_response.json()["id"]
     assert body["latest_executor_action"]["id"] == executor_response.json()["id"]
+    assert body["latest_packet_review"]["id"] == packet_review_response.json()["id"]
+    assert body["latest_packet_review"]["decision"] == "approved"
+    assert body["latest_packet_review"]["notes"] == "Packet approved for manual use."
     assert body["event_count"] == len(tracker.events)
     assert body["next_states"] == ["Submitted", "Rejected"]
     assert body["ready_for_policy"] is True
@@ -1102,6 +1120,7 @@ def test_application_review_summary_hides_submitted_until_executor_evidence_exis
     assert response.status_code == 200
     body = response.json()
     assert body["latest_executor_action"] is None
+    assert body["latest_packet_review"] is None
     assert body["next_states"] == ["Rejected"]
     assert body["ready_for_policy"] is True
     assert body["ready_for_dry_run"] is True

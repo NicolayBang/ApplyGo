@@ -404,9 +404,11 @@ def get_application_review_summary(
 
     policy_decisions = unit.tracker.get_policy_decisions(application_id)
     executor_actions = unit.tracker.get_executor_actions(application_id)
+    packet_reviews = unit.tracker.get_packet_reviews(application_id)
     events = unit.tracker.get_events(application_id)
     latest_policy_decision = policy_decisions[-1] if policy_decisions else None
     latest_executor_action = executor_actions[-1] if executor_actions else None
+    latest_packet_review = packet_reviews[-1] if packet_reviews else None
     allowed_policy_ids = {
         str(decision.id)
         for decision in policy_decisions
@@ -422,6 +424,7 @@ def get_application_review_summary(
         "application": application,
         "latest_policy_decision": latest_policy_decision,
         "latest_executor_action": latest_executor_action,
+        "latest_packet_review": latest_packet_review,
         "event_count": len(events),
         "next_states": _next_states(application.state, has_submission_evidence),
         "ready_for_policy": bool(application.confidence),
