@@ -128,6 +128,9 @@ class Application(Base):
     executor_actions: Mapped[list[ExecutorAction]] = relationship(
         back_populates="application", passive_deletes="all"
     )
+    packet_reviews: Mapped[list[ApplicationPacketReview]] = relationship(
+        back_populates="application", passive_deletes="all"
+    )
     events: Mapped[list[EventLogEntry]] = relationship(
         back_populates="application", passive_deletes="all"
     )
@@ -215,6 +218,48 @@ class EmailThread(Base):
             name="ck_email_threads_direction_m1",
         ),
         Index("ix_email_threads_application_id", "application_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# ApplicationPacketReview
+# ---------------------------------------------------------------------------
+
+class ApplicationPacketReview(Base):
+    """Human packet review evidence for M2 packet persistence."""
+
+    __tablename__ = "application_packet_reviews"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("applications.id"),
+        nullable=False,
+    )
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    reviewed_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    packet_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    application: Mapped[Application] = relationship(back_populates="packet_reviews")
+
+    __table_args__ = (
+        CheckConstraint(
+            "decision IN ('approved', 'rejected', 'changes_requested')",
+            name="ck_application_packet_reviews_decision_m2",
+        ),
+        CheckConstraint(
+            "source IN ('dashboard')",
+            name="ck_application_packet_reviews_source_m2",
+        ),
+        Index("ix_application_packet_reviews_application_id", "application_id"),
+        Index("ix_application_packet_reviews_created_at", "created_at"),
     )
 
 
