@@ -13,7 +13,7 @@ automation behavior.
 - [x] Run one final local validation on current `main`.
 - [x] Record a dated final local M1 validation note.
 - [x] Record a dated M1 validation note after the first live manual demo pass.
-- [ ] Add one dashboard screenshot or short GIF to the README.
+- [x] Add one dashboard screenshot or short GIF to the README.
 - [x] Add a GitHub Actions CI badge to the README.
 
 ## Reviewer Experience Improvements
@@ -23,7 +23,7 @@ automation behavior.
 - [x] Add a short "Key tradeoffs" section to `docs/capstone/reviewer-brief.md`:
   dry-run first, policy before executor, explicit non-goals, and why real automation is deferred.
 - [x] Make the Codespaces demo path more one-click friendly if the repo is shared with reviewers.
-- [ ] Keep final validation notes and any selected screenshots close to the top-level reviewer path.
+- [x] Keep final validation notes and any selected screenshots close to the top-level reviewer path.
 
 ## Product Polish Candidates
 
