@@ -645,7 +645,7 @@ function renderScoreDetails(application) {
   elements.scoreList.innerHTML = `
     <div class="score-hero">
       <div class="score-value">
-        <strong>${escapeHtml(application.fit_score || "-")}</strong>
+        <strong>${escapeHtml(application.fit_score ?? "-")}</strong>
         <span>/100</span>
       </div>
       <div>
@@ -807,6 +807,10 @@ function renderRecentApplications(applications) {
       const title = job.title || "Untitled role";
       const company = job.company || "Unknown company";
       const updated = formatDate(application.updated_at || application.created_at);
+      const scoreChip =
+        application.fit_score !== null && application.fit_score !== undefined
+          ? `<span class="score-chip">Fit ${escapeHtml(application.fit_score)}</span>`
+          : "";
 
       return `
         <button
@@ -819,7 +823,7 @@ function renderRecentApplications(applications) {
             <span class="meta">${escapeHtml(company)} - ${escapeHtml(updated)}</span>
           </span>
           <span class="recent-application-meta">
-            ${application.fit_score ? `<span class="score-chip">Fit ${escapeHtml(application.fit_score)}</span>` : ""}
+            ${scoreChip}
             ${badge(application.state)}
           </span>
         </button>

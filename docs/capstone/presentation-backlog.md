@@ -9,20 +9,20 @@ automation behavior.
 
 ## Highest Impact Before Sharing Widely
 
-- [ ] Merge the M1 dashboard workflow validation PR once CI and remote validation are accepted.
+- [ ] Merge the M1 dashboard workflow validation PR after manual validation is accepted.
 - [ ] Run one final manual demo on current `main`.
-- [ ] Record a dated final M1 validation note after the manual demo pass.
+- [x] Record a dated M1 validation note after the first live manual demo pass.
 - [ ] Add one dashboard screenshot or short GIF to the README.
-- [ ] Add a GitHub Actions CI badge to the README.
+- [x] Add a GitHub Actions CI badge to the README.
 
 ## Reviewer Experience Improvements
 
-- [ ] Add a compact architecture diagram to the README:
+- [x] Add a compact architecture diagram to the README:
   `Dashboard -> FastAPI -> Tracker -> PostgreSQL -> Event Log / Policy / Executor`.
-- [ ] Add a short "Key tradeoffs" section to `docs/capstone/reviewer-brief.md`:
+- [x] Add a short "Key tradeoffs" section to `docs/capstone/reviewer-brief.md`:
   dry-run first, policy before executor, explicit non-goals, and why real automation is deferred.
-- [ ] Make the Codespaces demo path more one-click friendly if the repo is shared with reviewers.
-- [ ] Keep screenshots and final validation notes close to the top-level reviewer path.
+- [x] Make the Codespaces demo path more one-click friendly if the repo is shared with reviewers.
+- [ ] Keep final validation notes and any selected screenshots close to the top-level reviewer path.
 
 ## Product Polish Candidates
 

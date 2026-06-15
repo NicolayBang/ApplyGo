@@ -58,7 +58,7 @@ final validation rather than core backend architecture.
 
 Recommended next action:
 
-1. Let the frontend design sketching continue without code changes.
-2. After a preferred layout is chosen, implement a small dashboard polish PR.
-3. Run the final M1 manual demo pass.
+1. Complete the final manual demo pass against current `main`.
+2. Accept or update the dashboard workflow validation PR from the manual result.
+3. Record the final pass/fix outcome in the capstone validation docs.
 4. If the pass is clean, mark M1 MVP complete for capstone review.
