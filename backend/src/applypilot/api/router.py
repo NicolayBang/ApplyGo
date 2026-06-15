@@ -11,6 +11,8 @@ from applypilot.domain.executor.schemas import ExecutorActionRead, ExecutorDryRu
 from applypilot.domain.applications.models import (
     ApplicationAuditRead,
     ApplicationCreate,
+    ApplicationPacketReviewCreate,
+    ApplicationPacketReviewRead,
     ApplicationRead,
     ApplicationReviewSummaryRead,
     ApplicationScoreRequest,
@@ -171,6 +173,31 @@ def score_application(
     unit.commit()
     unit.refresh(application)
     return application
+
+
+@router.post(
+    "/applications/{application_id}/packet-reviews",
+    response_model=ApplicationPacketReviewRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["applications"],
+)
+def create_application_packet_review(
+    application_id: UUID,
+    request: ApplicationPacketReviewCreate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Record a human packet review decision without external side effects."""
+    try:
+        review = unit.tracker.record_packet_review(
+            application_id=application_id,
+            data=request,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    unit.commit()
+    unit.refresh(review)
+    return review
 
 
 @router.post(

@@ -67,6 +67,7 @@ class FakeTracker:
         ]
         self.policy_decisions = []
         self.executor_actions = []
+        self.packet_reviews = []
         self.last_list_filters = None
 
     def create_job(self, data):
@@ -281,6 +282,23 @@ class FakeTracker:
         if application_id != self.application_id:
             return []
         return self.policy_decisions
+
+    def record_packet_review(self, application_id, data):
+        if application_id != self.application_id:
+            raise ValueError(f"Application {application_id} not found")
+
+        record = SimpleNamespace(
+            id=uuid.uuid4(),
+            application_id=application_id,
+            decision=data.decision,
+            reviewed_by=data.reviewed_by,
+            source=data.source,
+            packet_text=data.packet_text,
+            notes=data.notes,
+            created_at=datetime.now(tz=UTC),
+        )
+        self.packet_reviews.append(record)
+        return record
 
     def record_executor_result(self, request, result, actor="worker"):
         application_id = uuid.UUID(request.application_id)
@@ -687,6 +705,67 @@ def test_policy_decision_is_evaluated_persisted_and_audited() -> None:
     assert events[-1]["event_type"] == "policy_decision_logged"
     assert events[-1]["actor"] == "policy"
     assert events[-1]["payload"]["decision"] == "review"
+
+
+def test_packet_review_is_recorded_without_audit_event() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+    event_count = len(tracker.events)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "approved",
+            "reviewed_by": " Nicolay ",
+            "source": "dashboard",
+            "packet_text": None,
+            "notes": " Ready for manual use. ",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["application_id"] == str(tracker.application_id)
+    assert body["decision"] == "approved"
+    assert body["reviewed_by"] == "Nicolay"
+    assert body["source"] == "dashboard"
+    assert body["packet_text"] is None
+    assert body["notes"] == "Ready for manual use."
+    assert len(tracker.packet_reviews) == 1
+    assert len(tracker.events) == event_count
+
+
+def test_packet_review_rejects_invalid_decision() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "maybe",
+            "reviewed_by": "human",
+            "source": "dashboard",
+        },
+    )
+
+    assert response.status_code == 422
+    assert len(tracker.packet_reviews) == 0
+
+
+def test_packet_review_returns_404_when_application_missing() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{uuid.uuid4()}/packet-reviews",
+        json={
+            "decision": "approved",
+            "reviewed_by": "human",
+            "source": "dashboard",
+        },
+    )
+
+    assert response.status_code == 404
 
 
 def test_policy_decision_uses_stored_application_score_when_context_is_omitted() -> None:
