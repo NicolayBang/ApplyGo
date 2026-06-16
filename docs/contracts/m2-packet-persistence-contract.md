@@ -1,12 +1,28 @@
 # M2 Packet Persistence Contract
 
-**Status:** Proposed for Nicolay + Francis review
+**Status:** Implemented M2 baseline
 **Milestone:** M2
-**Authorizes migration:** No
-**Authorizes implementation:** No
+**Authorizes migration:** Historical authorization only
+**Authorizes implementation:** Historical authorization only
 
 This contract defines the decision boundary for persisting M2 application packet review decisions.
-It does not approve database, API, or dashboard implementation by itself.
+It records the contract that the implemented M2 packet review slice now follows. It does not
+authorize additional packet storage, document versioning, external automation, or future schema
+expansion by itself.
+
+## Implementation Status
+
+The M2 baseline implementation now includes:
+
+- `application_packet_reviews` persistence;
+- `application_packet.reviewed` audit events;
+- `POST /applications/{application_id}/packet-reviews`;
+- `latest_packet_review` exposure through the review summary;
+- dashboard controls for approve, reject, and request-changes decisions.
+
+The implemented dashboard path records the review decision, reviewer, source, and optional notes.
+It does not send full packet text by default, send email, open browser automation, submit an
+application, call an LLM, or require OpenClaw.
 
 ## Purpose
 
@@ -21,11 +37,11 @@ The persistence layer should answer:
 - What changed in the audit trail?
 - Can the decision be explained later without relying on transient UI state?
 
-## Proposed Scope
+## Implemented Scope
 
-The first persistence implementation should record packet review decisions only.
+The first persistence implementation records packet review decisions only.
 
-Allowed first persisted artifact:
+Allowed persisted artifact:
 
 ```text
 application_packet.reviewed
@@ -43,7 +59,7 @@ Allowed source:
 dashboard
 ```
 
-## Proposed Storage Direction
+## Storage Direction
 
 Use a dedicated table rather than overloading the existing M1 `documents` placeholder.
 
@@ -54,13 +70,13 @@ Rationale:
 - reviewer decisions should be easier to query than generic document blobs;
 - M2 does not need the future reusable document/version model yet.
 
-Proposed table name:
+Table name:
 
 ```text
 application_packet_reviews
 ```
 
-Proposed fields:
+Fields:
 
 ```text
 id uuid PK
@@ -79,9 +95,9 @@ Retention:
 - Database delete behavior must be reviewed with the migration PR.
 - Event log remains the append-only audit source.
 
-## Proposed API Boundary
+## API Boundary
 
-Candidate endpoint:
+Endpoint:
 
 ```text
 POST /applications/{application_id}/packet-reviews
@@ -163,11 +179,14 @@ This contract does not approve:
 - LLM-required packet generation;
 - company normalization or ADR-0005 implementation.
 
-## Merge Gate
+## Closeout Review
 
-Before implementation begins, Nicolay and Francis should confirm:
+The implemented M2 baseline reflects these reviewed choices:
 
-- dedicated table vs. `documents` table;
-- delete/retention behavior;
-- whether `packet_text` should be persisted in M2;
-- whether dashboard review decisions are enough for M2 acceptance.
+- dedicated table instead of the `documents` table;
+- no ORM delete cascade from applications to packet review rows;
+- nullable `packet_text`, with the dashboard not sending full packet text by default;
+- dashboard review decisions are enough for the M2 baseline.
+
+Future changes that persist full packet snapshots, add document versioning, change retention
+behavior, or connect packet approval to external automation need a new review.

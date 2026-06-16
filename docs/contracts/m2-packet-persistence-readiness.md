@@ -1,35 +1,37 @@
 # M2 Packet Persistence Readiness Checklist
 
-**Status:** Draft review checklist
+**Status:** Fulfilled for the implemented M2 baseline
 **Milestone:** M2
-**Authorizes implementation:** No
+**Authorizes implementation:** Historical guidance only
 
-Use this checklist before starting any PR that persists packet review decisions.
+This checklist was used to shape the M2 packet review persistence implementation. Keep it as a
+review reference for the implemented baseline and as a guardrail for future packet persistence
+changes.
 
 ## Required Decisions
 
-- Confirm `application_packet_reviews` as a dedicated table, or choose an alternative.
-- Confirm whether packet review rows should block application deletion or use database-level
+- Confirmed: `application_packet_reviews` is a dedicated table.
+- Confirmed: packet review rows avoid ORM delete cascade and use reviewed database-level
   retention similar to policy/executor/event records.
-- Confirm whether `packet_text` is stored in M2 or generated only at review time.
-- Confirm allowed decision values: `approved`, `rejected`, `changes_requested`.
-- Confirm the audit event name: `application_packet.reviewed`.
+- Confirmed: `packet_text` is nullable; the dashboard does not send full packet text by default.
+- Confirmed allowed decision values: `approved`, `rejected`, `changes_requested`.
+- Confirmed audit event name: `application_packet.reviewed`.
 
 ## Implementation Readiness
 
-The implementation PR should be split only if needed, but the full implementation must cover:
+The implemented M2 baseline covers:
 
 - SQLAlchemy model and relationship.
 - Alembic migration with deterministic constraints and indexes.
 - Pydantic request/response schemas.
 - Tracker method that writes the review row and appends the audit event in one unit of work.
 - API endpoint for creating a packet review decision.
-- Dashboard action only after backend behavior exists.
-- Audit or review-summary exposure only if the UI needs it for the same milestone slice.
+- Dashboard action after backend behavior exists.
+- Review-summary exposure for the latest packet review.
 
 ## Test Expectations
 
-Runnable tests should prove:
+Runnable tests prove:
 
 - valid review decisions persist;
 - invalid decisions are rejected;
@@ -52,7 +54,7 @@ Stop and request human review if implementation requires:
 
 ## Merge Gate
 
-Before merging the implementation PR, the reviewer should be able to answer:
+For the implemented M2 baseline, the reviewer should be able to answer:
 
 - What decision was recorded?
 - Who recorded it?
