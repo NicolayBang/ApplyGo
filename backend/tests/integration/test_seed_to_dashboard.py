@@ -15,6 +15,8 @@ Run explicitly:
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
 import uuid
 
 import pytest
@@ -201,6 +203,88 @@ def test_m3_tracker_create_job_does_not_infer_company_domain_from_source_url(
     assert company.normalized_name == "example co"
     assert company.domain is None
     assert company.normalized_domain is None
+
+
+def test_m3_company_backfill_migration_populates_legacy_jobs(
+    db_session,
+    monkeypatch,
+) -> None:
+    """Migration 0010 backfills pre-M3 jobs without rewriting source text."""
+    migration_path = (
+        Path(__file__).parents[2]
+        / "alembic"
+        / "versions"
+        / "0010_backfill_job_company_identity.py"
+    )
+    spec = importlib.util.spec_from_file_location("migration_0010", migration_path)
+    assert spec is not None
+    assert spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    job_ids = {
+        "first": uuid.uuid4(),
+        "second": uuid.uuid4(),
+        "unknown": uuid.uuid4(),
+        "confidential": uuid.uuid4(),
+    }
+    legacy_rows = [
+        (job_ids["first"], "ApplyPilot, Inc."),
+        (job_ids["second"], "applypilot inc"),
+        (job_ids["unknown"], None),
+        (job_ids["confidential"], "Confidential employer"),
+    ]
+    for job_id, company in legacy_rows:
+        db_session.execute(
+            text(
+                """
+                INSERT INTO jobs (id, title, company, company_id)
+                VALUES (CAST(:job_id AS uuid), :title, :company, NULL)
+                """
+            ),
+            {
+                "job_id": str(job_id),
+                "title": f"Legacy job {job_id}",
+                "company": company,
+            },
+        )
+
+    monkeypatch.setattr(migration.op, "get_bind", db_session.connection)
+    migration.upgrade()
+
+    rows = {
+        row.id: row
+        for row in db_session.execute(
+            text(
+                """
+                SELECT
+                    jobs.id,
+                    jobs.company,
+                    jobs.company_id,
+                    companies.name AS company_name,
+                    companies.normalized_name
+                FROM jobs
+                JOIN companies ON companies.id = jobs.company_id
+                WHERE jobs.id IN (
+                    CAST(:first AS uuid),
+                    CAST(:second AS uuid),
+                    CAST(:unknown AS uuid),
+                    CAST(:confidential AS uuid)
+                )
+                """
+            ),
+            {key: str(value) for key, value in job_ids.items()},
+        )
+    }
+
+    assert len(rows) == len(job_ids)
+    assert rows[job_ids["first"]].company == "ApplyPilot, Inc."
+    assert rows[job_ids["first"]].company_id == rows[job_ids["second"]].company_id
+    assert rows[job_ids["first"]].normalized_name == "applypilot inc"
+    assert rows[job_ids["unknown"]].company is None
+    assert rows[job_ids["unknown"]].company_name == "Unknown Company"
+    assert rows[job_ids["confidential"]].company == "Confidential employer"
+    assert rows[job_ids["confidential"]].company_name == "Confidential Company"
 
 
 def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
