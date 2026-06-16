@@ -360,20 +360,20 @@ function updateWorkflowReadiness() {
 
 function renderSummary(application) {
   const job = application.job || {};
-  const nextStates = visibleStateTransitions(application)
-    .map((transition) => displayLabel(transition.state))
-    .join(", ");
+  const nextStateLabels = visibleStateTransitions(application).map((transition) =>
+    displayLabel(transition.state),
+  );
   const overviewRows = [
     ["Location", job.location],
     ["Remote", job.remote_ok ? "Yes" : null],
     ["Job type", job.job_type],
     ["Salary", job.salary_raw],
     ["State", displayLabel(application.state)],
-    ["Next states", nextStates || "None"],
+    ["Next states", nextStateLabels],
     ["Mode", displayLabel(application.automation_mode)],
     ["Confidence", displayLabel(application.confidence)],
-    ["Missing data", displayList(application.missing_data)],
-    ["Red flags", displayList(application.red_flags)],
+    ["Missing data", (application.missing_data || []).map(displayLabel)],
+    ["Red flags", (application.red_flags || []).map(displayLabel)],
     ["Created", formatDate(application.created_at)],
     ["Updated", formatDate(application.updated_at)],
   ];
@@ -408,8 +408,8 @@ function renderSummary(application) {
         ${badge(recommendationDisplay(application.recommendation) || "Not recorded")}
       </div>
       <div>
-        <span>Next state</span>
-        <strong>${escapeHtml(nextStates || "None")}</strong>
+        <span>Next states</span>
+        ${badgeGroup(nextStateLabels, "None")}
       </div>
     </div>
     ${detailRows(overviewRows)}
@@ -468,11 +468,30 @@ function detailRows(rows) {
       ${rows
         .map(
           ([label, value]) =>
-            `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not recorded")}</dd>`,
+            `<dt>${escapeHtml(label)}</dt><dd>${renderDetailValue(value)}</dd>`,
         )
         .join("")}
     </dl>
   `;
+}
+
+function renderDetailValue(value) {
+  if (Array.isArray(value)) {
+    const items = value.map(displayLabel).filter(Boolean);
+    if (!items.length) return escapeHtml("Not recorded");
+    return badgeGroup(items);
+  }
+
+  return escapeHtml(value || "Not recorded");
+}
+
+function badgeGroup(values, emptyLabel = "Not recorded") {
+  const items = (values || []).map(displayLabel).filter(Boolean);
+  if (!items.length) {
+    return `<div class="value-chip-list">${badge(emptyLabel)}</div>`;
+  }
+
+  return `<div class="value-chip-list">${items.map((item) => badge(item)).join("")}</div>`;
 }
 
 function clearStateActions() {

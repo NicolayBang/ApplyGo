@@ -649,6 +649,7 @@ button:disabled {
   display: grid;
   gap: 6px;
   align-content: start;
+  min-width: 0;
   min-height: 72px;
   border: 1px solid #dfe8f3;
   border-radius: 9px;
@@ -675,6 +676,18 @@ button:disabled {
   color: var(--text);
   font-weight: 700;
   line-height: 1.25;
+}
+
+.value-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.value-chip-list .badge {
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .detail-list dd {
@@ -1349,6 +1362,25 @@ button:disabled {
   .packet-review-form {
     grid-template-columns: 1fr;
   }
+
+  .review-evidence-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .application-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar-tile {
+    width: 40px;
+    height: 40px;
+  }
+
+  .summary-panel .detail-list dt,
+  .summary-panel .detail-list dd {
+    padding-inline: 10px;
+  }
 }
 
 @media (min-width: 921px) and (max-width: 1120px) {
@@ -1417,5 +1449,20 @@ button:disabled {
 
   .status-row {
     padding: 12px;
+  }
+
+  .summary-panel {
+    padding: 16px;
+  }
+
+  .summary-signal-row > div {
+    min-height: auto;
+  }
+
+  .summary-panel .detail-list dd,
+  .summary-panel .detail-list dt,
+  .compact-item strong,
+  .compact-item .meta {
+    overflow-wrap: anywhere;
   }
 }
