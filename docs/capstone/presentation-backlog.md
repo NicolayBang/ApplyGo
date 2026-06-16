@@ -29,6 +29,9 @@ automation behavior.
 
 - [ ] Add an audit report export/download option for the current application.
 - [ ] Improve dashboard mobile spacing and dense helper text.
+- [ ] Improve narrow-width dashboard card layout: reduce wrapping in technical identifiers, keep
+  status pills from crowding card columns, and make application detail cards breathe more at
+  tablet/small-desktop widths.
 - [ ] Improve empty states and reviewer-facing labels without changing backend behavior.
 - [ ] Add a small roadmap/issues section linking future milestones to planned GitHub issues.
 
