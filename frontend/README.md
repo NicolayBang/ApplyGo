@@ -1,4 +1,4 @@
-# ApplyPilot Frontend
+# ApplyGo Frontend
 
 This folder contains the milestone-1 audit dashboard scaffold.
 

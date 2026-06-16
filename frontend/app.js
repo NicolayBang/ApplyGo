@@ -5,9 +5,9 @@ const demoAudit = {
     job: {
       id: "77b2ac60-06b2-4f6f-9a42-9a02d2e18424",
       title: "Backend Platform Engineer",
-      company: "ApplyPilot Demo Co.",
+      company: "ApplyGo Demo Co.",
       location: "Remote",
-      source_url: "https://jobs.lever.co/applypilot/backend-platform-engineer",
+      source_url: "https://jobs.lever.co/applygo/backend-platform-engineer",
       raw_text: "Build Python APIs with FastAPI, PostgreSQL, automation, and platform workflows.",
       remote_ok: true,
       job_type: "full-time",
@@ -144,9 +144,9 @@ const lifecycleSteps = [
 
 const sampleJob = {
   title: "Backend Platform Engineer",
-  company: "ApplyPilot Demo Co.",
+  company: "ApplyGo Demo Co.",
   location: "Remote",
-  source_url: "https://jobs.lever.co/applypilot/backend-platform-engineer",
+  source_url: "https://jobs.lever.co/applygo/backend-platform-engineer",
   remote_ok: true,
   raw_text:
     "Build Python APIs with FastAPI, PostgreSQL, automation workflows, and platform data services. This is a full-time remote role with a salary range of $95,000 - $125,000. Partner with DevOps and product teams to improve reliable backend delivery.",
@@ -911,7 +911,7 @@ function buildCoverNoteDraft(application, job) {
   return [
     `Hello ${company} team,`,
     "",
-    `I am interested in the ${role} opportunity. ApplyPilot's current review packet marks this application as ${recommendation}${score ? ` with a ${score} fit score` : ""}.`,
+    `I am interested in the ${role} opportunity. ApplyGo's current review packet marks this application as ${recommendation}${score ? ` with a ${score} fit score` : ""}.`,
     `The strongest recorded fit signal is that ${reason}.`,
     riskSentence,
     "I would like a human reviewer to confirm the packet before any external follow-up is sent.",
@@ -1127,7 +1127,7 @@ function packetFileName() {
   const company = String(job.company || "company").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
   const role = String(job.title || "role").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
   const suffix = String(application.id || "demo").slice(0, 8);
-  return `applypilot-packet-${company || "company"}-${role || "role"}-${suffix}.txt`.toLowerCase();
+  return `applygo-packet-${company || "company"}-${role || "role"}-${suffix}.txt`.toLowerCase();
 }
 
 function downloadTextFile(fileName, text) {

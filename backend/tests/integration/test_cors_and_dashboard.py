@@ -67,8 +67,8 @@ def test_dashboard_can_prefill_sample_job_for_demo() -> None:
     assert "sampleJob" in script_response.text
     assert "loadSampleJob" in script_response.text
     assert "Backend Platform Engineer" in script_response.text
-    assert "ApplyPilot Demo Co." in script_response.text
-    assert "https://jobs.lever.co/applypilot/backend-platform-engineer" in script_response.text
+    assert "ApplyGo Demo Co." in script_response.text
+    assert "https://jobs.lever.co/applygo/backend-platform-engineer" in script_response.text
     assert "full-time remote role" in script_response.text
     assert "salary range of $95,000 - $125,000" in script_response.text
 
