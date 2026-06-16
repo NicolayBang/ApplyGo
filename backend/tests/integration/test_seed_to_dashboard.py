@@ -23,6 +23,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from applypilot.config.settings import get_settings
+from applypilot.db.models import Company
+from applypilot.domain.applications.models import JobCreate
 
 # Short timeout (2s) so pytest collection never hangs when PG is absent.
 _CONNECT_TIMEOUT = 2
@@ -141,6 +143,64 @@ def test_seed_creates_records_and_audit_api_returns_summary(db_session) -> None:
         assert review_body["next_states"] == ["Draft"]
     finally:
         app.dependency_overrides.pop(get_tracker_unit, None)
+
+
+def test_m3_tracker_create_job_resolves_company_identity(db_session) -> None:
+    """New job writes preserve display text and populate the M3 company identity FK."""
+    from applypilot.db.tracker import Tracker
+
+    tracker = Tracker(db_session)
+
+    first = tracker.create_job(
+        JobCreate(title="Backend Engineer", company="  ApplyPilot,   Inc. ")
+    )
+    second = tracker.create_job(
+        JobCreate(title="Frontend Engineer", company="applypilot inc")
+    )
+    unknown = tracker.create_job(JobCreate(title="Mystery Role"))
+    confidential = tracker.create_job(
+        JobCreate(title="Platform Role", company="Confidential employer")
+    )
+
+    assert first.company == "ApplyPilot, Inc."
+    assert first.company_id == second.company_id
+    assert unknown.company is None
+    assert unknown.company_id is not None
+    assert confidential.company == "Confidential employer"
+    assert confidential.company_id is not None
+
+    companies = {
+        company.name: company
+        for company in db_session.query(Company).order_by(Company.name).all()
+    }
+    assert companies["ApplyPilot, Inc."].normalized_name == "applypilot inc"
+    assert companies["ApplyPilot, Inc."].normalized_domain is None
+    assert companies["Unknown Company"].normalized_name == "unknown company"
+    assert companies["Confidential Company"].normalized_name == "confidential company"
+
+
+def test_m3_tracker_create_job_does_not_infer_company_domain_from_source_url(
+    db_session,
+) -> None:
+    """Job source URLs may identify ATS hosts, not employer domains."""
+    from applypilot.db.tracker import Tracker
+
+    tracker = Tracker(db_session)
+
+    job = tracker.create_job(
+        JobCreate(
+            title="Data Engineer",
+            company="Example Co",
+            source_url="https://jobs.lever.co/not-the-employer/data-engineer",
+        )
+    )
+
+    company = db_session.get(Company, job.company_id)
+    assert company is not None
+    assert company.name == "Example Co"
+    assert company.normalized_name == "example co"
+    assert company.domain is None
+    assert company.normalized_domain is None
 
 
 def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:

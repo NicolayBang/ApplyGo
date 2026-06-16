@@ -91,8 +91,9 @@ ix_jobs_company_id(company_id)
 ```
 
 During the M3 compatibility period, `company` remains the existing display/source text and
-`company_id` is nullable. Later M3 work must backfill and cut over canonical company reads before
-`company_id` becomes required.
+`company_id` is nullable for legacy rows. New job writes resolve or create deterministic company
+identity records and populate `company_id`. Later M3 work must backfill existing rows and cut over
+canonical company reads before `company_id` becomes required.
 
 ### `companies`
 
@@ -306,6 +307,8 @@ ix_event_log_created_at(created_at)
 - PostgreSQL is the durable system of record.
 - `applications` is the central aggregate for M1.
 - Job creation may deterministically enrich blank job metadata from manual intake.
+- Job creation resolves deterministic company identity for new writes while preserving
+  `jobs.company` as display/source text.
 - Application state transitions go through the state machine.
 - New application rows default to `ApplicationCreated` at both ORM and database levels.
 - Application creation and state changes append event log records.
@@ -345,7 +348,7 @@ Application-enforced:
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
-| Normalized company identity | In progress for M3 | Migration `0009` adds `companies` and nullable `jobs.company_id`; backfill, canonical read/write cutover, non-null enforcement, and `company_source_text` rename remain future M3 work |
+| Normalized company identity | In progress for M3 | Migration `0009` adds `companies` and nullable `jobs.company_id`; new job writes resolve `company_id`; backfill, canonical read cutover, non-null enforcement, and `company_source_text` rename remain future M3 work |
 | Normalized document/thread/answer model | Deferred | The broader M5/M7 model remains proposed in ADR-0002 |
 
 ## Current Non-Goals
@@ -372,7 +375,7 @@ The proposed phase placement is:
 - M7: `contacts`, `threads`, `messages`, `thread_applications`
 
 ADR-0005 specifically approves the M3 company identity direction. Migration `0009` starts the
-compatibility schema only; M3 is not complete until backfill, canonical reads/writes, non-null
+compatibility schema only; M3 is not complete until backfill, canonical reads, non-null
 `jobs.company_id`, and the `company_source_text` rename are implemented and validated. ADR-0002
 remains Proposed for the broader M5/M7 normalization direction. No future table listed here is
 currently authorized for migration.
