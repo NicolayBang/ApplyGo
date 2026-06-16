@@ -6,7 +6,7 @@ ApplyGo is a governed job application automation platform built from the locked 
 
 The product brand and GitHub repository slug are now **ApplyGo**, while the current Python package
 namespace, health payload, and some runtime identifiers still use `ApplyPilot` / `applypilot` until
-a later technical rename pass.
+a later technical rename pass. That deferred cleanup is tracked in [issue #197](https://github.com/NicolayBang/ApplyGo/issues/197).
 
 ## Current status
 
@@ -17,6 +17,32 @@ The reviewer-facing demo remains the M1 governed workflow: manual intake, determ
 policy review, dry-run execution evidence, and audit visibility. M2 and M3 work is present as
 controlled platform groundwork; it does not add production automation, live Gmail/browser execution,
 or real external submissions.
+
+## What This Repo Proves
+
+This repository is best read as an engineering capstone baseline, not as a finished end-user
+product. The implemented system demonstrates:
+
+- governed workflow state, not hidden automation;
+- policy-before-executor discipline;
+- dry-run-first execution with explicit side-effect reporting;
+- database-backed auditability and migration discipline;
+- a reviewer dashboard that makes the workflow legible without opening the database.
+
+## Review In 2 Minutes
+
+If you only have a couple of minutes, focus on this:
+
+1. Read `docs/capstone/reviewer-brief.md`.
+2. Look at the dashboard evidence screenshot below.
+3. Skim `docs/capstone/mvp-status.md`.
+
+What you should see:
+
+- a `Sample job` guided path through creation, scoring, policy, and preview;
+- dry-run executor evidence with no external side effects;
+- append-only audit visibility for creation, state changes, scoring, policy, and executor activity;
+- explicit reviewer control rather than autonomous job submission claims.
 
 ## Locked architecture principles
 
