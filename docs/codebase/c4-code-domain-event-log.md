@@ -38,9 +38,12 @@ operations but no event update or delete operation.
 | `application.created` | `Tracker.create_application()` |
 | `application.state_changed` | `Tracker.update_state()` |
 | `application.scored` | `Tracker.score_application()` |
+| `application_packet.reviewed` | `Tracker.record_packet_review()` |
 | `policy_decision_logged` | `Tracker.record_policy_decision()` |
 | `executor_attempt_logged` | `Tracker.record_executor_result()` |
 | `executor_result_logged` | `Tracker.record_executor_result()` |
 
 Policy decisions are persisted before executor actions. Executor attempt and result evidence
-is appended when a new idempotent action is recorded.
+is appended when a new idempotent action is recorded. Packet review evidence uses the
+`application_packet.reviewed` name consistently across the tracker, API tests, docs, and
+dashboard timeline rendering.
