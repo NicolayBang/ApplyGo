@@ -1,6 +1,6 @@
 # Capstone Documentation
 
-This folder contains reviewer-facing capstone material for the current ApplyPilot milestone.
+This folder contains reviewer-facing capstone material for the current ApplyGo milestone.
 
 ## Start Here
 

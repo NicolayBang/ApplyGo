@@ -3,7 +3,7 @@
 **Status:** Optional polish backlog  
 **Scope:** Recruiter/instructor presentation quality, not new product scope
 
-This list captures small improvements that would make ApplyPilot easier to review and more polished
+This list captures small improvements that would make ApplyGo easier to review and more polished
 as a portfolio/capstone project. These items do not change M1 architecture or authorize new
 automation behavior.
 

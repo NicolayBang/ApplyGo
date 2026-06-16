@@ -1,9 +1,9 @@
-# ApplyPilot Reviewer Brief
+# ApplyGo Reviewer Brief
 
 **Status:** Milestone 1 MVP-presentable capstone baseline
 **Audience:** recruiters, instructors, and technical reviewers
 
-ApplyPilot is a governed job application automation platform. The current milestone proves the
+ApplyGo is a governed job application automation platform. The current milestone proves the
 platform spine: manual job intake, deterministic classification and scoring, workflow state
 transitions, policy evaluation, side-effect-free dry-run execution, and audit visibility.
 
@@ -79,3 +79,6 @@ scope, architecture decisions, merge decisions, and final acceptance. AI-generat
 kept behind repository rules, tests, CI, contracts, and human review.
 
 The project is intentionally presented as an engineered capstone, not as autonomous AI output.
+
+Note: some runtime identifiers, package names, and service payloads still use `applypilot` during
+the current transition phase.

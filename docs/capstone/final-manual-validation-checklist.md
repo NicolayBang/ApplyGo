@@ -4,7 +4,7 @@
 **Audience:** Nicolay, Francis, reviewers, and demo operators  
 **Scope:** current MVP demo path on `main`
 
-Use this checklist for the final human pass before presenting the current ApplyPilot MVP. It is
+Use this checklist for the final human pass before presenting the current ApplyGo MVP. It is
 intended to catch demo-readiness issues that automated tests do not prove well: visual clarity,
 workflow legibility, browser behavior, and whether the audit story is easy to explain.
 
@@ -53,7 +53,7 @@ Dashboard URL:
 
 ## Governance Story
 
-- [ ] The UI makes it clear ApplyPilot is governed workflow automation, not an autonomous bot.
+- [ ] The UI makes it clear ApplyGo is governed workflow automation, not an autonomous bot.
 - [ ] Policy comes before executor activity.
 - [ ] Dry-run evidence shows no external side effects.
 - [ ] Human review remains visible before real submission behavior.

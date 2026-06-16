@@ -12,7 +12,7 @@ For setup commands, use `codespaces-demo.md` or `dashboard-demo-flow.md`.
 
 ## Opening Summary
 
-ApplyPilot is a governed job application automation platform. M1 proves the platform spine:
+ApplyGo is a governed job application automation platform. M1 proves the platform spine:
 
 ```text
 manual intake -> classification -> scoring -> policy -> dry-run executor -> audit timeline

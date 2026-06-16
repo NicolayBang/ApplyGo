@@ -4,7 +4,7 @@
 **Date:** 2026-06-15
 **Audience:** reviewers, instructors, recruiters, and project contributors
 
-Milestone 1 establishes the ApplyPilot platform spine. It is not a finished job application product,
+Milestone 1 establishes the ApplyGo platform spine. It is not a finished job application product,
 but it is ready to demonstrate the governed workflow model that future automation will build on.
 
 ## Release Summary

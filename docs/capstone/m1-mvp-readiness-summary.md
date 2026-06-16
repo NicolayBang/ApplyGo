@@ -4,7 +4,7 @@
 **Date:** 2026-06-15
 **Audience:** Nicolay, Francis, reviewers, instructors, recruiters
 
-ApplyPilot now has a working governed automation spine for the M1 demo. The repo demonstrates a
+ApplyGo now has a working governed automation spine for the M1 demo. The repo demonstrates a
 database-backed workflow where a job can be manually entered, classified, scored, policy-checked,
 dry-run planned, and audited without performing external side effects.
 
