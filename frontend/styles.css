@@ -1010,6 +1010,38 @@ button:disabled {
   gap: 8px;
 }
 
+.packet-review-history {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.packet-review-history-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.packet-review-history-heading strong {
+  color: var(--ink-soft);
+}
+
+.packet-review-history-heading span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.packet-review-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.packet-review-history-item {
+  border-left-width: 4px;
+}
+
 .packet-preview {
   overflow: auto;
   max-height: 360px;

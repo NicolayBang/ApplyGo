@@ -425,6 +425,7 @@ def get_application_review_summary(
         "latest_policy_decision": latest_policy_decision,
         "latest_executor_action": latest_executor_action,
         "latest_packet_review": latest_packet_review,
+        "packet_reviews": packet_reviews,
         "event_count": len(events),
         "next_states": _next_states(application.state, has_submission_evidence),
         "ready_for_policy": bool(application.confidence),

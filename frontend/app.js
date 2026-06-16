@@ -106,6 +106,7 @@ const demoReviewSummary = {
   latest_policy_decision: demoAudit.policy_decisions.at(-1),
   latest_executor_action: demoAudit.executor_actions.at(-1),
   latest_packet_review: null,
+  packet_reviews: [],
   event_count: demoAudit.events.length,
   next_states: ["Draft"],
   ready_for_policy: true,
@@ -191,6 +192,7 @@ const elements = {
   packetReviewForm: document.querySelector("#packet-review-form"),
   packetReviewStatus: document.querySelector("#packet-review-status"),
   packetReviewNotes: document.querySelector("#packet-review-notes"),
+  packetReviewHistory: document.querySelector("#packet-review-history"),
   copyCoverNoteButton: document.querySelector("#copy-cover-note-button"),
   copyPacketButton: document.querySelector("#copy-packet-button"),
   downloadPacketButton: document.querySelector("#download-packet-button"),
@@ -734,6 +736,10 @@ function latestPacketReview() {
   return currentReviewSummary?.latest_packet_review || null;
 }
 
+function packetReviewHistory() {
+  return currentReviewSummary?.packet_reviews || [];
+}
+
 function packetDecisionLabel(value) {
   const labels = {
     approved: "Approved",
@@ -879,6 +885,7 @@ function renderPacketReadiness() {
 function renderPacketPreview() {
   renderPacketReadiness();
   renderPacketReviewControls();
+  renderPacketReviewHistory();
   elements.packetPreview.textContent = buildPacketPreview();
 }
 
@@ -908,6 +915,43 @@ function renderPacketReviewControls() {
   }
 
   elements.packetReviewStatus.textContent = `${packetDecisionLabel(review.decision)} by ${review.reviewed_by} from ${review.source}.`;
+}
+
+function renderPacketReviewHistory() {
+  const reviews = [...packetReviewHistory()].reverse();
+
+  if (!reviews.length) {
+    elements.packetReviewHistory.innerHTML =
+      '<p class="empty">No packet review history recorded yet.</p>';
+    return;
+  }
+
+  elements.packetReviewHistory.innerHTML = `
+    <div class="packet-review-history-heading">
+      <strong>Packet review history</strong>
+      <span>${reviews.length} recorded review${reviews.length === 1 ? "" : "s"}</span>
+    </div>
+    <div class="packet-review-history-list">
+      ${reviews
+        .map(
+          (review) => `
+            <article class="compact-item packet-review-history-item">
+              <div class="stage-card-header">
+                <strong>${escapeHtml(packetDecisionLabel(review.decision))}</strong>
+                ${badge(review.decision)}
+              </div>
+              <div class="meta">${escapeHtml(`Reviewed by ${review.reviewed_by} from ${review.source} on ${formatDate(review.created_at)}`)}</div>
+              ${
+                review.notes
+                  ? `<div class="meta"><strong>Notes:</strong> ${escapeHtml(review.notes)}</div>`
+                  : '<div class="meta">No reviewer notes recorded.</div>'
+              }
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function packetFileName() {
@@ -1117,6 +1161,7 @@ function reviewSummaryFromAudit(data) {
     latest_policy_decision: policyDecisions.at(-1) || null,
     latest_executor_action: executorActions.at(-1) || null,
     latest_packet_review: data.latest_packet_review || null,
+    packet_reviews: data.packet_reviews || [],
     event_count: (data.events || []).length,
     next_states: visibleStateTransitions(application).map((transition) => transition.state),
     ready_for_policy: Boolean(application.confidence),
