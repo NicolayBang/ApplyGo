@@ -1,7 +1,7 @@
 # Current Data Model
 
 **Status:** Implemented snapshot  
-**Scope:** Milestone 1 backend schema  
+**Scope:** Implemented backend schema through the M3 company identity compatibility step
 **Database:** PostgreSQL  
 **Source of truth:** SQLAlchemy models and Alembic migrations
 
@@ -37,11 +37,14 @@ Current migrations:
 5. `0005_add_executor_contract_metadata.py`
 6. `0006_add_m1_value_check_constraints.py`
 7. `0007_retain_policy_and_executor_audit.py`
+8. `0008_add_application_packet_reviews.py`
+9. `0009_add_company_identity_schema.py`
 
 ## Core Shape
 
 ```mermaid
 erDiagram
+    COMPANIES ||--o{ JOBS : identifies
     JOBS ||--o{ APPLICATIONS : has
     APPLICATIONS ||--o{ DOCUMENTS : owns
     APPLICATIONS ||--o{ EMAIL_THREADS : owns
@@ -51,6 +54,10 @@ erDiagram
 ```
 
 `applications` is the canonical hub record. Workflow state, scoring, policy decisions, executor records, documents, email threads, and audit events all attach to an application.
+
+`companies` is present as the first M3 compatibility schema step. Existing API and dashboard
+behavior still expose `jobs.company` as the current display value until a later backfill/cutover
+migration changes canonical reads and writes.
 
 ## Tables
 
@@ -66,6 +73,7 @@ source_url varchar(2048) nullable
 raw_text text nullable
 title varchar(512) nullable
 company varchar(256) nullable
+company_id uuid nullable FK -> companies.id
 location varchar(256) nullable
 remote_ok boolean not null default false
 job_type varchar(64) nullable
@@ -79,6 +87,36 @@ Indexes:
 
 ```text
 ix_jobs_company(company)
+ix_jobs_company_id(company_id)
+```
+
+During the M3 compatibility period, `company` remains the existing display/source text and
+`company_id` is nullable. Later M3 work must backfill and cut over canonical company reads before
+`company_id` becomes required.
+
+### `companies`
+
+Canonical company identity records introduced for the M3 compatibility path.
+
+```text
+id uuid PK
+name varchar(256) not null
+normalized_name varchar(256) not null
+domain varchar(256) nullable
+normalized_domain varchar(256) nullable
+created_at timestamptz not null
+updated_at timestamptz not null
+```
+
+Indexes and constraints:
+
+```text
+ix_companies_normalized_name(normalized_name)
+ix_companies_normalized_domain(normalized_domain)
+uq_companies_normalized_domain_m3(normalized_domain) where normalized_domain is not null
+uq_companies_normalized_name_without_domain_m3(normalized_name) where normalized_domain is null
+ck_companies_name_not_blank_m3
+ck_companies_normalized_name_not_blank_m3
 ```
 
 ### `applications`
@@ -276,6 +314,8 @@ ix_event_log_created_at(created_at)
 - Executor dry-run and result records append audit events.
 - The event-log database FK does not cascade on application delete.
 - Policy decision and executor action FKs do not cascade on application delete.
+- Companies exist as the M3 compatibility table, but existing consumers still read the display
+  company value from `jobs.company`.
 
 ## Validation Boundaries
 
@@ -305,13 +345,13 @@ Application-enforced:
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
-| Normalized company/document/thread/answer model | Deferred | ADR-0005 approves the M3 company identity direction, but implementation timing remains gated; the broader M5/M7 model remains proposed in ADR-0002 |
+| Normalized company identity | In progress for M3 | Migration `0009` adds `companies` and nullable `jobs.company_id`; backfill, canonical read/write cutover, non-null enforcement, and `company_source_text` rename remain future M3 work |
+| Normalized document/thread/answer model | Deferred | The broader M5/M7 model remains proposed in ADR-0002 |
 
 ## Current Non-Goals
 
-The following are not implemented as separate schema tables in M1:
+The following are not implemented as separate schema tables:
 
-- `companies`
 - `contacts`
 - `document_versions`
 - `application_documents`
@@ -321,17 +361,18 @@ The following are not implemented as separate schema tables in M1:
 - `answer_library`
 - `application_answers`
 
-These may be introduced later through new migrations and architecture review. In particular,
-`companies` is an approved M3 direction but is not implemented and is not yet authorized for
-migration.
+These may be introduced later through new migrations and architecture review.
 
 The proposed phase placement is:
 
-- M3: `companies`
+- M3: remaining company backfill, cutover, required `jobs.company_id`, and
+  `company_source_text` rename
 - M5: `document_versions`, `application_documents`, `answer_library`,
   `application_answers`
 - M7: `contacts`, `threads`, `messages`, `thread_applications`
 
-ADR-0005 specifically approves the M3 company identity direction while requiring a later
-implementation-timing decision. ADR-0002 remains Proposed for the broader M5/M7 normalization
-direction. No future table listed here is currently authorized for migration.
+ADR-0005 specifically approves the M3 company identity direction. Migration `0009` starts the
+compatibility schema only; M3 is not complete until backfill, canonical reads/writes, non-null
+`jobs.company_id`, and the `company_source_text` rename are implemented and validated. ADR-0002
+remains Proposed for the broader M5/M7 normalization direction. No future table listed here is
+currently authorized for migration.

@@ -23,6 +23,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -30,6 +31,57 @@ from sqlalchemy.sql import func
 
 from applypilot.db.base import Base
 from applypilot.domain.state_machine import ApplicationState
+
+
+# ---------------------------------------------------------------------------
+# Company
+# ---------------------------------------------------------------------------
+
+class Company(Base):
+    """Canonical company identity introduced for the M3 compatibility path."""
+
+    __tablename__ = "companies"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    domain: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    normalized_domain: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    jobs: Mapped[list[Job]] = relationship(back_populates="company_identity")
+
+    __table_args__ = (
+        CheckConstraint("name <> ''", name="ck_companies_name_not_blank_m3"),
+        CheckConstraint(
+            "normalized_name <> ''",
+            name="ck_companies_normalized_name_not_blank_m3",
+        ),
+        Index("ix_companies_normalized_name", "normalized_name"),
+        Index("ix_companies_normalized_domain", "normalized_domain"),
+        Index(
+            "uq_companies_normalized_domain_m3",
+            "normalized_domain",
+            unique=True,
+            postgresql_where=text("normalized_domain IS NOT NULL"),
+        ),
+        Index(
+            "uq_companies_normalized_name_without_domain_m3",
+            "normalized_name",
+            unique=True,
+            postgresql_where=text("normalized_domain IS NULL"),
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -48,6 +100,9 @@ class Job(Base):
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     title: Mapped[str | None] = mapped_column(String(512), nullable=True)
     company: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    company_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True
+    )
     location: Mapped[str | None] = mapped_column(String(256), nullable=True)
     remote_ok: Mapped[bool] = mapped_column(Boolean, default=False)
     job_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -66,8 +121,12 @@ class Job(Base):
     applications: Mapped[list[Application]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
+    company_identity: Mapped[Company | None] = relationship(back_populates="jobs")
 
-    __table_args__ = (Index("ix_jobs_company", "company"),)
+    __table_args__ = (
+        Index("ix_jobs_company", "company"),
+        Index("ix_jobs_company_id", "company_id"),
+    )
 
 
 # ---------------------------------------------------------------------------

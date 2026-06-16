@@ -5,10 +5,12 @@ from sqlalchemy import CheckConstraint
 from applypilot.db.models import (
     Application,
     ApplicationPacketReview,
+    Company,
     Document,
     EmailThread,
     EventLogEntry,
     ExecutorAction,
+    Job,
     PolicyDecision,
 )
 from applypilot.domain.state_machine import ApplicationState
@@ -106,6 +108,35 @@ def test_application_packet_review_schema_matches_m2_contract() -> None:
         "ix_application_packet_reviews_application_id",
         "ix_application_packet_reviews_created_at",
     }.issubset({index.name for index in ApplicationPacketReview.__table__.indexes})
+
+
+def test_company_identity_schema_matches_m3_compatibility_contract() -> None:
+    company_table = Company.__table__
+    job_table = Job.__table__
+
+    assert company_table.c.name.nullable is False
+    assert company_table.c.normalized_name.nullable is False
+    assert company_table.c.domain.nullable is True
+    assert company_table.c.normalized_domain.nullable is True
+    assert job_table.c.company.nullable is True
+    assert job_table.c.company_id.nullable is True
+
+    company_fk = next(iter(job_table.c.company_id.foreign_keys))
+    assert company_fk.column.table.name == "companies"
+    assert company_fk.ondelete is None
+
+    assert {
+        "ck_companies_name_not_blank_m3",
+        "ck_companies_normalized_name_not_blank_m3",
+    }.issubset(check_constraint_names(Company))
+
+    assert {
+        "ix_companies_normalized_name",
+        "ix_companies_normalized_domain",
+        "uq_companies_normalized_domain_m3",
+        "uq_companies_normalized_name_without_domain_m3",
+    }.issubset({index.name for index in Company.__table__.indexes})
+    assert "ix_jobs_company_id" in {index.name for index in Job.__table__.indexes}
 
 
 def test_m1_value_check_constraints_are_declared_on_models() -> None:
