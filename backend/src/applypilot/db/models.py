@@ -99,9 +99,9 @@ class Job(Base):
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     title: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    company: Mapped[str | None] = mapped_column(String(256), nullable=True)
-    company_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True
+    company_source_text: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False
     )
     location: Mapped[str | None] = mapped_column(String(256), nullable=True)
     remote_ok: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -124,9 +124,14 @@ class Job(Base):
     company_identity: Mapped[Company | None] = relationship(back_populates="jobs")
 
     __table_args__ = (
-        Index("ix_jobs_company", "company"),
+        Index("ix_jobs_company_source_text", "company_source_text"),
         Index("ix_jobs_company_id", "company_id"),
     )
+
+    @property
+    def company(self) -> str | None:
+        """Return the canonical display company while preserving legacy API compatibility."""
+        return self.company_identity.name if self.company_identity else self.company_source_text
 
 
 # ---------------------------------------------------------------------------

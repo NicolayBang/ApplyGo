@@ -1,16 +1,16 @@
 # Database Schema Views
 
-These diagrams intentionally separate implemented M1 behavior from approved and proposed future
-design.
+These diagrams intentionally separate implemented behavior from approved and proposed future design.
 Diagrams are explanatory artifacts; models, migrations, contracts, and approved ADRs remain higher
 authority.
 
-## Current M1 Schema
+## Current Implemented Schema
 
 **Status: Implemented**
 
 ```mermaid
 erDiagram
+    COMPANIES ||--o{ JOBS : identifies
     JOBS ||--o{ APPLICATIONS : has
     APPLICATIONS ||--o{ DOCUMENTS : owns
     APPLICATIONS ||--o{ EMAIL_THREADS : owns
@@ -18,9 +18,17 @@ erDiagram
     APPLICATIONS ||--o{ EXECUTOR_ACTIONS : records
     APPLICATIONS ||--o{ EVENT_LOG : audits
 
+    COMPANIES {
+        uuid id PK
+        varchar name
+        varchar normalized_name
+        varchar domain
+        varchar normalized_domain
+    }
     JOBS {
         uuid id PK
-        varchar company
+        uuid company_id FK
+        varchar company_source_text
         varchar title
         text raw_text
         boolean remote_ok
@@ -78,12 +86,11 @@ See `docs/contracts/database-schema-contract.md` for complete column and constra
 
 ## Future Data Model
 
-**Status: Approved M3 Base Direction with Proposed 3NF Amendment plus Later Phases / Not Implemented**
+**Status: Later Phases / Not Implemented**
 
-The company portion records the approved M3 base direction and proposed 3NF amendment in ADR-0005.
-The amendment and implementation timing remain gated. The M5/M7 portions record the proposed broader
-normalization direction in ADR-0002. This is not a description of the current database and does not
-authorize migrations.
+The company portion is already implemented in the current schema. The M5/M7 portions record the
+proposed broader normalization direction in ADR-0002. This future view is not a description of the
+current database and does not authorize migrations.
 
 ```mermaid
 erDiagram
@@ -134,11 +141,10 @@ erDiagram
 
 ## Phase Boundary
 
-- M1 keeps the current seven-table aggregate.
-- M3 company identity has an approved base direction; the practical 3NF completion amendment and
-  implementation timing remain gated.
-- Proposed M3 completion requires `jobs.company_id`, canonical company facts only on `companies`,
-  and raw employer provenance in `jobs.company_source_text`; none is implemented yet.
+- M1 keeps the original application aggregate behavior.
+- M3 company identity is implemented for the deterministic baseline: `jobs.company_id` is required,
+  canonical company facts live on `companies`, and raw employer provenance lives in
+  `jobs.company_source_text`.
 - M5 may introduce packet/document version and answer entities.
 - M7 may introduce contacts, messages, and many-to-many recruiter threads.
 - Executor retry/backoff and table naming changes require a separately approved migration.

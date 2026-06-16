@@ -1,33 +1,25 @@
 # M3 Company Migration Contract
 
-**Status:** Approved direction; proposed 3NF amendment pending review; implementation timing gated
+**Status:** Implemented M3 baseline
 
-**Scope:** Future M3 migration from `jobs.company` text to first-class company identity
+**Scope:** Completed M3 migration from `jobs.company` text to first-class company identity
 
-**Authority:** Approved M3 direction contract; does not authorize migration until timing is approved
+**Authority:** Implemented M3 company identity baseline contract
 
-**Review state:** Existing direction approved; 3NF completion amendment and later implementation
-timing require Nicolay and Francis approval
+**Review state:** Direction approved by Nicolay and Francis; implementation PR requires final
+merge-gate review because it changes schema constraints and column names
 
 **Related:** `docs/decisions/ADR-0005-m3-company-identity.md`,
 `docs/contracts/database-schema-contract.md`, `docs/architecture/database-implementation-roadmap.md`
 
-This contract defines the safety boundary for the future M3 company identity migration. It is not an
-implemented schema description. The current M1 source of truth remains `jobs.company` until an
-approved migration changes the database, ORM, API, dashboard, tests, and documentation together.
-
-Nicolay and Francis approved the existing direction for M3, but the proposed 3NF completion
-requirements in this revision are not yet approved and implementation remains gated. Before any
-schema migration starts, the team must approve this amendment and explicitly confirm that the
-current milestone is ready for company identity work.
-
-Do not implement yet unless the implementation PR is limited to deterministic company identity,
-preserves `jobs.company`, avoids source-url domain assumptions, includes placeholder handling, and
-proves PostgreSQL migration plus API/dashboard compatibility.
+This contract defines the safety boundary for the implemented M3 company identity migration. The
+cutover is limited to deterministic company identity, avoids source-url domain assumptions, includes
+placeholder handling, preserves raw intake provenance, and requires PostgreSQL migration plus
+API/dashboard compatibility evidence.
 
 ## Starting Point
 
-The implemented M1 schema stores company display text directly on `jobs.company`.
+The pre-M3 schema stored company display text directly on `jobs.company`.
 
 Current behavior that must remain compatible during the M3 transition:
 
@@ -36,17 +28,18 @@ Current behavior that must remain compatible during the M3 transition:
 - existing jobs and applications survive migration without data loss
 - M1 audit records remain unchanged
 
-## Target Shape
+## Implemented Shape
 
-The future M3 migration may add:
+The implemented M3 baseline uses:
 
 ```text
 companies
 jobs.company_id -> companies.id
+jobs.company_source_text
 ```
 
-The migration must preserve `jobs.company` as source/provenance text during backfill. The completed
-M3 shape must use required `jobs.company_id` for canonical identity and rename the legacy column to
+Migration `0010` preserves `jobs.company` as source/provenance text during backfill. Migration
+`0011` completes the baseline by making `jobs.company_id` required and renaming the legacy column to
 `jobs.company_source_text`.
 
 ## Target Normal Form
@@ -78,7 +71,7 @@ Backfill must be deterministic:
 
 ## Migration Order
 
-The implementation PR should use an add/backfill/constrain sequence:
+The implementation uses an add/backfill/constrain sequence:
 
 1. Add `companies` with nullable domain fields and deterministic timestamps.
 2. Seed `Unknown Company` and `Confidential Company`.
@@ -93,16 +86,15 @@ The implementation PR should use an add/backfill/constrain sequence:
 
 ## API And Dashboard Compatibility
 
-During the compatibility period:
+After cutover:
 
 - API responses must continue exposing a display `company` string for existing consumers, projected
-  from `companies.name` after cutover.
+  from `companies.name`.
 - Dashboard rows must keep showing company text without requiring frontend rewrites in the same PR.
-- An additive `company_source_text` field may expose raw intake provenance where needed.
+- An additive `company_source_text` field exposes raw intake provenance where needed.
 - New writes must deterministically create or reuse a company and persist `company_id` in the same
   transaction.
-- Compatibility may span multiple M3 migrations, but M3 is not complete while `jobs.company` remains
-  an ambiguous canonical-looking column.
+- The database no longer exposes an ambiguous canonical-looking `jobs.company` column.
 
 ## Validation Requirements
 
@@ -127,10 +119,9 @@ The implementation PR must include runnable validation for:
 When local PostgreSQL is unavailable, request Remote Validation Assist and record the result in the
 PR.
 
-## Implementation Entry Conditions
+## Implementation Boundary
 
-An implementation PR is allowed only after the team explicitly confirms timing. That PR must remain
-limited to:
+The implementation remains limited to:
 
 - deterministic company identity migration;
 - preserving legacy `jobs.company` values as provenance during migration;
@@ -143,7 +134,7 @@ limited to:
 
 ## Approval Checklist
 
-Before this contract is implemented, Nicolay and Francis should confirm:
+Before merging the cutover, Nicolay and Francis should confirm:
 
 - Backfill may create `Unknown Company` and `Confidential Company` rows.
 - The migration preserves original `jobs.company` text.
@@ -151,8 +142,7 @@ Before this contract is implemented, Nicolay and Francis should confirm:
 - No fuzzy matching, AI matching, or external enrichment runs during backfill.
 - API and dashboard compatibility for the existing company display field is required in the same
   implementation PR.
-- Making `jobs.company_id` non-null requires validation evidence and explicit human approval and is
-  required before M3 company normalization is complete.
+- Making `jobs.company_id` non-null has validation evidence and explicit human approval.
 - Downgrade limits and backup expectations are documented in the implementation PR.
 
 ## Rollback Boundary

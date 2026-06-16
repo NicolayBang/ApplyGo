@@ -100,7 +100,8 @@ manual intake
 
 ### Current limitations
 
-- `jobs.company` is a nullable string, not a normalized company foreign key.
+- Company identity is normalized for the M3 deterministic baseline; contact ownership and company
+  merge tooling remain future work.
 - `documents` and `email_threads` are M1 placeholders with one application owner.
 - Retry, backoff, and rate-limit fields are not present.
 
@@ -245,23 +246,18 @@ the active milestone is ready for company identity work.
 
 ### D. Company identity and deduplication contract
 
-**Status:** APPROVED BASE DIRECTION / PROPOSED 3NF AMENDMENT IN ADR-0005 / TIMING GATED
+**Status:** IMPLEMENTED M3 BASELINE
 
-The current `jobs.company` string is valid for M1. Before adding `companies`, confirm
-implementation timing for:
+The M3 baseline now uses `companies`, required `jobs.company_id`, and raw provenance in
+`jobs.company_source_text`. Later company-related work still needs explicit review for:
 
-- company identity key
-- normalization of whitespace, case, punctuation, and legal suffixes
-- domain normalization and subdomain handling
-- whether a normalized domain is unique when present
-- fallback deduplication when no domain exists
-- representation of unknown or confidential companies
 - merge behavior when duplicate companies are discovered
-- whether jobs retain the original source company text for provenance
-- which table owns each company fact and how transitive duplication is prevented
-- when canonical API reads switch from source text to `companies.name`
+- contact ownership
+- recruiter/company relationship modeling
+- external enrichment
+- fuzzy matching or human merge workflows
 
-The approved-direction migration shape is:
+The implemented migration shape is:
 
 ```text
 add companies
@@ -276,12 +272,9 @@ add companies
 -> rename jobs.company to jobs.company_source_text
 ```
 
-The base direction is approved; the 3NF completion requirements are proposed. Neither status
-authorizes implementation before the amendment and separate timing gate are approved.
-
-M3 is complete only when `companies` is the sole canonical owner of company facts,
-`jobs.company_id` is required, canonical display reads use `companies.name`, and the retained raw
-source value is explicitly named `jobs.company_source_text`.
+The M3 baseline is complete when migration `0011` is applied and validated: `companies` owns
+canonical company facts, `jobs.company_id` is required, canonical display reads use
+`companies.name`, and the retained raw source value is explicitly named `jobs.company_source_text`.
 
 ### E. Lifecycle and transition contract
 
@@ -594,4 +587,5 @@ A PostgreSQL schema change is done when:
 - CI is green
 - Nicolay and Francis approve the high-risk change
 
-Until those conditions are met, the future model remains **Planned / Not Implemented**.
+Until those conditions are met on the implementation PR, the high-risk schema cutover must remain
+unmerged.

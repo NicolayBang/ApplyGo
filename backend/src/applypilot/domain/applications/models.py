@@ -95,7 +95,9 @@ class JobRead(JobCreate):
             data.setdefault("company_source_text", data.get("company"))
             return data
 
-        company_source_text = getattr(value, "company", None)
+        company_source_text = getattr(value, "company_source_text", None)
+        if company_source_text is None:
+            company_source_text = getattr(value, "company", None)
         company_identity = getattr(value, "company_identity", None)
         company_name = getattr(company_identity, "name", None) or company_source_text
         return {

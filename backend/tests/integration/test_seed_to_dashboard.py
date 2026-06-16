@@ -15,8 +15,6 @@ Run explicitly:
 
 from __future__ import annotations
 
-import importlib.util
-from pathlib import Path
 import uuid
 
 import pytest
@@ -59,6 +57,67 @@ def db_session():
         session.rollback()
         session.close()
         engine.dispose()
+
+
+def insert_company(db_session, *, name: str | None = None) -> uuid.UUID:
+    """Insert a company row for tests that exercise database constraints directly."""
+    company_id = uuid.uuid4()
+    display_name = name or f"Test Company {company_id}"
+    db_session.execute(
+        text(
+            """
+            INSERT INTO companies (
+                id,
+                name,
+                normalized_name,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                CAST(:company_id AS uuid),
+                :name,
+                :normalized_name,
+                now(),
+                now()
+            )
+            """
+        ),
+        {
+            "company_id": str(company_id),
+            "name": display_name,
+            "normalized_name": f"{display_name.lower()} {company_id}",
+        },
+    )
+    return company_id
+
+
+def insert_job(
+    db_session,
+    *,
+    company_name: str | None = None,
+    company_source_text: str | None = None,
+) -> uuid.UUID:
+    """Insert a valid job row after the M3 company identity cutover."""
+    job_id = uuid.uuid4()
+    company_id = insert_company(db_session, name=company_name)
+    db_session.execute(
+        text(
+            """
+            INSERT INTO jobs (id, company_source_text, company_id)
+            VALUES (
+                CAST(:job_id AS uuid),
+                :company_source_text,
+                CAST(:company_id AS uuid)
+            )
+            """
+        ),
+        {
+            "job_id": str(job_id),
+            "company_source_text": company_source_text or company_name,
+            "company_id": str(company_id),
+        },
+    )
+    return job_id
 
 
 def test_seed_creates_records_and_audit_api_returns_summary(db_session) -> None:
@@ -152,28 +211,33 @@ def test_m3_tracker_create_job_resolves_company_identity(db_session) -> None:
     from applypilot.db.tracker import Tracker
 
     tracker = Tracker(db_session)
+    company_base = f"ApplyPilot Cutover {uuid.uuid4().hex[:8]}"
+    company_source_text = f"{company_base}, Inc."
 
     first = tracker.create_job(
-        JobCreate(title="Backend Engineer", company="  ApplyPilot,   Inc. ")
+        JobCreate(title="Backend Engineer", company=f"  {company_base},   Inc. ")
     )
     second = tracker.create_job(
-        JobCreate(title="Frontend Engineer", company="applypilot inc")
+        JobCreate(title="Frontend Engineer", company=f"{company_base.lower()} inc")
     )
     unknown = tracker.create_job(JobCreate(title="Mystery Role"))
     confidential = tracker.create_job(
         JobCreate(title="Platform Role", company="Confidential employer")
     )
 
-    assert first.company == "ApplyPilot, Inc."
+    assert first.company == company_source_text
+    assert first.company_source_text == company_source_text
     assert first.company_id == second.company_id
-    assert unknown.company is None
+    assert unknown.company == "Unknown Company"
+    assert unknown.company_source_text is None
     assert unknown.company_id is not None
-    assert confidential.company == "Confidential employer"
+    assert confidential.company == "Confidential Company"
+    assert confidential.company_source_text == "Confidential employer"
     assert confidential.company_id is not None
 
     applypilot_company = db_session.get(Company, first.company_id)
     assert applypilot_company is not None
-    assert applypilot_company.normalized_name == "applypilot inc"
+    assert applypilot_company.normalized_name == f"{company_base.lower()} inc"
     assert applypilot_company.normalized_domain is None
 
     companies = {company.name: company for company in db_session.query(Company).all()}
@@ -205,86 +269,59 @@ def test_m3_tracker_create_job_does_not_infer_company_domain_from_source_url(
     assert company.normalized_domain is None
 
 
-def test_m3_company_backfill_migration_populates_legacy_jobs(
-    db_session,
-    monkeypatch,
-) -> None:
-    """Migration 0010 backfills pre-M3 jobs without rewriting source text."""
-    migration_path = (
-        Path(__file__).parents[2]
-        / "alembic"
-        / "versions"
-        / "0010_backfill_job_company_identity.py"
-    )
-    spec = importlib.util.spec_from_file_location("migration_0010", migration_path)
-    assert spec is not None
-    assert spec.loader is not None
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
-
-    job_ids = {
-        "first": uuid.uuid4(),
-        "second": uuid.uuid4(),
-        "unknown": uuid.uuid4(),
-        "confidential": uuid.uuid4(),
-    }
-    legacy_rows = [
-        (job_ids["first"], "ApplyPilot, Inc."),
-        (job_ids["second"], "applypilot inc"),
-        (job_ids["unknown"], None),
-        (job_ids["confidential"], "Confidential employer"),
-    ]
-    for job_id, company in legacy_rows:
-        db_session.execute(
-            text(
-                """
-                INSERT INTO jobs (id, title, company, company_id)
-                VALUES (CAST(:job_id AS uuid), :title, :company, NULL)
-                """
-            ),
-            {
-                "job_id": str(job_id),
-                "title": f"Legacy job {job_id}",
-                "company": company,
-            },
-        )
-
-    monkeypatch.setattr(migration.op, "get_bind", db_session.connection)
-    migration.upgrade()
-
-    rows = {
-        row.id: row
-        for row in db_session.execute(
-            text(
-                """
-                SELECT
-                    jobs.id,
-                    jobs.company,
-                    jobs.company_id,
-                    companies.name AS company_name,
-                    companies.normalized_name
-                FROM jobs
-                JOIN companies ON companies.id = jobs.company_id
-                WHERE jobs.id IN (
-                    CAST(:first AS uuid),
-                    CAST(:second AS uuid),
-                    CAST(:unknown AS uuid),
-                    CAST(:confidential AS uuid)
+def test_m3_company_cutover_requires_company_identity(db_session) -> None:
+    """PostgreSQL requires jobs to carry a canonical company identity after cutover."""
+    with pytest.raises(IntegrityError):
+        with db_session.begin_nested():
+            db_session.execute(
+                text(
+                    """
+                    INSERT INTO jobs (id, title, company_source_text)
+                    VALUES (
+                        gen_random_uuid(),
+                        'Missing Company Identity',
+                        'Legacy Source Text'
+                    )
+                    """
                 )
-                """
-            ),
-            {key: str(value) for key, value in job_ids.items()},
-        )
-    }
+            )
 
-    assert len(rows) == len(job_ids)
-    assert rows[job_ids["first"]].company == "ApplyPilot, Inc."
-    assert rows[job_ids["first"]].company_id == rows[job_ids["second"]].company_id
-    assert rows[job_ids["first"]].normalized_name == "applypilot inc"
-    assert rows[job_ids["unknown"]].company is None
-    assert rows[job_ids["unknown"]].company_name == "Unknown Company"
-    assert rows[job_ids["confidential"]].company == "Confidential employer"
-    assert rows[job_ids["confidential"]].company_name == "Confidential Company"
+    company_id = insert_company(db_session, name="Cutover Company")
+    job_id = uuid.uuid4()
+    db_session.execute(
+        text(
+            """
+            INSERT INTO jobs (
+                id,
+                title,
+                company_source_text,
+                company_id
+            )
+            VALUES (
+                CAST(:job_id AS uuid),
+                'Company Cutover Role',
+                'Cutover Company, Inc.',
+                CAST(:company_id AS uuid)
+            )
+            """
+        ),
+        {"job_id": str(job_id), "company_id": str(company_id)},
+    )
+
+    row = db_session.execute(
+        text(
+            """
+            SELECT jobs.company_source_text, companies.name AS company_name
+            FROM jobs
+            JOIN companies ON companies.id = jobs.company_id
+            WHERE jobs.id = CAST(:job_id AS uuid)
+            """
+        ),
+        {"job_id": str(job_id)},
+    ).one()
+
+    assert row.company_source_text == "Cutover Company, Inc."
+    assert row.company_name == "Cutover Company"
 
 
 def test_m3_api_projects_canonical_company_and_source_text(db_session) -> None:
@@ -323,13 +360,9 @@ def test_m3_api_projects_canonical_company_and_source_text(db_session) -> None:
 
 def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
     """PostgreSQL rejects invalid stable M1 vocabulary values."""
-    job_id = uuid.uuid4()
+    job_id = insert_job(db_session)
     application_id = uuid.uuid4()
 
-    db_session.execute(
-        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
-        {"job_id": str(job_id)},
-    )
     db_session.execute(
         text(
             """
@@ -511,13 +544,9 @@ def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
 
 def test_m2_packet_review_constraints_allow_nullable_packet_text(db_session) -> None:
     """PostgreSQL accepts valid packet reviews without storing packet text."""
-    job_id = uuid.uuid4()
+    job_id = insert_job(db_session)
     application_id = uuid.uuid4()
 
-    db_session.execute(
-        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
-        {"job_id": str(job_id)},
-    )
     db_session.execute(
         text(
             """
@@ -578,13 +607,9 @@ def test_m2_packet_review_constraints_allow_nullable_packet_text(db_session) -> 
 
 def test_m2_packet_review_constraints_reject_invalid_values(db_session) -> None:
     """PostgreSQL rejects packet review decisions outside the M2 contract."""
-    job_id = uuid.uuid4()
+    job_id = insert_job(db_session)
     application_id = uuid.uuid4()
 
-    db_session.execute(
-        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
-        {"job_id": str(job_id)},
-    )
     db_session.execute(
         text(
             """
@@ -652,13 +677,9 @@ def test_m2_packet_review_tracker_appends_audit_event(db_session) -> None:
     from applypilot.db.tracker import Tracker
     from applypilot.domain.applications.models import ApplicationPacketReviewCreate
 
-    job_id = uuid.uuid4()
+    job_id = insert_job(db_session)
     application_id = uuid.uuid4()
 
-    db_session.execute(
-        text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
-        {"job_id": str(job_id)},
-    )
     db_session.execute(
         text(
             """
@@ -771,12 +792,8 @@ def test_audit_records_prevent_application_delete(db_session) -> None:
     """PostgreSQL prevents deleting applications with retained audit evidence."""
 
     def create_application() -> str:
-        job_id = uuid.uuid4()
+        job_id = insert_job(db_session)
         application_id = uuid.uuid4()
-        db_session.execute(
-            text("INSERT INTO jobs (id) VALUES (CAST(:job_id AS uuid))"),
-            {"job_id": str(job_id)},
-        )
         db_session.execute(
             text(
                 """
