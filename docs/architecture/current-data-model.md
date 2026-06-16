@@ -1,7 +1,7 @@
 # Current Data Model
 
 **Status:** Implemented snapshot  
-**Scope:** Implemented backend schema through the M3 company identity compatibility step
+**Scope:** Implemented backend schema through the M3 company identity cutover
 **Database:** PostgreSQL  
 **Source of truth:** SQLAlchemy models and Alembic migrations
 
@@ -40,6 +40,7 @@ Current migrations:
 8. `0008_add_application_packet_reviews.py`
 9. `0009_add_company_identity_schema.py`
 10. `0010_backfill_job_company_identity.py`
+11. `0011_complete_company_identity_cutover.py`
 
 ## Core Shape
 
@@ -56,9 +57,9 @@ erDiagram
 
 `applications` is the canonical hub record. Workflow state, scoring, policy decisions, executor records, documents, email threads, and audit events all attach to an application.
 
-`companies` is present as the first M3 compatibility schema step. Existing API and dashboard
-behavior still expose `jobs.company` as the current display value until a later backfill/cutover
-migration changes canonical reads and writes.
+`companies` is the canonical company identity table for the implemented M3 cutover. API and
+dashboard behavior still expose a display `company` value for compatibility, but that value is now
+projected from `companies.name`; raw intake provenance is retained as `jobs.company_source_text`.
 
 ## Tables
 
@@ -73,8 +74,8 @@ id uuid PK
 source_url varchar(2048) nullable
 raw_text text nullable
 title varchar(512) nullable
-company varchar(256) nullable
-company_id uuid nullable FK -> companies.id
+company_source_text varchar(256) nullable
+company_id uuid not null FK -> companies.id
 location varchar(256) nullable
 remote_ok boolean not null default false
 job_type varchar(64) nullable
@@ -87,15 +88,14 @@ updated_at timestamptz not null
 Indexes:
 
 ```text
-ix_jobs_company(company)
+ix_jobs_company_source_text(company_source_text)
 ix_jobs_company_id(company_id)
 ```
 
-During the M3 compatibility period, `company` remains the existing database source text. Migration
-`0010` backfills existing rows and new job writes resolve or create deterministic company identity
-records. API read models now project the display `company` value from `companies.name` when a
-relationship exists and expose the raw intake value separately as `company_source_text`. Later M3
-work must make `company_id` required and rename the database source column.
+Migration `0010` backfills existing rows and new job writes resolve or create deterministic company
+identity records. Migration `0011` completes the cutover by requiring `company_id` and renaming the
+raw source/provenance column to `company_source_text`. API read models keep the compatible display
+`company` field projected from `companies.name`.
 
 ### `companies`
 
@@ -309,8 +309,8 @@ ix_event_log_created_at(created_at)
 - PostgreSQL is the durable system of record.
 - `applications` is the central aggregate for M1.
 - Job creation may deterministically enrich blank job metadata from manual intake.
-- Job creation resolves deterministic company identity for new writes while preserving
-  `jobs.company` as display/source text.
+- Job creation resolves deterministic company identity for new writes while preserving raw intake
+  provenance as `jobs.company_source_text`.
 - Application state transitions go through the state machine.
 - New application rows default to `ApplicationCreated` at both ORM and database levels.
 - Application creation and state changes append event log records.
@@ -319,8 +319,8 @@ ix_event_log_created_at(created_at)
 - Executor dry-run and result records append audit events.
 - The event-log database FK does not cascade on application delete.
 - Policy decision and executor action FKs do not cascade on application delete.
-- Companies exist as the M3 compatibility table, but existing consumers still read the display
-  company value from `jobs.company`.
+- Companies own canonical company identity. Existing consumers still read the compatible display
+  company value through API projection.
 
 ## Validation Boundaries
 
@@ -350,7 +350,7 @@ Application-enforced:
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
-| Normalized company identity | In progress for M3 | Migration `0009` adds `companies` and nullable `jobs.company_id`; migration `0010` backfills legacy rows; new job writes resolve `company_id`; API reads project display company from `companies.name`; non-null enforcement and database `company_source_text` rename remain future M3 work |
+| Normalized company identity | Resolved for M3 baseline | Migration `0009` adds `companies`; migration `0010` backfills legacy rows; migration `0011` requires `jobs.company_id` and renames provenance to `jobs.company_source_text`; API reads project display company from `companies.name` |
 | Normalized document/thread/answer model | Deferred | The broader M5/M7 model remains proposed in ADR-0002 |
 
 ## Current Non-Goals
@@ -370,14 +370,13 @@ These may be introduced later through new migrations and architecture review.
 
 The proposed phase placement is:
 
-- M3: remaining required `jobs.company_id` and database `company_source_text` rename
 - M5: `document_versions`, `application_documents`, `answer_library`,
   `application_answers`
 - M7: `contacts`, `threads`, `messages`, `thread_applications`
 
 ADR-0005 specifically approves the M3 company identity direction. Migration `0009` starts the
 compatibility schema, and migration `0010` backfills legacy job rows. API reads now project company
-display from `companies.name`. M3 is not complete until non-null `jobs.company_id` and the database
-`company_source_text` rename are implemented and validated. ADR-0002 remains Proposed for the
-broader M5/M7 normalization direction. No future table listed here is currently authorized for
-migration.
+display from `companies.name`. Migration `0011` completes the M3 baseline cutover by enforcing
+non-null `jobs.company_id` and renaming raw provenance to `jobs.company_source_text`. ADR-0002
+remains Proposed for the broader M5/M7 normalization direction. No future table listed here is
+currently authorized for migration.

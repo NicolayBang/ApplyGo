@@ -118,8 +118,8 @@ def test_company_identity_schema_matches_m3_compatibility_contract() -> None:
     assert company_table.c.normalized_name.nullable is False
     assert company_table.c.domain.nullable is True
     assert company_table.c.normalized_domain.nullable is True
-    assert job_table.c.company.nullable is True
-    assert job_table.c.company_id.nullable is True
+    assert job_table.c.company_source_text.nullable is True
+    assert job_table.c.company_id.nullable is False
 
     company_fk = next(iter(job_table.c.company_id.foreign_keys))
     assert company_fk.column.table.name == "companies"
@@ -136,7 +136,10 @@ def test_company_identity_schema_matches_m3_compatibility_contract() -> None:
         "uq_companies_normalized_domain_m3",
         "uq_companies_normalized_name_without_domain_m3",
     }.issubset({index.name for index in Company.__table__.indexes})
-    assert "ix_jobs_company_id" in {index.name for index in Job.__table__.indexes}
+    assert {
+        "ix_jobs_company_id",
+        "ix_jobs_company_source_text",
+    }.issubset({index.name for index in Job.__table__.indexes})
 
 
 def test_m1_value_check_constraints_are_declared_on_models() -> None:

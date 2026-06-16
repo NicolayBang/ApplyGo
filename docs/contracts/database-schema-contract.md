@@ -1,8 +1,8 @@
 # Database Schema Contract
 
-**Status:** Implemented baseline plus M3 compatibility schema
+**Status:** Implemented baseline plus M3 company identity cutover
 
-**Scope:** PostgreSQL schema through migration `0010`
+**Scope:** PostgreSQL schema through migration `0011`
 
 **Authority:** SQLAlchemy models and applied Alembic migrations
 
@@ -17,7 +17,7 @@ It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
 The implemented migration chain is
-`0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007 -> 0008 -> 0009 -> 0010`.
+`0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007 -> 0008 -> 0009 -> 0010 -> 0011`.
 
 ## Provisioning Boundary
 
@@ -57,8 +57,8 @@ PostgreSQL enum or `CHECK` constraint.
 | `source_url` | `varchar(2048)` | yes | none | |
 | `raw_text` | `text` | yes | none | |
 | `title` | `varchar(512)` | yes | none | |
-| `company` | `varchar(256)` | yes | none | `ix_jobs_company` |
-| `company_id` | `uuid` | yes | none | FK -> `companies.id`, `ix_jobs_company_id` |
+| `company_source_text` | `varchar(256)` | yes | none | `ix_jobs_company_source_text` |
+| `company_id` | `uuid` | no | none | FK -> `companies.id`, `ix_jobs_company_id` |
 | `location` | `varchar(256)` | yes | none | |
 | `remote_ok` | `boolean` | no | `false` | |
 | `job_type` | `varchar(64)` | yes | none | |
@@ -70,14 +70,13 @@ PostgreSQL enum or `CHECK` constraint.
 The nullable intake fields are intentional for M1. `JobIntakeClassifier` may fill blank
 classification fields before persistence, but PostgreSQL does not require them.
 
-During the M3 compatibility period, `company` remains the legacy display/source text. Migration
-`0010` backfills existing rows, and new job writes resolve or create a deterministic company
-identity row and persist `company_id` in the same transaction. Later M3 work must complete canonical
-read cutover before making this relationship required.
+Migration `0010` backfills existing rows, and new job writes resolve or create a deterministic
+company identity row and persist `company_id` in the same transaction. Migration `0011` completes
+the M3 baseline cutover by requiring `company_id` and renaming the raw intake provenance field to
+`company_source_text`.
 
-API read models now project the response `company` value from `companies.name` when the relationship
-exists, while exposing the raw database/source value as `company_source_text`. The underlying
-database column remains named `jobs.company` until a later compatibility migration renames it.
+API read models project the response `company` value from `companies.name` while exposing the raw
+database/source value as `company_source_text`.
 
 ### `companies`
 
@@ -98,8 +97,8 @@ uq_companies_normalized_domain_m3 on normalized_domain where normalized_domain i
 uq_companies_normalized_name_without_domain_m3 on normalized_name where normalized_domain is null
 ```
 
-`companies` is the M3 compatibility table. It does not by itself complete company normalization;
-non-null `jobs.company_id` and the database `company_source_text` rename remain separate M3 work.
+`companies` owns canonical company identity for the implemented M3 baseline. The retained
+`jobs.company_source_text` value is provenance and must not be treated as canonical company truth.
 
 ### `applications`
 
@@ -232,7 +231,7 @@ The current dry-run does not automatically advance application state after execu
 
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
 - ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
-  compatibility schema, migration `0010` backfills legacy job rows, and new job writes now populate
-  `jobs.company_id`. API reads now project company display from the company relationship. Remaining
-  M3 work still needs validation before the database `company_source_text` rename and non-null
-  enforcement.
+  compatibility schema, migration `0010` backfills legacy job rows, and migration `0011` completes
+  the M3 baseline cutover by requiring `jobs.company_id` and renaming raw provenance to
+  `jobs.company_source_text`. Later company merge UI, contacts, and external enrichment remain out
+  of scope.

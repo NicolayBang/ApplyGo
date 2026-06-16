@@ -55,7 +55,13 @@ class Tracker:
     def create_job(self, data: JobCreate) -> Job:
         enriched = JobIntakeClassifier().enrich(data)
         company = self._resolve_company(enriched.company)
-        job = Job(**enriched.model_dump(), company_id=company.id)
+        job_data = enriched.model_dump()
+        company_source_text = job_data.pop("company")
+        job = Job(
+            **job_data,
+            company_source_text=company_source_text,
+            company_id=company.id,
+        )
         self._session.add(job)
         self._session.flush()
         return job
@@ -137,7 +143,11 @@ class Tracker:
         if recommendation:
             query = query.filter(Application.recommendation == recommendation)
         if company:
-            query = query.join(Application.job).filter(Job.company.ilike(f"%{company}%"))
+            query = (
+                query.join(Application.job)
+                .join(Job.company_identity)
+                .filter(Company.name.ilike(f"%{company}%"))
+            )
         if created_from:
             query = query.filter(Application.created_at >= created_from)
         if created_to:
