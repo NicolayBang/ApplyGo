@@ -54,6 +54,7 @@ manual intake -> parse/classify -> state progression -> scoring -> policy check 
 
 Useful reviewer entry points:
 
+- `docs/capstone/release-pack.md`: fastest recruiter/reviewer reading order
 - `docs/capstone/reviewer-brief.md`: concise capstone/recruiter overview
 - `docs/capstone/codespaces-demo.md`: quick Codespaces demo path for reviewers
 - `docs/capstone/README.md`: capstone documentation index and suggested reading order
@@ -76,6 +77,19 @@ Useful reviewer entry points:
 The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
 
 ![ApplyPilot dashboard review evidence](docs/capstone/assets/m2-dashboard-review-evidence.png)
+
+## Public Reviewer Path
+
+For the cleanest first pass through the public repo:
+
+1. Read `docs/capstone/release-pack.md`.
+2. Read `docs/capstone/reviewer-brief.md`.
+3. Read `docs/capstone/mvp-status.md`.
+4. Use `docs/capstone/codespaces-demo.md` if you want the fastest runnable demo.
+5. Use `docs/capstone/dashboard-demo-flow.md` for the detailed step-by-step workflow.
+
+This path stays grounded in implemented behavior and avoids pulling future-looking architecture notes
+ahead of the current capstone baseline.
 
 ## Implemented M1 architecture
 

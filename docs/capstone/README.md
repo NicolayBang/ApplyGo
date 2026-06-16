@@ -4,6 +4,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 
 ## Start Here
 
+- `release-pack.md` - fastest public reviewer path and recommended reading order.
 - `reviewer-brief.md` - concise capstone/recruiter overview.
 - `codespaces-demo.md` - quick Codespaces demo path for reviewers.
 - `mvp-status.md` - concise current implementation status and remaining MVP boundaries.
@@ -25,24 +26,25 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 
 ## Reading Order
 
-1. Read `reviewer-brief.md` for the shortest capstone overview.
-2. Use `codespaces-demo.md` for the fastest cloud demo path.
+1. Read `release-pack.md` for the fastest public reviewer path.
+2. Read `reviewer-brief.md` for the shortest capstone overview.
 3. Read `mvp-status.md` to understand what exists today.
-4. Use `final-manual-validation-checklist.md` for the last human pass before presenting.
-5. Use `m1-demo-script.md` when presenting the demo live.
-6. Read `m1-release-notes.md` for the current M1 release marker and handoff summary.
-7. Read `m1-mvp-readiness-summary.md` to understand what remains before calling M1 complete.
-8. Run `dashboard-demo-flow.md` to exercise the implemented workflow in detail.
-9. Use `m1-demo-review-checklist.md` to record pass/fix observations.
+4. Read `m1-release-notes.md` for the current M1 release marker and handoff summary.
+5. Use `codespaces-demo.md` for the fastest cloud demo path.
+6. Use `m1-demo-script.md` when presenting the demo live.
+7. Run `dashboard-demo-flow.md` to exercise the implemented workflow in detail.
+8. Use `m1-demo-review-checklist.md` to record pass/fix observations.
+9. Use `final-manual-validation-checklist.md` for the last human pass before presenting.
 10. Read `m1-local-mvp-validation-2026-06-15.md` for the final local MVP validation evidence.
 11. Read `m1-manual-demo-validation-2026-06-14.md` for the earlier live manual validation result.
-12. Use `m2-packet-flow-validation-template.md` for reusable M2 packet-flow signoff sessions.
-13. Use `m2-packet-preview-validation.md` when validating the deterministic packet preview only.
-14. Use `m2-packet-review-validation.md` when validating persisted human packet review decisions only.
-15. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-16. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
-17. Use `process.md` to understand the project discipline behind the work.
-18. Treat `phase-2-ideas.md` as future discussion material only.
+12. Read `m1-mvp-readiness-summary.md` to understand what remained at the M1 completion boundary.
+13. Use `m2-packet-flow-validation-template.md` for reusable M2 packet-flow signoff sessions.
+14. Use `m2-packet-preview-validation.md` when validating the deterministic packet preview only.
+15. Use `m2-packet-review-validation.md` when validating persisted human packet review decisions only.
+16. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
+17. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+18. Use `process.md` to understand the project discipline behind the work.
+19. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 
