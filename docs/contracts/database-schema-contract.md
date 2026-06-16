@@ -1,8 +1,8 @@
-# M1 Database Schema Contract
+# Database Schema Contract
 
-**Status:** Implemented baseline
+**Status:** Implemented baseline plus M3 compatibility schema
 
-**Scope:** Milestone 1 PostgreSQL schema
+**Scope:** PostgreSQL schema through migration `0009`
 
 **Authority:** SQLAlchemy models and applied Alembic migrations
 
@@ -16,7 +16,8 @@ manual intake -> parse/classify -> state progression -> scoring
 It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
-The implemented migration chain is `0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007`.
+The implemented migration chain is
+`0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007 -> 0008 -> 0009`.
 
 ## Provisioning Boundary
 
@@ -57,6 +58,7 @@ PostgreSQL enum or `CHECK` constraint.
 | `raw_text` | `text` | yes | none | |
 | `title` | `varchar(512)` | yes | none | |
 | `company` | `varchar(256)` | yes | none | `ix_jobs_company` |
+| `company_id` | `uuid` | yes | none | FK -> `companies.id`, `ix_jobs_company_id` |
 | `location` | `varchar(256)` | yes | none | |
 | `remote_ok` | `boolean` | no | `false` | |
 | `job_type` | `varchar(64)` | yes | none | |
@@ -67,6 +69,32 @@ PostgreSQL enum or `CHECK` constraint.
 
 The nullable intake fields are intentional for M1. `JobIntakeClassifier` may fill blank
 classification fields before persistence, but PostgreSQL does not require them.
+
+During the M3 compatibility period, `company` remains the legacy display/source text and
+`company_id` is nullable. Later M3 work must backfill this relationship before making it required.
+
+### `companies`
+
+| Column | PostgreSQL type | Null | Default | Key / index |
+|---|---|---:|---|---|
+| `id` | `uuid` | no | supplied by ORM | PK |
+| `name` | `varchar(256)` | no | none | `ck_companies_name_not_blank_m3` |
+| `normalized_name` | `varchar(256)` | no | none | `ix_companies_normalized_name`, `ck_companies_normalized_name_not_blank_m3` |
+| `domain` | `varchar(256)` | yes | none | |
+| `normalized_domain` | `varchar(256)` | yes | none | `ix_companies_normalized_domain` |
+| `created_at` | `timestamptz` | no | `now()` | |
+| `updated_at` | `timestamptz` | no | `now()` | |
+
+Unique indexes:
+
+```text
+uq_companies_normalized_domain_m3 on normalized_domain where normalized_domain is not null
+uq_companies_normalized_name_without_domain_m3 on normalized_name where normalized_domain is null
+```
+
+`companies` is the first M3 compatibility table. It does not by itself complete company
+normalization; backfill, canonical read/write cutover, non-null `jobs.company_id`, and
+`company_source_text` rename remain separate M3 work.
 
 ### `applications`
 
@@ -198,5 +226,6 @@ The current dry-run does not automatically advance application state after execu
 ## Open Database Decisions
 
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
-- ADR-0005 records approved M3 company identity direction. Confirm implementation timing before
-  adding `companies` or `jobs.company_id`; this contract does not approve the migration.
+- ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
+  compatibility schema. Remaining M3 work still needs validation before canonical cutover and
+  non-null enforcement.
