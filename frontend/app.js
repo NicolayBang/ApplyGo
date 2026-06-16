@@ -187,6 +187,7 @@ const elements = {
   scoreList: document.querySelector("#score-list"),
   policyList: document.querySelector("#policy-list"),
   executorList: document.querySelector("#executor-list"),
+  packetReadinessSummary: document.querySelector("#packet-readiness-summary"),
   packetReadiness: document.querySelector("#packet-readiness"),
   packetPreview: document.querySelector("#packet-preview"),
   packetReviewForm: document.querySelector("#packet-review-form"),
@@ -766,6 +767,117 @@ function primaryFitRisk(application) {
   return (application.score_risks || []).find(Boolean) || (application.missing_data || []).find(Boolean);
 }
 
+function packetReadinessSummaryState() {
+  const application = currentAudit.application || {};
+  const policy = latestPolicyDecision();
+  const executor = latestExecutorAction();
+  const review = latestPacketReview();
+  const nextStep = nextAction();
+  const hasApplication = Boolean(application.id);
+  const hasScore = Boolean(application.confidence || application.fit_score);
+  const state = application.state;
+  const isWorkflowApproved = state === "Approved" || state === "Submitted";
+
+  if (!hasApplication) {
+    return {
+      tone: "blocked",
+      status: "Blocked",
+      title: "Create or load an application",
+      detail: "Packet readiness starts only after a real application is loaded into the dashboard.",
+      next: nextStep.detail,
+    };
+  }
+
+  if (!hasScore) {
+    return {
+      tone: "blocked",
+      status: "Blocked",
+      title: "Score the application first",
+      detail: "The packet still needs fit evidence before policy, dry-run, or packet review can be trusted.",
+      next: nextStep.detail,
+    };
+  }
+
+  if (!isWorkflowApproved) {
+    return {
+      tone: "review",
+      status: "Needs human decision",
+      title: `Workflow state is ${displayLabel(state)}`,
+      detail: "Move through the guided workflow before treating the packet as ready for manual use.",
+      next: nextStep.detail,
+    };
+  }
+
+  if (!policy) {
+    return {
+      tone: "review",
+      status: "Needs human decision",
+      title: "Policy review still required",
+      detail: "Record a policy decision so the packet has governed permission for the preview action.",
+      next: nextStep.detail,
+    };
+  }
+
+  if (!policy.allowed) {
+    return {
+      tone: "review",
+      status: "Needs human decision",
+      title: "Policy review is blocking dry-run",
+      detail: dryRunBlockReason(policy),
+      next: nextStep.detail,
+    };
+  }
+
+  if (!executor) {
+    return {
+      tone: "review",
+      status: "Needs human decision",
+      title: "Preview action still required",
+      detail: "Run the dry-run preview so the packet includes executor evidence with no external side effects.",
+      next: nextStep.detail,
+    };
+  }
+
+  if (!review) {
+    return {
+      tone: "review",
+      status: "Needs human decision",
+      title: "Packet review not recorded",
+      detail: "A human reviewer still needs to approve, reject, or request changes for this packet.",
+      next: "Record a packet review decision after checking the current preview.",
+    };
+  }
+
+  if (review.decision === "changes_requested") {
+    return {
+      tone: "blocked",
+      status: "Blocked",
+      title: "Packet changes requested",
+      detail: review.notes || "The latest packet review requested changes before manual use.",
+      next: "Update the application evidence or packet notes, then record a new packet review.",
+    };
+  }
+
+  if (review.decision === "rejected") {
+    return {
+      tone: "blocked",
+      status: "Blocked",
+      title: "Packet rejected for manual use",
+      detail: review.notes || "The latest packet review rejected this packet.",
+      next: "Rework the packet evidence before trying again.",
+    };
+  }
+
+  return {
+    tone: "ready",
+    status: "Ready",
+    title: "Packet is ready for manual use",
+    detail:
+      "Approved workflow state, allowed policy, dry-run executor evidence, and human packet approval are all recorded.",
+    next: "You can copy or download the packet for a governed manual follow-up.",
+  };
+}
+
 function buildCoverNoteDraft(application, job) {
   const role = job.title || "this role";
   const company = job.company || "your team";
@@ -843,38 +955,73 @@ function packetReadinessItems() {
   const application = currentAudit.application || {};
   const policy = latestPolicyDecision();
   const executor = latestExecutorAction();
+  const review = latestPacketReview();
 
   return [
     {
       label: "Application",
-      ready: Boolean(application.id),
-      detail: application.id ? "Loaded" : "Create or load an application",
+      state: application.id ? "ready" : "blocked",
+      summary: application.id ? "Loaded" : "Missing",
+      detail: application.id ? "Loaded into the dashboard" : "Create or load an application",
     },
     {
       label: "Score",
-      ready: Boolean(application.confidence || application.fit_score),
+      state: application.confidence || application.fit_score ? "ready" : "blocked",
+      summary: application.confidence ? displayLabel(application.confidence) : "Needed",
       detail: application.confidence ? `${application.confidence} confidence` : "Score before review",
     },
     {
       label: "Policy",
-      ready: Boolean(policy),
-      detail: policy ? `${policy.decision} decision` : "Evaluate policy",
+      state: !policy ? "blocked" : policy.allowed ? "ready" : "review",
+      summary: !policy ? "Needed" : displayLabel(policy.decision),
+      detail: !policy
+        ? "Evaluate policy"
+        : policy.allowed
+          ? `${policy.decision} decision`
+          : dryRunBlockReason(policy),
     },
     {
       label: "Dry-run",
-      ready: Boolean(executor),
+      state: executor ? "ready" : "blocked",
+      summary: executor ? displayLabel(executor.status) : "Pending",
       detail: executor ? `${executor.status} ${executor.execution_mode}` : "Preview action",
     },
+    {
+      label: "Packet review",
+      state: !review ? "review" : review.decision === "approved" ? "ready" : "blocked",
+      summary: !review ? "Needed" : packetDecisionLabel(review.decision),
+      detail: !review
+        ? "Record a human review"
+        : review.notes || `${packetDecisionLabel(review.decision)} by ${review.reviewed_by}`,
+    },
   ];
+}
+
+function renderPacketReadinessSummary() {
+  const summary = packetReadinessSummaryState();
+
+  elements.packetReadinessSummary.innerHTML = `
+    <article class="packet-readiness-summary-card ${summary.tone}">
+      <div class="packet-readiness-summary-header">
+        <div>
+          <span>Packet readiness</span>
+          <strong>${escapeHtml(summary.title)}</strong>
+        </div>
+        ${badge(summary.status)}
+      </div>
+      <p>${escapeHtml(summary.detail)}</p>
+      <small>${escapeHtml(summary.next)}</small>
+    </article>
+  `;
 }
 
 function renderPacketReadiness() {
   elements.packetReadiness.innerHTML = packetReadinessItems()
     .map(
       (item) => `
-        <div class="packet-readiness-item ${item.ready ? "ready" : "pending"}">
+        <div class="packet-readiness-item ${item.state}">
           <span>${escapeHtml(item.label)}</span>
-          <strong>${item.ready ? "Ready" : "Pending"}</strong>
+          <strong>${escapeHtml(item.summary)}</strong>
           <small>${escapeHtml(item.detail)}</small>
         </div>
       `,
@@ -883,6 +1030,7 @@ function renderPacketReadiness() {
 }
 
 function renderPacketPreview() {
+  renderPacketReadinessSummary();
   renderPacketReadiness();
   renderPacketReviewControls();
   renderPacketReviewHistory();

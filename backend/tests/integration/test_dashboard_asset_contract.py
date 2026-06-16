@@ -74,6 +74,7 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert 'aria-label="Application packet preview"' in index_response.text
     assert 'href="#application-packet"' in index_response.text
     assert 'id="application-packet"' in index_response.text
+    assert 'id="packet-readiness-summary"' in index_response.text
     assert 'id="packet-readiness"' in index_response.text
     assert 'id="packet-review-form"' in index_response.text
     assert 'id="packet-review-status"' in index_response.text
@@ -84,6 +85,7 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert 'id="copy-packet-button"' in index_response.text
     assert 'id="download-packet-button"' in index_response.text
     assert "renderPacketReadiness" in script_response.text
+    assert "renderPacketReadinessSummary" in script_response.text
     assert "renderPacketReviewControls" in script_response.text
     assert "renderPacketReviewHistory" in script_response.text
     assert "recordPacketReview" in script_response.text
@@ -97,6 +99,7 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert "renderPacketPreview" in script_response.text
     assert "Recording packet review does not send email, open a browser, or submit an application." in script_response.text
     assert ".packet-panel" in style_response.text
+    assert ".packet-readiness-summary" in style_response.text
     assert ".packet-readiness" in style_response.text
     assert ".packet-review-form" in style_response.text
     assert ".packet-review-history" in style_response.text
