@@ -2,7 +2,7 @@
 
 **Status:** Implemented baseline plus M3 compatibility schema
 
-**Scope:** PostgreSQL schema through migration `0009`
+**Scope:** PostgreSQL schema through migration `0010`
 
 **Authority:** SQLAlchemy models and applied Alembic migrations
 
@@ -17,7 +17,7 @@ It does not approve the future normalized data model in
 `docs/decisions/ADR-0002-canonical-data-model.md`.
 
 The implemented migration chain is
-`0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007 -> 0008 -> 0009`.
+`0001 -> 0002 -> 0003 -> 0004 -> 0005 -> 0006 -> 0007 -> 0008 -> 0009 -> 0010`.
 
 ## Provisioning Boundary
 
@@ -70,10 +70,10 @@ PostgreSQL enum or `CHECK` constraint.
 The nullable intake fields are intentional for M1. `JobIntakeClassifier` may fill blank
 classification fields before persistence, but PostgreSQL does not require them.
 
-During the M3 compatibility period, `company` remains the legacy display/source text and
-`company_id` is nullable for legacy rows. New job writes resolve or create a deterministic company
-identity row and persist `company_id` in the same transaction. Later M3 work must backfill existing
-rows before making this relationship required.
+During the M3 compatibility period, `company` remains the legacy display/source text. Migration
+`0010` backfills existing rows, and new job writes resolve or create a deterministic company
+identity row and persist `company_id` in the same transaction. Later M3 work must complete canonical
+read cutover before making this relationship required.
 
 ### `companies`
 
@@ -95,8 +95,8 @@ uq_companies_normalized_name_without_domain_m3 on normalized_name where normaliz
 ```
 
 `companies` is the M3 compatibility table. It does not by itself complete company normalization;
-backfill, canonical read cutover, non-null `jobs.company_id`, and
-`company_source_text` rename remain separate M3 work.
+canonical read cutover, non-null `jobs.company_id`, and `company_source_text` rename remain separate
+M3 work.
 
 ### `applications`
 
@@ -229,6 +229,6 @@ The current dry-run does not automatically advance application state after execu
 
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
 - ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
-  compatibility schema, and new job writes now populate `jobs.company_id`. Remaining M3 work still
-  needs validation before canonical read cutover, legacy backfill, `company_source_text` rename, and
-  non-null enforcement.
+  compatibility schema, migration `0010` backfills legacy job rows, and new job writes now populate
+  `jobs.company_id`. Remaining M3 work still needs validation before canonical read cutover,
+  `company_source_text` rename, and non-null enforcement.
