@@ -44,6 +44,7 @@ Useful reviewer entry points:
 - `docs/capstone/codespaces-demo.md`: quick Codespaces demo path for reviewers
 - `docs/capstone/README.md`: capstone documentation index and suggested reading order
 - `docs/capstone/mvp-status.md`: concise current implementation status and remaining MVP boundaries
+- `docs/capstone/final-manual-validation-checklist.md`: final human validation pass before presenting
 - `docs/capstone/m1-demo-script.md`: short presentation script for the live M1 demo
 - `docs/capstone/m1-release-notes.md`: M1 release marker, validation evidence, and handoff summary
 - `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
