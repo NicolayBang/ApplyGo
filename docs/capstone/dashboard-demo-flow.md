@@ -68,7 +68,7 @@ The dashboard should show:
 - manual intake form
 - recent applications list
 - parsed job metadata in the application summary
-- workflow actions
+- guided actions
 - review readiness
 - application summary
 - score details
@@ -164,9 +164,9 @@ Expected result:
 
 The policy check uses stored application score context when explicit context is not provided by the dashboard.
 
-### 5. Dry-Run Follow-Up
+### 5. Preview Action
 
-Click `Dry-run follow-up`.
+Click `Preview action`.
 
 Expected result:
 

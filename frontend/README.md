@@ -110,13 +110,14 @@ intake data supports them.
 The built-in Sample job includes enough deterministic signals for the M1 happy path: ATS source,
 full-time job type, compensation range, remote marker, and detailed job text.
 
-## Workflow actions
+## Guided actions
 
-With an application loaded, the dashboard can continue the M1 dry-run workflow:
+With an application loaded, the dashboard can continue the current guided workflow:
 
-1. Click **Evaluate policy** to call `POST /applications/{application_id}/policy-decisions`.
-2. Click **Preview action** to call `POST /applications/{application_id}/executor-actions/dry-run`.
-3. The audit panel reloads and shows the policy decision plus executor attempt/result events.
+1. Click **Score application** to record fit evidence when it is not already present.
+2. Click **Evaluate policy** to call `POST /applications/{application_id}/policy-decisions`.
+3. Click **Preview action** to call `POST /applications/{application_id}/executor-actions/dry-run`.
+4. The audit panel reloads and shows the score, policy decision, and executor attempt/result events.
 
 The dry-run action requires an allowed policy decision. If no allowed decision exists, the dashboard
 asks for policy evaluation first.

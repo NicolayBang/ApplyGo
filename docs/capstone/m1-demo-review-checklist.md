@@ -48,7 +48,7 @@ new scope document.
 
 ## Dry-Run And Audit
 
-- [ ] `Dry-run follow-up` requires an allowed policy decision.
+- [ ] `Preview action` requires an allowed policy decision.
 - [ ] Executor action records `execution_mode=dry_run`.
 - [ ] Executor result shows `side_effects=false`.
 - [ ] Planned steps and safeguards are visible.
