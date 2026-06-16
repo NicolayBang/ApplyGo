@@ -358,19 +358,19 @@ function updateWorkflowReadiness() {
 function renderSummary(application) {
   const job = application.job || {};
   const nextStates = visibleStateTransitions(application)
-    .map((transition) => transition.state)
+    .map((transition) => displayLabel(transition.state))
     .join(", ");
   const overviewRows = [
     ["Location", job.location],
     ["Remote", job.remote_ok ? "Yes" : null],
     ["Job type", job.job_type],
     ["Salary", job.salary_raw],
-    ["State", application.state],
+    ["State", displayLabel(application.state)],
     ["Next states", nextStates || "None"],
-    ["Mode", application.automation_mode],
-    ["Confidence", application.confidence],
-    ["Missing data", (application.missing_data || []).join(", ")],
-    ["Red flags", (application.red_flags || []).join(", ")],
+    ["Mode", displayLabel(application.automation_mode)],
+    ["Confidence", displayLabel(application.confidence)],
+    ["Missing data", displayList(application.missing_data)],
+    ["Red flags", displayList(application.red_flags)],
     ["Created", formatDate(application.created_at)],
     ["Updated", formatDate(application.updated_at)],
   ];
@@ -431,6 +431,18 @@ function scoreNumberDisplay(application) {
 
 function recommendationDisplay(value) {
   return String(value || "").replace(/_/g, " ");
+}
+
+function displayLabel(value) {
+  return String(value || "")
+    .replace(/_/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function displayList(values) {
+  return (values || []).map(displayLabel).filter(Boolean).join(", ");
 }
 
 function initials(value) {
@@ -618,7 +630,7 @@ function renderReviewSummary(summary) {
   const latestPolicy = summary.latest_policy_decision;
   const latestExecutor = summary.latest_executor_action;
   const latestPacketReview = summary.latest_packet_review;
-  const nextStates = (summary.next_states || []).join(", ") || "None";
+  const nextStates = displayList(summary.next_states) || "None";
   const items = [
     {
       label: "Policy",
@@ -704,7 +716,7 @@ function renderScoreDetails(application) {
 
 function badge(value) {
   const normalized = String(value || "unknown").toLowerCase().replace(/[^a-z0-9_-]/g, "");
-  return `<span class="badge ${normalized}">${escapeHtml(value || "unknown")}</span>`;
+  return `<span class="badge ${normalized}">${escapeHtml(displayLabel(value) || "unknown")}</span>`;
 }
 
 function compactMeta(label, values) {
@@ -1317,10 +1329,10 @@ function policyDecisionDetail(decision) {
 function dryRunBlockReason(decision) {
   if (!decision) return "Evaluate policy before dry-run.";
   if (decision.allowed) return "Ready for dry-run follow-up.";
-  const requiredOverrides = (decision.required_overrides || []).join(", ");
+  const requiredOverrides = displayList(decision.required_overrides);
   return requiredOverrides
     ? `Policy requires review before dry-run: ${requiredOverrides}.`
-    : `Policy returned ${decision.decision}; dry-run requires an allowed policy decision.`;
+    : `Policy returned ${displayLabel(decision.decision)}; dry-run requires an allowed policy decision.`;
 }
 
 function policyContextFromApplication() {
