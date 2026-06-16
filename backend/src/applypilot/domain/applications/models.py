@@ -169,12 +169,22 @@ class ApplicationPacketReviewCreate(BaseModel):
     packet_text: str | None = None
     notes: str | None = None
 
-    @field_validator("reviewed_by", "packet_text", "notes", mode="before")
+    @field_validator("reviewed_by", mode="before")
     @classmethod
-    def _normalize_optional_text(cls, value: object) -> object:
+    def _normalize_reviewed_by(cls, value: object) -> object:
         if not isinstance(value, str):
             return value
         normalized = value.strip()
+        if not normalized:
+            raise ValueError("reviewed_by must not be blank")
+        return normalized
+
+    @field_validator("packet_text", "notes", mode="before")
+    @classmethod
+    def _normalize_packet_review_optional_text(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        normalized = value.replace("\r\n", "\n").replace("\r", "\n").strip()
         return normalized or None
 
 

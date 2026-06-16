@@ -787,6 +787,49 @@ def test_packet_review_rejects_invalid_decision() -> None:
     assert len(tracker.packet_reviews) == 0
 
 
+def test_packet_review_rejects_blank_reviewer() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "approved",
+            "reviewed_by": "   ",
+            "source": "dashboard",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "reviewed_by must not be blank" in response.text
+    assert len(tracker.packet_reviews) == 0
+
+
+def test_packet_review_normalizes_packet_text_and_blank_notes() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    response = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "approved",
+            "reviewed_by": "human",
+            "source": "dashboard",
+            "packet_text": "  First line.\r\nSecond line.\r\n  ",
+            "notes": "   ",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["packet_text"] == "First line.\nSecond line."
+    assert body["notes"] is None
+
+    [review] = tracker.packet_reviews
+    assert review.packet_text == "First line.\nSecond line."
+    assert review.notes is None
+
+
 def test_packet_review_returns_404_when_application_missing() -> None:
     tracker = FakeTracker()
     client = make_client(tracker)

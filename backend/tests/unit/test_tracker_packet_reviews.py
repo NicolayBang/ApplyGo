@@ -131,6 +131,37 @@ def test_packet_review_request_rejects_unapproved_values() -> None:
             source="browser",
         )
 
+    with pytest.raises(ValidationError, match="reviewed_by must not be blank"):
+        ApplicationPacketReviewCreate(
+            decision="approved",
+            reviewed_by="   ",
+        )
+
+
+def test_packet_review_request_normalizes_optional_text_fields() -> None:
+    request = ApplicationPacketReviewCreate(
+        decision="approved",
+        reviewed_by=" human reviewer ",
+        packet_text="  Line one.\r\nLine two.\r\n  ",
+        notes="  Needs one last check.\r\n",
+    )
+
+    assert request.reviewed_by == "human reviewer"
+    assert request.packet_text == "Line one.\nLine two."
+    assert request.notes == "Needs one last check."
+
+
+def test_packet_review_request_converts_blank_optional_text_to_none() -> None:
+    request = ApplicationPacketReviewCreate(
+        decision="approved",
+        reviewed_by="human",
+        packet_text="   \r\n   ",
+        notes="   ",
+    )
+
+    assert request.packet_text is None
+    assert request.notes is None
+
 
 def test_get_packet_reviews_returns_application_reviews_oldest_first() -> None:
     application = make_application()
