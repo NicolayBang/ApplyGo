@@ -1,12 +1,12 @@
 # ApplyGo
 
-[![CI](https://github.com/NicolayBang/ApplyPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/NicolayBang/ApplyPilot/actions/workflows/ci.yml)
+[![CI](https://github.com/NicolayBang/ApplyGo/actions/workflows/ci.yml/badge.svg)](https://github.com/NicolayBang/ApplyGo/actions/workflows/ci.yml)
 
 ApplyGo is a governed job application automation platform built from the locked OpenClaw architecture baseline.
 
-Phase 1 of the rename is public-facing only. The product brand is now **ApplyGo**, while the current
-GitHub repository slug, Python package namespace, health payload, and some runtime identifiers still
-use `ApplyPilot` / `applypilot` until a later technical rename pass.
+The product brand and GitHub repository slug are now **ApplyGo**, while the current Python package
+namespace, health payload, and some runtime identifiers still use `ApplyPilot` / `applypilot` until
+a later technical rename pass.
 
 ## Current status
 

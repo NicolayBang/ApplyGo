@@ -27,21 +27,21 @@ In both cases, `docker-compose.yml` remains the source of truth.
 ## Start and Stop the Environment
 Start services:
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose up -d postgres redis
 docker compose run --rm migrate
 ```
 
 Stop services:
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose down
 ```
 
 ## Run Docker Compose
 Compose usage is unchanged between local and Codespaces:
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose up -d
 docker compose ps
 ```
@@ -65,13 +65,13 @@ python -m uvicorn applypilot.main:app --host 0.0.0.0 --port 8000
 
 2. PostgreSQL reachable
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose exec postgres pg_isready -U ${POSTGRES_USER:-applypilot} -d ${POSTGRES_DB:-applypilot}
 ```
 
 3. Redis reachable
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose exec redis redis-cli ping
 ```
 Expected output: `PONG`
@@ -115,7 +115,7 @@ python -m scripts.validate_seed_to_dashboard
 To run the same demo seed and audit validation inside Compose:
 
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose --profile demo run --rm seed
 ```
 

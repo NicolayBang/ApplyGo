@@ -100,13 +100,11 @@ demo.
 When done:
 
 ```bash
-cd /workspaces/ApplyPilot
+cd /workspaces/ApplyGo
 docker compose down
 ```
 
 Then stop the Codespace from the GitHub Codespaces UI to avoid unnecessary usage.
-
-If the GitHub repository slug has already been renamed, use the renamed workspace directory instead.
 
 ## Deeper Validation
 

@@ -1,6 +1,6 @@
 # ApplyGo Brand Transition
 
-**Status:** Approved Phase 1 public brand direction  
+**Status:** Public brand transition implemented; technical rename deferred  
 **Audience:** Nicolay, Francis, Vanessa persona, frontend design reviewers  
 **Scope:** public naming guidance and visible brand transition only; runtime rename is not authorized by this document
 
@@ -46,8 +46,6 @@ intentionally, with review, instead of being bundled into unrelated frontend or 
 
 A later technical rename PR can decide how far the transition goes:
 
-- repository display name change;
-- repository slug change;
 - package/runtime rename;
 - database/config rename.
 
