@@ -71,7 +71,9 @@ The nullable intake fields are intentional for M1. `JobIntakeClassifier` may fil
 classification fields before persistence, but PostgreSQL does not require them.
 
 During the M3 compatibility period, `company` remains the legacy display/source text and
-`company_id` is nullable. Later M3 work must backfill this relationship before making it required.
+`company_id` is nullable for legacy rows. New job writes resolve or create a deterministic company
+identity row and persist `company_id` in the same transaction. Later M3 work must backfill existing
+rows before making this relationship required.
 
 ### `companies`
 
@@ -92,8 +94,8 @@ uq_companies_normalized_domain_m3 on normalized_domain where normalized_domain i
 uq_companies_normalized_name_without_domain_m3 on normalized_name where normalized_domain is null
 ```
 
-`companies` is the first M3 compatibility table. It does not by itself complete company
-normalization; backfill, canonical read/write cutover, non-null `jobs.company_id`, and
+`companies` is the M3 compatibility table. It does not by itself complete company normalization;
+backfill, canonical read cutover, non-null `jobs.company_id`, and
 `company_source_text` rename remain separate M3 work.
 
 ### `applications`
@@ -227,5 +229,6 @@ The current dry-run does not automatically advance application state after execu
 
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
 - ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
-  compatibility schema. Remaining M3 work still needs validation before canonical cutover and
+  compatibility schema, and new job writes now populate `jobs.company_id`. Remaining M3 work still
+  needs validation before canonical read cutover, legacy backfill, `company_source_text` rename, and
   non-null enforcement.

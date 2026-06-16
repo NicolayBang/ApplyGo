@@ -12,7 +12,14 @@ from datetime import datetime, timezone
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from applypilot.db.models import Application, ApplicationPacketReview, EventLogEntry, ExecutorAction, Job
+from applypilot.db.models import (
+    Application,
+    ApplicationPacketReview,
+    Company,
+    EventLogEntry,
+    ExecutorAction,
+    Job,
+)
 from applypilot.db.models import PolicyDecision as PolicyDecisionRecord
 from applypilot.domain.applications.models import (
     ApplicationCreate,
@@ -21,6 +28,10 @@ from applypilot.domain.applications.models import (
 )
 from applypilot.domain.applications.intake import JobIntakeClassifier
 from applypilot.domain.applications.scoring import ApplicationScorer, JobScoringInput
+from applypilot.domain.companies.normalization import (
+    CompanyIdentityCandidate,
+    CompanyIdentityNormalizer,
+)
 from applypilot.domain.executor import ExecutorRequest, ExecutorResult
 from applypilot.domain.policy import PolicyDecision, PolicyRequest
 from applypilot.domain.state_machine import (
@@ -43,13 +54,46 @@ class Tracker:
 
     def create_job(self, data: JobCreate) -> Job:
         enriched = JobIntakeClassifier().enrich(data)
-        job = Job(**enriched.model_dump())
+        company = self._resolve_company(enriched.company)
+        job = Job(**enriched.model_dump(), company_id=company.id)
         self._session.add(job)
         self._session.flush()
         return job
 
     def get_job(self, job_id: uuid.UUID) -> Job | None:
         return self._session.get(Job, job_id)
+
+    def _resolve_company(self, company_text: str | None) -> Company:
+        candidate = CompanyIdentityNormalizer().normalize(company_text)
+
+        existing = self._find_company(candidate)
+        if existing is not None:
+            return existing
+
+        company = Company(
+            id=uuid.uuid4(),
+            name=candidate.name,
+            normalized_name=candidate.normalized_name,
+            domain=candidate.domain,
+            normalized_domain=candidate.normalized_domain,
+        )
+        self._session.add(company)
+        self._session.flush()
+        return company
+
+    def _find_company(self, candidate: CompanyIdentityCandidate) -> Company | None:
+        query = self._session.query(Company)
+        if candidate.normalized_domain:
+            return (
+                query.filter(Company.normalized_domain == candidate.normalized_domain)
+                .one_or_none()
+            )
+
+        return (
+            query.filter(Company.normalized_domain.is_(None))
+            .filter(Company.normalized_name == candidate.normalized_name)
+            .one_or_none()
+        )
 
     # ------------------------------------------------------------------
     # Application
