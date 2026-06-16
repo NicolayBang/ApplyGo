@@ -22,7 +22,7 @@ _From the thread: tracker listeners that check the status of submitted applicati
 
 ## 2. Failed-application detection + remediation report
 
-_From slinky07: highlight jobs that weren't successfully applied, and produce a report on how to finish the application manually._
+_From team review: highlight jobs that weren't successfully applied, and produce a report on how to finish the application manually._
 
 - Surface applications stuck in `FAILED` in the dashboard (review-queue filter or a dedicated "Needs manual follow-up" view).
 - Auto-generate a **"finish this manually"** report per failed application:
@@ -37,10 +37,10 @@ _From slinky07: highlight jobs that weren't successfully applied, and produce a 
 
 ## 3. Keep this doc as the running parking lot
 
-_From bangabaws: a simple .md so we don't forget to talk about these later._
+_From team review: keep a lightweight markdown parking lot so good ideas are captured before they become real work._
 
 - This file is the low-ceremony capture list. Bullets, not specs.
-- Promote an item to a real YouTrack ticket (`APP-###`) only when we actually pick it up.
+- Promote an item to a real planning ticket (`M<milestone>-APP-###`) only when we actually pick it up.
 
 ---
 
