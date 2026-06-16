@@ -85,9 +85,9 @@ fills the current M1 happy-path data:
 
 ```text
 Role title: Backend Platform Engineer
-Company: ApplyPilot Demo Co.
+Company: ApplyGo Demo Co.
 Location: Remote
-Job URL: https://jobs.lever.co/applypilot/backend-platform-engineer
+Job URL: https://jobs.lever.co/applygo/backend-platform-engineer
 Remote ok: checked
 ```
 
