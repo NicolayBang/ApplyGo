@@ -1,6 +1,6 @@
 # Diagram Index
 
-This folder contains explanatory diagrams for ApplyPilot. Diagrams help reviewers understand the
+This folder contains explanatory diagrams for ApplyGo. Diagrams help reviewers understand the
 system, but they are not the source of truth for implemented behavior.
 
 Authority remains:
@@ -13,10 +13,10 @@ Authority remains:
 ## Current Diagrams
 
 - `component-diagram.md` - high-level component relationships.
-- `database-schema.md` - implemented M1 database view plus planned future ER view.
+- `database-schema.md` - implemented schema through packet review persistence and company identity plus planned future ER view.
 - `state-machine.md` - implemented M1 application workflow states.
-- `execution-sequence.md` - policy, executor, and audit ordering.
-- `backend-class-diagram.md` - backend class and module reference.
+- `execution-sequence.md` - transition validation, packet review persistence, and guarded submission ordering.
+- `backend-class-diagram.md` - backend class and module reference including company identity and packet review persistence.
 
 ## Maintenance Rule
 
