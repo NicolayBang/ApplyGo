@@ -1091,11 +1091,49 @@ def test_application_review_summary_returns_compact_readiness_view() -> None:
     assert body["latest_packet_review"]["id"] == packet_review_response.json()["id"]
     assert body["latest_packet_review"]["decision"] == "approved"
     assert body["latest_packet_review"]["notes"] == "Packet approved for manual use."
+    assert [review["id"] for review in body["packet_reviews"]] == [
+        packet_review_response.json()["id"]
+    ]
     assert body["event_count"] == len(tracker.events)
     assert body["next_states"] == ["Submitted", "Rejected"]
     assert body["ready_for_policy"] is True
     assert body["ready_for_dry_run"] is True
     assert body["ready_for_submission"] is True
+
+
+def test_application_review_summary_returns_packet_review_history_oldest_first() -> None:
+    tracker = FakeTracker()
+    client = make_client(tracker)
+
+    first_review = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "changes_requested",
+            "reviewed_by": "human",
+            "source": "dashboard",
+            "notes": "Clarify one requirement.",
+        },
+    )
+    second_review = client.post(
+        f"/applications/{tracker.application_id}/packet-reviews",
+        json={
+            "decision": "approved",
+            "reviewed_by": "human",
+            "source": "dashboard",
+            "notes": "Ready for manual use.",
+        },
+    )
+    response = client.get(f"/applications/{tracker.application_id}/review-summary")
+
+    assert first_review.status_code == 201
+    assert second_review.status_code == 201
+    assert response.status_code == 200
+    body = response.json()
+    assert [review["id"] for review in body["packet_reviews"]] == [
+        first_review.json()["id"],
+        second_review.json()["id"],
+    ]
+    assert body["latest_packet_review"]["id"] == second_review.json()["id"]
 
 
 def test_application_review_summary_hides_submitted_until_executor_evidence_exists() -> None:
@@ -1121,6 +1159,7 @@ def test_application_review_summary_hides_submitted_until_executor_evidence_exis
     body = response.json()
     assert body["latest_executor_action"] is None
     assert body["latest_packet_review"] is None
+    assert body["packet_reviews"] == []
     assert body["next_states"] == ["Rejected"]
     assert body["ready_for_policy"] is True
     assert body["ready_for_dry_run"] is True

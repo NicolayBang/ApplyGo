@@ -78,12 +78,14 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert 'id="packet-review-form"' in index_response.text
     assert 'id="packet-review-status"' in index_response.text
     assert 'id="packet-review-notes"' in index_response.text
+    assert 'id="packet-review-history"' in index_response.text
     assert 'id="packet-preview"' in index_response.text
     assert 'id="copy-cover-note-button"' in index_response.text
     assert 'id="copy-packet-button"' in index_response.text
     assert 'id="download-packet-button"' in index_response.text
     assert "renderPacketReadiness" in script_response.text
     assert "renderPacketReviewControls" in script_response.text
+    assert "renderPacketReviewHistory" in script_response.text
     assert "recordPacketReview" in script_response.text
     assert "/applications/${applicationId}/packet-reviews" in script_response.text
     assert "buildPacketPreview" in script_response.text
@@ -97,6 +99,7 @@ def test_dashboard_packet_preview_contract_is_wired() -> None:
     assert ".packet-panel" in style_response.text
     assert ".packet-readiness" in style_response.text
     assert ".packet-review-form" in style_response.text
+    assert ".packet-review-history" in style_response.text
     assert ".packet-preview" in style_response.text
 
 

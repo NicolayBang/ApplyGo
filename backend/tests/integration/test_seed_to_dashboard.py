@@ -776,6 +776,7 @@ def test_m2_packet_review_api_updates_summary_and_timeline(db_session) -> None:
         assert summary["latest_packet_review"]["id"] == packet_review["id"]
         assert summary["latest_packet_review"]["decision"] == "changes_requested"
         assert summary["latest_packet_review"]["notes"] == "Clarify one requirement before manual use."
+        assert [review["id"] for review in summary["packet_reviews"]] == [packet_review["id"]]
 
         events_response = client.get(f"/applications/{application_id}/events")
         assert events_response.status_code == 200

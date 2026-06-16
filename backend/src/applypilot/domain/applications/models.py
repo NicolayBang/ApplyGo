@@ -234,6 +234,7 @@ class ApplicationReviewSummaryRead(BaseModel):
     latest_policy_decision: PolicyDecisionRead | None = None
     latest_executor_action: ExecutorActionRead | None = None
     latest_packet_review: ApplicationPacketReviewRead | None = None
+    packet_reviews: list[ApplicationPacketReviewRead] = Field(default_factory=list)
     event_count: int
     next_states: list[str]
     ready_for_policy: bool
