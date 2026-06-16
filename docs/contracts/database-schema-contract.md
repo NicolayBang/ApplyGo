@@ -75,6 +75,10 @@ During the M3 compatibility period, `company` remains the legacy display/source 
 identity row and persist `company_id` in the same transaction. Later M3 work must complete canonical
 read cutover before making this relationship required.
 
+API read models now project the response `company` value from `companies.name` when the relationship
+exists, while exposing the raw database/source value as `company_source_text`. The underlying
+database column remains named `jobs.company` until a later compatibility migration renames it.
+
 ### `companies`
 
 | Column | PostgreSQL type | Null | Default | Key / index |
@@ -95,8 +99,7 @@ uq_companies_normalized_name_without_domain_m3 on normalized_name where normaliz
 ```
 
 `companies` is the M3 compatibility table. It does not by itself complete company normalization;
-canonical read cutover, non-null `jobs.company_id`, and `company_source_text` rename remain separate
-M3 work.
+non-null `jobs.company_id` and the database `company_source_text` rename remain separate M3 work.
 
 ### `applications`
 
@@ -230,5 +233,6 @@ The current dry-run does not automatically advance application state after execu
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
 - ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
   compatibility schema, migration `0010` backfills legacy job rows, and new job writes now populate
-  `jobs.company_id`. Remaining M3 work still needs validation before canonical read cutover,
-  `company_source_text` rename, and non-null enforcement.
+  `jobs.company_id`. API reads now project company display from the company relationship. Remaining
+  M3 work still needs validation before the database `company_source_text` rename and non-null
+  enforcement.

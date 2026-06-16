@@ -91,10 +91,11 @@ ix_jobs_company(company)
 ix_jobs_company_id(company_id)
 ```
 
-During the M3 compatibility period, `company` remains the existing display/source text.
-Migration `0010` backfills existing rows and new job writes resolve or create deterministic company
-identity records. Later M3 work must cut over canonical company reads before `company_id` becomes
-required.
+During the M3 compatibility period, `company` remains the existing database source text. Migration
+`0010` backfills existing rows and new job writes resolve or create deterministic company identity
+records. API read models now project the display `company` value from `companies.name` when a
+relationship exists and expose the raw intake value separately as `company_source_text`. Later M3
+work must make `company_id` required and rename the database source column.
 
 ### `companies`
 
@@ -349,7 +350,7 @@ Application-enforced:
 | Stable enum-like strings lack PostgreSQL checks | Resolved by ADR-0003 / migration `0006` | Named M1 `CHECK` constraints enforce stable values |
 | Policy/executor records cascade with application | Resolved by ADR-0004 / migration `0007` | Restrictive physical deletion preserves M1 audit-bearing records |
 | PostgreSQL schema creation is reproducible | Resolved | Compose starts PostgreSQL; the `migrate` service applies Alembic; the optional `seed` service validates the demo flow |
-| Normalized company identity | In progress for M3 | Migration `0009` adds `companies` and nullable `jobs.company_id`; migration `0010` backfills legacy rows; new job writes resolve `company_id`; canonical read cutover, non-null enforcement, and `company_source_text` rename remain future M3 work |
+| Normalized company identity | In progress for M3 | Migration `0009` adds `companies` and nullable `jobs.company_id`; migration `0010` backfills legacy rows; new job writes resolve `company_id`; API reads project display company from `companies.name`; non-null enforcement and database `company_source_text` rename remain future M3 work |
 | Normalized document/thread/answer model | Deferred | The broader M5/M7 model remains proposed in ADR-0002 |
 
 ## Current Non-Goals
@@ -369,13 +370,14 @@ These may be introduced later through new migrations and architecture review.
 
 The proposed phase placement is:
 
-- M3: remaining company read cutover, required `jobs.company_id`, and `company_source_text` rename
+- M3: remaining required `jobs.company_id` and database `company_source_text` rename
 - M5: `document_versions`, `application_documents`, `answer_library`,
   `application_answers`
 - M7: `contacts`, `threads`, `messages`, `thread_applications`
 
 ADR-0005 specifically approves the M3 company identity direction. Migration `0009` starts the
-compatibility schema, and migration `0010` backfills legacy job rows. M3 is not complete until
-canonical reads, non-null `jobs.company_id`, and the `company_source_text` rename are implemented
-and validated. ADR-0002 remains Proposed for the broader M5/M7 normalization direction. No future
-table listed here is currently authorized for migration.
+compatibility schema, and migration `0010` backfills legacy job rows. API reads now project company
+display from `companies.name`. M3 is not complete until non-null `jobs.company_id` and the database
+`company_source_text` rename are implemented and validated. ADR-0002 remains Proposed for the
+broader M5/M7 normalization direction. No future table listed here is currently authorized for
+migration.

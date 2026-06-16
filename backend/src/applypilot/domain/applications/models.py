@@ -82,8 +82,38 @@ class JobCreate(BaseModel):
 
 class JobRead(JobCreate):
     id: uuid.UUID
+    company_id: uuid.UUID | None = None
+    company_source_text: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _project_company_identity(cls, value: object) -> object:
+        if isinstance(value, dict):
+            data = dict(value)
+            data.setdefault("company_source_text", data.get("company"))
+            return data
+
+        company_source_text = getattr(value, "company", None)
+        company_identity = getattr(value, "company_identity", None)
+        company_name = getattr(company_identity, "name", None) or company_source_text
+        return {
+            "id": getattr(value, "id", None),
+            "source_url": getattr(value, "source_url", None),
+            "raw_text": getattr(value, "raw_text", None),
+            "title": getattr(value, "title", None),
+            "company": company_name,
+            "company_id": getattr(value, "company_id", None),
+            "company_source_text": company_source_text,
+            "location": getattr(value, "location", None),
+            "remote_ok": getattr(value, "remote_ok", False),
+            "job_type": getattr(value, "job_type", None),
+            "ats_type": getattr(value, "ats_type", None),
+            "salary_raw": getattr(value, "salary_raw", None),
+            "created_at": getattr(value, "created_at", None),
+            "updated_at": getattr(value, "updated_at", None),
+        }
 
     model_config = {"from_attributes": True}
 

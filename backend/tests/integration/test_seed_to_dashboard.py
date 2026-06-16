@@ -171,12 +171,12 @@ def test_m3_tracker_create_job_resolves_company_identity(db_session) -> None:
     assert confidential.company == "Confidential employer"
     assert confidential.company_id is not None
 
-    companies = {
-        company.name: company
-        for company in db_session.query(Company).order_by(Company.name).all()
-    }
-    assert companies["ApplyPilot, Inc."].normalized_name == "applypilot inc"
-    assert companies["ApplyPilot, Inc."].normalized_domain is None
+    applypilot_company = db_session.get(Company, first.company_id)
+    assert applypilot_company is not None
+    assert applypilot_company.normalized_name == "applypilot inc"
+    assert applypilot_company.normalized_domain is None
+
+    companies = {company.name: company for company in db_session.query(Company).all()}
     assert companies["Unknown Company"].normalized_name == "unknown company"
     assert companies["Confidential Company"].normalized_name == "confidential company"
 
@@ -285,6 +285,40 @@ def test_m3_company_backfill_migration_populates_legacy_jobs(
     assert rows[job_ids["unknown"]].company_name == "Unknown Company"
     assert rows[job_ids["confidential"]].company == "Confidential employer"
     assert rows[job_ids["confidential"]].company_name == "Confidential Company"
+
+
+def test_m3_api_projects_canonical_company_and_source_text(db_session) -> None:
+    """API responses keep company display compatible while exposing raw source text."""
+    from fastapi.testclient import TestClient
+
+    from applypilot.db.dependencies import TrackerUnitOfWork, get_tracker_unit
+    from applypilot.db.tracker import Tracker
+    from applypilot.domain.applications.models import ApplicationCreate
+    from applypilot.main import app
+
+    tracker = Tracker(db_session)
+    job = tracker.create_job(
+        JobCreate(title="Backend Engineer", company="ApplyPilot, Inc.")
+    )
+    job.company_identity.name = "ApplyPilot"
+    application = tracker.create_application(ApplicationCreate(job_id=job.id))
+    db_session.commit()
+
+    def override_tracker_unit():
+        yield TrackerUnitOfWork(db_session)
+
+    app.dependency_overrides[get_tracker_unit] = override_tracker_unit
+    try:
+        client = TestClient(app)
+        response = client.get(f"/applications/{application.id}/review-summary")
+
+        assert response.status_code == 200
+        job_body = response.json()["application"]["job"]
+        assert job_body["company"] == "ApplyPilot"
+        assert job_body["company_source_text"] == "ApplyPilot, Inc."
+        assert job_body["company_id"] == str(job.company_id)
+    finally:
+        app.dependency_overrides.pop(get_tracker_unit, None)
 
 
 def test_m1_value_check_constraints_reject_invalid_writes(db_session) -> None:
