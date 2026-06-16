@@ -27,6 +27,8 @@ M1.
 - Docker Compose and Codespaces workflows for reproducible PostgreSQL/Redis-backed validation.
 - GitHub CI for frontend syntax, backend linting, migrations, tests, and app import smoke checks.
 
+![Current dashboard review evidence](assets/m2-dashboard-review-evidence.png)
+
 ## Architecture Highlights
 
 - Workflow owns state.
