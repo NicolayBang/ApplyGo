@@ -1,12 +1,16 @@
-# ApplyPilot
+# ApplyGo
 
 [![CI](https://github.com/NicolayBang/ApplyPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/NicolayBang/ApplyPilot/actions/workflows/ci.yml)
 
-ApplyPilot is a governed job application automation platform built from the locked OpenClaw architecture baseline.
+ApplyGo is a governed job application automation platform built from the locked OpenClaw architecture baseline.
+
+Phase 1 of the rename is public-facing only. The product brand is now **ApplyGo**, while the current
+GitHub repository slug, Python package namespace, health payload, and some runtime identifiers still
+use `ApplyPilot` / `applypilot` until a later technical rename pass.
 
 ## Current status
 
-ApplyPilot has an M1 MVP-ready capstone baseline, early M2 packet preparation and review
+ApplyGo has an M1 MVP-ready capstone baseline, early M2 packet preparation and review
 groundwork, and the M3 company identity database baseline implemented.
 
 The reviewer-facing demo remains the M1 governed workflow: manual intake, deterministic scoring,
@@ -76,7 +80,7 @@ Useful reviewer entry points:
 
 The dashboard includes a `Sample job` prefill button so reviewers can run the demo path without manually typing the sample role.
 
-![ApplyPilot dashboard review evidence](docs/capstone/assets/m2-dashboard-review-evidence.png)
+![ApplyGo dashboard review evidence](docs/capstone/assets/m2-dashboard-review-evidence.png)
 
 ## Public Reviewer Path
 

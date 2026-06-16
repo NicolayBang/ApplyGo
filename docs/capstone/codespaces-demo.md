@@ -1,7 +1,7 @@
 # Codespaces Demo Quickstart
 
 **Status:** M1 reviewer demo path  
-**Audience:** recruiters, instructors, and reviewers who want to run ApplyPilot without local setup
+**Audience:** recruiters, instructors, and reviewers who want to run ApplyGo without local setup
 
 This guide starts the current M1 demo in GitHub Codespaces. It uses the implemented backend,
 PostgreSQL migrations, and dashboard served by FastAPI at `/ui/`.
@@ -17,7 +17,7 @@ External-action-like behavior stays in dry-run mode.
 
 ## Open In Codespaces
 
-1. Open the ApplyPilot repository on GitHub.
+1. Open the ApplyGo repository on GitHub.
 2. Select **Code**.
 3. Select **Codespaces**.
 4. Create a Codespace on `main`.
@@ -105,6 +105,8 @@ docker compose down
 ```
 
 Then stop the Codespace from the GitHub Codespaces UI to avoid unnecessary usage.
+
+If the GitHub repository slug has already been renamed, use the renamed workspace directory instead.
 
 ## Deeper Validation
 

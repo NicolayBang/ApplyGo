@@ -4,7 +4,7 @@
 **Audience:** recruiters, instructors, capstone reviewers, and technical readers  
 **Purpose:** give a fast reading order for the current public repository
 
-ApplyPilot is best reviewed as an implemented capstone baseline, not as a finished product. The
+ApplyGo is best reviewed as an implemented capstone baseline, not as a finished product. The
 documents below are ordered to show what exists today, how to run it, and where the current
 boundaries are.
 
@@ -31,7 +31,7 @@ boundaries are.
 
 ## What To Read First
 
-- `reviewer-brief.md`: shortest explanation of what ApplyPilot is and what was built
+- `reviewer-brief.md`: shortest explanation of what ApplyGo is and what was built
 - `mvp-status.md`: current implemented scope, non-goals, and next direction
 - `m1-release-notes.md`: milestone framing, validation evidence, and handoff language
 - `dashboard-demo-flow.md`: detailed runbook for the implemented dashboard workflow

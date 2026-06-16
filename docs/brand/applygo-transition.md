@@ -1,49 +1,57 @@
 # ApplyGo Brand Transition
 
-**Status:** Draft brand direction  
+**Status:** Approved Phase 1 public brand direction  
 **Audience:** Nicolay, Francis, Vanessa persona, frontend design reviewers  
-**Scope:** naming guidance only; no implementation rename is authorized by this document
+**Scope:** public naming guidance and visible brand transition only; runtime rename is not authorized by this document
 
-The intended product brand direction is **ApplyGo**.
+The product brand is now **ApplyGo** for public-facing materials and visible UI.
 
-The repository, backend package names, existing docs, dashboard labels, API names, database names,
-and migration history remain **ApplyPilot** until the team opens and approves a separate rename PR.
+The backend package names, API service name, database names, migration history, and internal runtime
+identifiers remain **ApplyPilot** / `applypilot` until the team opens and approves a separate
+technical rename PR.
 
 ## Current Naming Rule
 
-- Use **ApplyGo** in visual sketches, logo exploration, brand concepts, and presentation mockups.
-- Keep **ApplyPilot** in implemented code, committed UI text, architecture docs, contracts, package
-  names, database objects, CI, and repository workflow.
-- Do not mix names inside implemented product screens unless a dedicated rename PR is in scope.
-- Do not rename the GitHub repository, Python package, database names, migrations, or historic
-  branches as part of MVP dashboard polish.
+- Use **ApplyGo** in public-facing docs, recruiter/reviewer materials, visible dashboard branding,
+  presentation mockups, and logo exploration.
+- Keep **ApplyPilot** / `applypilot` in package names, import paths, health payloads, database
+  objects, migrations, CI wiring, and technical architecture references unless a dedicated technical
+  rename PR is in scope.
+- It is acceptable during Phase 1 for public docs and UI to say ApplyGo while runtime commands and
+  service identifiers still say `applypilot`.
+- Do not rename the Python package, database names, migrations, or historic branches as part of
+  this public branding pass.
 
-## Why The Rename Is Deferred
+## Why The Technical Rename Is Deferred
 
-Renaming the implemented product touches many surfaces:
+Renaming the technical implementation touches many surfaces:
 
-- dashboard title and visible UI labels;
-- README and capstone documentation;
-- architecture and contract references;
-- screenshots and validation notes;
 - backend configuration;
 - package names and import paths if the technical rename ever expands that far;
 - CI and deployment documentation.
 
-A clean transition should happen intentionally, with review, instead of being bundled into unrelated
-frontend polish.
+The public-facing rename is safe to do first. The deeper technical rename should happen
+intentionally, with review, instead of being bundled into unrelated frontend or milestone work.
 
-## Future Rename PR Shape
+## Phase Plan
 
-A future rename PR can decide how far the transition goes:
+### Phase 1: public brand pass
 
-- brand-only visible UI change;
-- documentation wording change;
+- README and reviewer-facing docs say **ApplyGo**;
+- visible dashboard branding says **ApplyGo**;
+- demo language uses the ApplyGo product name;
+- repo readers are told that internal runtime identifiers still say `applypilot`.
+
+### Phase 2: technical rename pass
+
+A later technical rename PR can decide how far the transition goes:
+
 - repository display name change;
+- repository slug change;
 - package/runtime rename;
 - database/config rename.
 
-For MVP, prefer a brand-only or documentation-only step before any package, database, or migration
+For this milestone, prefer the Phase 1 public brand pass before any package, database, or migration
 rename.
 
 ## Guardrail

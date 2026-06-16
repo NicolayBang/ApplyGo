@@ -20,8 +20,8 @@ The UI should feel like a clean, modern SaaS workflow tool, not a marketing page
 
 ## Brand Naming
 
-The intended product brand direction is ApplyGo, but implemented repository naming remains
-ApplyPilot until a separate rename PR is approved.
+The public product brand is ApplyGo. Internal repository/runtime naming still uses ApplyPilot /
+`applypilot` until a separate technical rename PR is approved.
 
 Use `docs/brand/applygo-transition.md` for the current naming rule.
 
@@ -39,7 +39,7 @@ demo flow before M1 is complete.
 ## Must Preserve
 
 - Existing backend API contracts.
-- Existing implemented ApplyPilot naming.
+- Existing internal `applypilot` runtime naming.
 - Existing dashboard route behavior.
 - Existing state names and transition constraints.
 - Policy-before-executor ordering.

@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-06-15
 
-ApplyPilot is currently a governed job application automation platform spine, not a finished job
+ApplyGo is currently a governed job application automation platform spine, not a finished job
 application product. The implemented system proves the core workflow, persistence, policy, dry-run,
 and audit model needed before adding external automation.
 
