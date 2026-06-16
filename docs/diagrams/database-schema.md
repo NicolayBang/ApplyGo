@@ -14,6 +14,7 @@ erDiagram
     JOBS ||--o{ APPLICATIONS : has
     APPLICATIONS ||--o{ DOCUMENTS : owns
     APPLICATIONS ||--o{ EMAIL_THREADS : owns
+    APPLICATIONS ||--o{ APPLICATION_PACKET_REVIEWS : reviews
     APPLICATIONS ||--o{ POLICY_DECISIONS : records
     APPLICATIONS ||--o{ EXECUTOR_ACTIONS : records
     APPLICATIONS ||--o{ EVENT_LOG : audits
@@ -54,6 +55,15 @@ erDiagram
         varchar direction
         varchar classification
     }
+    APPLICATION_PACKET_REVIEWS {
+        uuid id PK
+        uuid application_id FK
+        varchar decision
+        varchar reviewed_by
+        varchar source
+        text packet_text
+        text notes
+    }
     POLICY_DECISIONS {
         uuid id PK
         uuid application_id FK
@@ -83,6 +93,9 @@ erDiagram
 ```
 
 See `docs/contracts/database-schema-contract.md` for complete column and constraint details.
+
+This implemented view now includes the M2 `application_packet_reviews` table and the M3 company
+identity cutover (`jobs.company_id`, `jobs.company_source_text`, and `companies`).
 
 ## Future Data Model
 
@@ -142,6 +155,7 @@ erDiagram
 ## Phase Boundary
 
 - M1 keeps the original application aggregate behavior.
+- M2 adds human packet review persistence and `application_packet.reviewed` audit evidence.
 - M3 company identity is implemented for the deterministic baseline: `jobs.company_id` is required,
   canonical company facts live on `companies`, and raw employer provenance lives in
   `jobs.company_source_text`.

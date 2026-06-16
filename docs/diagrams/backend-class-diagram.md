@@ -16,6 +16,7 @@ classDiagram
         +list_applications(filters) list~ApplicationRead~
         +update_application_state(UUID, ApplicationStateUpdate) ApplicationRead
         +score_application(UUID, ApplicationScoreRequest) ApplicationRead
+        +create_application_packet_review(UUID, ApplicationPacketReviewCreate) ApplicationPacketReviewRead
         +evaluate_application_policy(UUID, PolicyEvaluationRequest) PolicyDecisionRead
         +dry_run_executor_action(UUID, ExecutorDryRunRequest) ExecutorActionRead
         +list_application_events(UUID) list~EventLogRead~
@@ -40,6 +41,8 @@ classDiagram
         +update_state(UUID, str, str, dict) Application
         +submit_application(UUID, str, dict) Application
         +score_application(UUID, str) Application
+        +record_packet_review(UUID, ApplicationPacketReviewCreate) ApplicationPacketReview
+        +get_packet_reviews(UUID) list~ApplicationPacketReview~
         +record_policy_decision(PolicyRequest, PolicyDecision, str) PolicyDecisionRecord
         +get_policy_decision(UUID) PolicyDecisionRecord
         +get_policy_decisions(UUID) list~PolicyDecisionRecord~
@@ -51,11 +54,23 @@ classDiagram
         -_append_event(...) EventLogEntry
     }
 
+    class Company {
+        +UUID id
+        +str name
+        +str normalized_name
+        +str domain
+        +str normalized_domain
+        +datetime created_at
+        +datetime updated_at
+    }
+
     class Job {
         +UUID id
         +str source_url
         +str raw_text
         +str title
+        +UUID company_id
+        +str company_source_text
         +str company
         +str location
         +bool remote_ok
@@ -102,6 +117,17 @@ classDiagram
         +str raw_body
         +str draft_reply
         +datetime sent_at
+        +datetime created_at
+    }
+
+    class ApplicationPacketReview {
+        +UUID id
+        +UUID application_id
+        +str decision
+        +str reviewed_by
+        +str source
+        +str packet_text
+        +str notes
         +datetime created_at
     }
 
@@ -171,6 +197,8 @@ classDiagram
         +ApplicationRead application
         +PolicyDecisionRead latest_policy_decision
         +ExecutorActionRead latest_executor_action
+        +ApplicationPacketReviewRead latest_packet_review
+        +list~ApplicationPacketReviewRead~ packet_reviews
         +int event_count
         +list~str~ next_states
         +bool ready_for_policy
@@ -285,17 +313,21 @@ classDiagram
         +run() None
     }
 
+    Company "1" --> "*" Job : jobs
     Job "1" --> "*" Application : applications
     Application "1" --> "*" Document : documents
     Application "1" --> "*" EmailThread : email_threads
+    Application "1" --> "*" ApplicationPacketReview : packet_reviews
     Application "1" --> "*" PolicyDecisionRecord : policy_decisions
     Application "1" --> "*" ExecutorAction : executor_actions
     Application "1" --> "*" EventLogEntry : events
 
     ApiRouter --> TrackerUnitOfWork : uses
     TrackerUnitOfWork --> Tracker : exposes
+    Tracker --> Company : resolves/creates
     Tracker --> Job : creates/reads
     Tracker --> Application : creates/updates
+    Tracker --> ApplicationPacketReview : records
     Tracker --> EventLogEntry : appends
     Tracker --> PolicyDecisionRecord : records
     Tracker --> ExecutorAction : records
@@ -310,6 +342,7 @@ classDiagram
     ApplicationAuditRead --> PolicyDecisionRecord : includes
     ApplicationAuditRead --> ExecutorAction : includes
     ApplicationReviewSummaryRead --> ApplicationRead : summarizes
+    ApplicationReviewSummaryRead --> ApplicationPacketReviewRead : latest review
     ApplicationReviewSummaryRead --> PolicyDecisionRecord : latest decision
     ApplicationReviewSummaryRead --> ExecutorAction : latest action
 
@@ -335,9 +368,28 @@ classDiagram
 ## Notes
 
 - The ORM model is centered on `Application` as the canonical hub record.
-- `ApiRouter` exposes the current M1 workflow: manual job intake, application creation, scoring, policy evaluation, dry-run executor dispatch, event/audit reads, and the compact review summary.
-- `Tracker` is the current repository and orchestration boundary for creating jobs, creating applications, listing/filtering applications, scoring, recording policy decisions, recording executor results, appending audit events, and protecting the `Submitted` transition.
+- `ApiRouter` now exposes the implemented M2/M3 baseline: manual job intake, application creation, packet review persistence, scoring, policy evaluation, dry-run executor dispatch, event/audit reads, and the compact review summary.
+- `Tracker` is the current repository and orchestration boundary for creating jobs, resolving deterministic company identity, creating applications, listing/filtering applications, recording packet reviews, scoring, recording policy decisions, recording executor results, appending audit events, and protecting the `Submitted` transition.
 - `ApplicationStateMachine` owns transition validation. `Submitted` also requires `Tracker.submit_application`, an allowed policy decision, and matching executor evidence.
 - `PolicyEngine` and `ApplicationScorer` are deterministic. No LLM or external service is required for the implemented M1 scoring or policy path.
+- `ApplicationReviewSummaryRead` now includes packet review evidence for the dashboard, but packet review is still reviewer evidence rather than a submission precondition enforced by the database.
 - `ExecutorRequest`, `ExecutorResult`, `ExecutionMode`, and `StubExecutor` define the current dry-run executor contract shape, while worker implementations remain stubs in M1.
 - This diagram should be refreshed when backend classes, relationships, or major methods change.
+    class ApplicationPacketReviewCreate {
+        +str decision
+        +str reviewed_by
+        +str source
+        +str packet_text
+        +str notes
+    }
+
+    class ApplicationPacketReviewRead {
+        +UUID id
+        +UUID application_id
+        +str decision
+        +str reviewed_by
+        +str source
+        +str packet_text
+        +str notes
+        +datetime created_at
+    }

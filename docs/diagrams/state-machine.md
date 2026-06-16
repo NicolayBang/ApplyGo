@@ -39,3 +39,6 @@ stateDiagram-v2
 - `Archived` is terminal.
 - Invalid transitions are rejected by `ApplicationStateMachine.apply_transition`.
 - The source of truth for allowed transitions is `ALLOWED_TRANSITIONS`.
+- `Submitted` still appears as an allowed state transition, but the implemented backend routes it
+  through `Tracker.submit_application` so policy and executor evidence are verified before the state
+  change is persisted.

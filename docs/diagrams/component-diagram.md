@@ -3,19 +3,23 @@
 ```mermaid
 flowchart LR
     UI[Frontend Dashboard] --> API[Backend API]
-    API --> DB[(PostgreSQL)]
+    API --> TRK[Tracker / Unit of Work]
     API --> POL[Policy Engine]
     API --> SM[State Machine]
-    API --> EVT[Event Log]
     API --> EXE[Executor Contract]
 
-    EXE --> W1[Email Worker]
-    EXE --> W2[Browser Worker]
-    EXE --> W3[Document Worker]
+    TRK --> DB[(PostgreSQL)]
+    TRK --> EVT[Event Log]
+    TRK --> CID[Company Identity]
+    TRK --> PREV[Packet Review Records]
 
-    Q[(Redis Queue)] --> W1
-    Q --> W2
-    Q --> W3
+    EXE -. future worker contract .-> W1[Email Worker]
+    EXE -. future worker contract .-> W2[Browser Worker]
+    EXE -. future worker contract .-> W3[Document Worker]
+
+    Q[(Redis Queue)] -. future orchestration .-> W1
+    Q -. future orchestration .-> W2
+    Q -. future orchestration .-> W3
 
     POL --> EVT
     EXE --> EVT
@@ -27,3 +31,5 @@ flowchart LR
 - Database remains canonical source of truth.
 - Workers only execute approved structured commands.
 - Dry-run and execute share the same executor contract.
+- Company identity and packet review persistence are implemented inside the current monolith.
+- Worker implementations and Redis-backed orchestration remain later-phase contracts/stubs.
