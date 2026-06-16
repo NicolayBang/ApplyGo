@@ -21,13 +21,31 @@ Define append-only audit requirements for transitions, decisions, attempts, and 
 - `application.created`
 - `application.state_changed`
 - `application.scored`
+- `application_packet.reviewed`
 - `policy_decision_logged`
 - `executor_attempt_logged`
 - `executor_result_logged`
 
 Use the implemented `application.*` namespace for application lifecycle events.
+Use the implemented `application_packet.*` namespace for packet review evidence.
 Do not introduce aliases such as `state_transition` or `state_updated` unless an ADR
 explicitly changes the event vocabulary and migration strategy.
+
+## Current Canonical Vocabulary
+
+The current implemented baseline intentionally uses a mixed-but-explicit vocabulary:
+
+- `application.created`
+- `application.state_changed`
+- `application.scored`
+- `application_packet.reviewed`
+- `policy_decision_logged`
+- `executor_attempt_logged`
+- `executor_result_logged`
+
+This is the authoritative event set for the current M1 + M2 baseline. Docs, tests, dashboard
+labels, and any migration/backfill work must use these exact names unless a later ADR changes the
+vocabulary.
 
 ## Ordering Requirements
 Audit sequence for executor flow:
@@ -45,5 +63,5 @@ records the executor result without automatically submitting or otherwise advanc
 - Event payloads should include idempotency and correlation identifiers.
 
 ## Milestone Note
-Event schema and ordering describe implemented M1 behavior. Future event vocabulary changes
+Event schema and ordering describe the implemented M1 + M2 behavior. Future event vocabulary changes
 must update this contract, tests, dashboard labels, and any migration/backfill strategy in the same PR.

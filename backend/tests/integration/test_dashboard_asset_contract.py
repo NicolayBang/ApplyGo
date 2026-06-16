@@ -137,3 +137,13 @@ def test_dashboard_fetch_methods_match_m1_route_contract() -> None:
     assert "fetchJson(`${base}/applications?${recentApplicationQuery()}`)" in script
     assert "fetchJson(`${base}/applications/${applicationId}/audit`)" in script
     assert "fetchJson(`${base}/applications/${applicationId}/review-summary`)" in script
+
+
+def test_dashboard_event_summary_uses_canonical_packet_review_name() -> None:
+    """Dashboard timeline rendering still recognizes the implemented packet review event name."""
+    script_response = client.get("/ui/app.js")
+
+    assert script_response.status_code == 200
+
+    assert 'event.event_type === "application_packet.reviewed"' in script_response.text
+    assert "Packet review:" in script_response.text

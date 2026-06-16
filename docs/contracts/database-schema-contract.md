@@ -213,7 +213,7 @@ Migration `0003` removes database `ON DELETE CASCADE`. The ORM relationship also
 delete/delete-orphan cascade and uses passive deletes. The repository exposes append and read
 operations but no event update/delete API.
 
-## M1 Persistence Map
+## Current Persistence Map
 
 | Demo stage | Current write | Audit evidence |
 |---|---|---|
@@ -223,6 +223,7 @@ operations but no event update/delete API.
 | Scoring | score columns on `applications` | `application.scored` |
 | Policy check | `policy_decisions` | `policy_decision_logged` |
 | Dry-run executor | `executor_actions` | `executor_attempt_logged`, `executor_result_logged` |
+| Packet review | `application_packet_reviews` | `application_packet.reviewed` |
 | Audit timeline | read-only aggregate | ordered `event_log` rows plus policy/action records |
 
 The current dry-run does not automatically advance application state after execution.

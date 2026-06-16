@@ -58,7 +58,7 @@ The core control-plane promise is intact:
 ### Auditability
 
 - Application creation, scoring, state transitions, policy decisions, executor attempts, and executor results are recorded.
-- Event vocabulary is aligned around the implemented `application.*`, `policy_decision_logged`, `executor_attempt_logged`, and `executor_result_logged` names.
+- Event vocabulary is aligned around the implemented `application.*`, `application_packet.reviewed`, `policy_decision_logged`, `executor_attempt_logged`, and `executor_result_logged` names.
 - `event_log` no longer cascades on application delete at the database level.
 - ORM event relationships avoid delete/delete-orphan cascade and use passive deletes.
 
