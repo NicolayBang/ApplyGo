@@ -15,6 +15,7 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 - `m1-demo-review-checklist.md` - pass/fix checklist for manually reviewing the M1 demo.
 - `m1-manual-demo-validation-2026-06-14.md` - summary of the live M1 manual validation result.
 - `m1-local-mvp-validation-2026-06-15.md` - final local Docker/frontend-backend MVP validation.
+- `m2-packet-flow-validation-template.md` - reusable packet preview + packet review manual validation template.
 - `m2-packet-preview-validation.md` - draft checklist for validating the current read-only M2 packet preview.
 - `m2-packet-review-validation.md` - draft checklist for validating persisted human packet review decisions.
 - `frontend-design-handoff.md` - guardrails for dashboard sketching and future visual polish.
@@ -35,12 +36,13 @@ This folder contains reviewer-facing capstone material for the current ApplyPilo
 9. Use `m1-demo-review-checklist.md` to record pass/fix observations.
 10. Read `m1-local-mvp-validation-2026-06-15.md` for the final local MVP validation evidence.
 11. Read `m1-manual-demo-validation-2026-06-14.md` for the earlier live manual validation result.
-12. Use `m2-packet-preview-validation.md` when validating the deterministic packet preview.
-13. Use `m2-packet-review-validation.md` when validating persisted human packet review decisions.
-14. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
-15. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
-16. Use `process.md` to understand the project discipline behind the work.
-17. Treat `phase-2-ideas.md` as future discussion material only.
+12. Use `m2-packet-flow-validation-template.md` for reusable M2 packet-flow signoff sessions.
+13. Use `m2-packet-preview-validation.md` when validating the deterministic packet preview only.
+14. Use `m2-packet-review-validation.md` when validating persisted human packet review decisions only.
+15. Use `frontend-design-handoff.md` before implementing dashboard visual changes.
+16. Use `presentation-backlog.md` for optional recruiter/instructor polish ideas.
+17. Use `process.md` to understand the project discipline behind the work.
+18. Treat `phase-2-ideas.md` as future discussion material only.
 
 ## Internal Process Docs
 
