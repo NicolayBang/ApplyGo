@@ -4,6 +4,16 @@
 
 ApplyPilot is a governed job application automation platform built from the locked OpenClaw architecture baseline.
 
+## Current status
+
+ApplyPilot has an M1 MVP-ready capstone baseline, early M2 packet preparation and review
+groundwork, and the M3 company identity database baseline implemented.
+
+The reviewer-facing demo remains the M1 governed workflow: manual intake, deterministic scoring,
+policy review, dry-run execution evidence, and audit visibility. M2 and M3 work is present as
+controlled platform groundwork; it does not add production automation, live Gmail/browser execution,
+or real external submissions.
+
 ## Locked architecture principles
 
 - Workflow owns state.
@@ -14,11 +24,9 @@ ApplyPilot is a governed job application automation platform built from the lock
 - Dry-run is a first-class platform capability from day one.
 - Semi-auto and full-auto are policy modes on the same workflow.
 
-## Milestone 1 scope
+## Implemented baseline
 
-This repository currently contains the Milestone 1 platform spine.
-
-Milestone 1 focuses on the platform spine:
+The implemented baseline includes the M1 platform spine:
 
 - Canonical data model and tracker
 - Application state machine
@@ -27,6 +35,12 @@ Milestone 1 focuses on the platform spine:
 - Executor contract with `execute` and `dry_run`
 - Stub executor that logs planned actions, safeguards, and side-effect status
 - Minimal dashboard for tracker, workflow state, scoring, policy, dry-run, review readiness, and audit visibility
+
+It also includes focused post-M1 groundwork:
+
+- M2 packet preview and packet review evidence for human-controlled application preparation
+- M3 first-class company identity, including canonical `companies` records and retained raw job
+  source text for traceability
 
 No Gmail, browser automation, LLM integration, or real external submission behavior is implemented yet.
 
@@ -43,15 +57,16 @@ Useful reviewer entry points:
 - `docs/capstone/reviewer-brief.md`: concise capstone/recruiter overview
 - `docs/capstone/codespaces-demo.md`: quick Codespaces demo path for reviewers
 - `docs/capstone/README.md`: capstone documentation index and suggested reading order
-- `docs/capstone/mvp-status.md`: concise current implementation status and remaining MVP boundaries
+- `docs/capstone/mvp-status.md`: concise current implementation status and MVP boundaries
 - `docs/capstone/m1-demo-script.md`: short presentation script for the live M1 demo
 - `docs/capstone/m1-release-notes.md`: M1 release marker, validation evidence, and handoff summary
 - `docs/capstone/dashboard-demo-flow.md`: step-by-step dashboard demo runbook
 - `docs/capstone/m1-demo-review-checklist.md`: manual pass/fix checklist for reviewing the M1 demo
-- `docs/architecture/current-data-model.md`: implemented M1 data model snapshot
+- `docs/architecture/current-data-model.md`: implemented data model snapshot through the M3 company identity cutover
 - `docs/architecture/database-implementation-roadmap.md`: done/next/future PostgreSQL plan and contract readiness
-- `docs/roadmap/m2-kickoff-plan.md`: proposed M2 direction after the M1 MVP-ready baseline
-- `docs/contracts/database-schema-contract.md`: exact M1 PostgreSQL table and constraint contract
+- `docs/roadmap/m2-kickoff-plan.md`: M2 direction after the M1 MVP-ready baseline
+- `docs/roadmap/m2-scope-and-acceptance.md`: scoped M2 acceptance criteria
+- `docs/contracts/database-schema-contract.md`: PostgreSQL table and constraint contract for the current baseline
 - `docs/diagrams/README.md`: diagram index and diagram authority reminder
 - `docs/diagrams/database-schema.md`: separate implemented and planned ER views
 - `docs/devops/codespaces.md`: Codespaces and DB-backed validation workflow
@@ -130,7 +145,7 @@ Then open `http://localhost:8000/ui/`.
 
 For DB-backed validation in Codespaces or local Docker, use `docs/devops/codespaces.md`.
 
-The full M1 validation path runs migrations, backend tests, and the seed-to-dashboard check:
+The current validation path runs migrations, backend tests, and the seed-to-dashboard check:
 
 ```powershell
 docker compose up -d postgres redis
@@ -140,6 +155,9 @@ python -m pytest
 python -m scripts.validate_seed_to_dashboard
 ```
 
+When PostgreSQL is available, the backend test suite also exercises database constraints, audit
+retention, packet review persistence, and the M3 company identity cutover regression path.
+
 The Compose migration runner uses the same Alembic migration chain as local backend commands. For
 an optional demo seed and audit validation inside Compose, run:
 
@@ -147,7 +165,7 @@ an optional demo seed and audit validation inside Compose, run:
 docker compose --profile demo run --rm seed
 ```
 
-## Definition of done for milestone 1
+## M1 demo definition of done
 
 - Create an application record
 - Parse and classify basic job metadata
