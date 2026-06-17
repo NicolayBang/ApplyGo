@@ -152,6 +152,16 @@ const sampleJob = {
     "Build Python APIs with FastAPI, PostgreSQL, automation workflows, and platform data services. This is a full-time remote role with a salary range of $95,000 - $125,000. Partner with DevOps and product teams to improve reliable backend delivery.",
 };
 
+const labelOverrides = {
+  ApplicationCreated: "Created",
+  ReadyForReview: "Ready for review",
+  needs_review: "Needs review",
+  not_recommended: "Not recommended",
+  dry_run: "Dry run",
+  "full-time": "Full-time",
+  "part-time": "Part-time",
+};
+
 const elements = {
   form: document.querySelector("#audit-form"),
   intakeForm: document.querySelector("#intake-form"),
@@ -366,7 +376,7 @@ function renderSummary(application) {
   const overviewRows = [
     ["Location", job.location],
     ["Remote", job.remote_ok ? "Yes" : null],
-    ["Job type", job.job_type],
+    ["Job type", displayLabel(job.job_type)],
     ["Salary", job.salary_raw],
     ["State", displayLabel(application.state)],
     ["Next states", nextStateLabels],
@@ -380,7 +390,7 @@ function renderSummary(application) {
   const technicalRows = [
     ["Application", application.id],
     ["Job", application.job_id],
-    ["ATS", job.ats_type],
+    ["ATS", displayLabel(job.ats_type)],
   ];
 
   elements.applicationSummary.innerHTML = `
@@ -433,15 +443,23 @@ function scoreNumberDisplay(application) {
 }
 
 function recommendationDisplay(value) {
-  return String(value || "").replace(/_/g, " ");
+  return displayLabel(value);
 }
 
 function displayLabel(value) {
-  return String(value || "")
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (labelOverrides[raw]) return labelOverrides[raw];
+
+  const normalized = raw
     .replace(/_/g, " ")
+    .replace(/-/g, " ")
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .toLowerCase();
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 function displayList(values) {
@@ -459,7 +477,7 @@ function initials(value) {
 }
 
 function summaryMeta(job) {
-  return [job.location, job.job_type, job.salary_raw].filter(Boolean).join(" - ") || "Details pending";
+  return [job.location, displayLabel(job.job_type), job.salary_raw].filter(Boolean).join(" - ") || "Details pending";
 }
 
 function detailRows(rows) {
@@ -668,7 +686,7 @@ function renderReviewSummary(summary) {
       label: "Submission",
       ready: summary.ready_for_submission,
       detail: latestExecutor
-        ? `${latestExecutor.status} ${latestExecutor.execution_mode} evidence recorded.`
+        ? `${displayLabel(latestExecutor.status)} ${displayLabel(latestExecutor.execution_mode)} evidence recorded.`
         : "Executor evidence required.",
     },
     {
@@ -719,7 +737,7 @@ function renderScoreDetails(application) {
       </div>
       <div>
         ${badge(recommendationDisplay(application.recommendation) || "No recommendation")}
-        <div class="meta">${escapeHtml(application.confidence || "unknown")} confidence</div>
+        <div class="meta">${escapeHtml(displayLabel(application.confidence || "unknown"))} confidence</div>
       </div>
     </div>
     ${groups
@@ -937,7 +955,7 @@ function buildPacketPreview() {
     "Fit Evidence",
     "------------",
     packetLine("Fit score", scoreNumberDisplay(application)),
-    packetLine("Confidence", application.confidence),
+    packetLine("Confidence", displayLabel(application.confidence)),
     packetLine("Recommendation", recommendationDisplay(application.recommendation)),
     packetLine("Reasons", listText(application.score_reasons)),
     packetLine("Risks", listText(application.score_risks)),
@@ -950,7 +968,7 @@ function buildPacketPreview() {
     packetLine(
       "Dry-run evidence",
       executor
-        ? `${executor.status} ${executor.execution_mode}; side effects: ${result.side_effects === false ? "false" : "not recorded"}`
+        ? `${displayLabel(executor.status)} ${displayLabel(executor.execution_mode)}; side effects: ${result.side_effects === false ? "false" : "not recorded"}`
         : "No executor preview recorded.",
     ),
     packetLine("Safeguards", listText(result.requires)),
@@ -987,7 +1005,7 @@ function packetReadinessItems() {
       label: "Score",
       state: application.confidence || application.fit_score ? "ready" : "blocked",
       summary: application.confidence ? displayLabel(application.confidence) : "Needed",
-      detail: application.confidence ? `${application.confidence} confidence` : "Score before review",
+      detail: application.confidence ? `${displayLabel(application.confidence)} confidence` : "Score before review",
     },
     {
       label: "Policy",
@@ -996,14 +1014,16 @@ function packetReadinessItems() {
       detail: !policy
         ? "Evaluate policy"
         : policy.allowed
-          ? `${policy.decision} decision`
+          ? `${displayLabel(policy.decision)} decision`
           : dryRunBlockReason(policy),
     },
     {
       label: "Dry-run",
       state: executor ? "ready" : "blocked",
       summary: executor ? displayLabel(executor.status) : "Pending",
-      detail: executor ? `${executor.status} ${executor.execution_mode}` : "Preview action",
+      detail: executor
+        ? `${displayLabel(executor.status)} ${displayLabel(executor.execution_mode)}`
+        : "Preview action",
     },
     {
       label: "Packet review",
@@ -1144,23 +1164,23 @@ function eventSummary(event) {
   const payload = event.payload || {};
 
   if (event.from_state || event.to_state) {
-    return `State change: ${event.from_state || "none"} -> ${event.to_state || "none"}`;
+    return `State change: ${displayLabel(event.from_state || "none")} -> ${displayLabel(event.to_state || "none")}`;
   }
 
   if (event.event_type === "application.scored") {
-    return `Score: ${payload.fit_score ?? "not recorded"} (${payload.confidence || "unknown confidence"}, ${payload.recommendation || "unknown recommendation"})`;
+    return `Score: ${payload.fit_score ?? "not recorded"} (${displayLabel(payload.confidence || "unknown confidence")}, ${displayLabel(payload.recommendation || "unknown recommendation")})`;
   }
 
   if (event.event_type === "policy_decision_logged") {
-    return `Policy decision: ${payload.decision || "unknown"} for ${payload.action_type || "unknown action"}`;
+    return `Policy decision: ${displayLabel(payload.decision || "unknown")} for ${displayLabel(payload.action_type || "unknown action")}`;
   }
 
   if (event.event_type === "executor_attempt_logged") {
-    return `Executor attempt: ${payload.execution_mode || "unknown mode"} (${payload.idempotency_key || "no idempotency key"})`;
+    return `Executor attempt: ${displayLabel(payload.execution_mode || "unknown mode")} (${payload.idempotency_key || "no idempotency key"})`;
   }
 
   if (event.event_type === "executor_result_logged") {
-    return `Executor result: ${payload.status || "unknown status"}`;
+    return `Executor result: ${displayLabel(payload.status || "unknown status")}`;
   }
 
   if (event.event_type === "application_packet.reviewed") {
@@ -1181,10 +1201,10 @@ function renderPolicy(decisions) {
       (decision) => `
         <div class="compact-item stage-card">
           <div class="stage-card-header">
-            <strong>${escapeHtml(decision.action_type)}</strong>
+            <strong>${escapeHtml(displayLabel(decision.action_type))}</strong>
             ${badge(decision.decision)}
           </div>
-          <div class="stage-meta">${escapeHtml(decision.mode)} - ${escapeHtml(formatDate(decision.created_at))}</div>
+          <div class="stage-meta">${escapeHtml(displayLabel(decision.mode))} - ${escapeHtml(formatDate(decision.created_at))}</div>
           ${compactMeta("Reasons", decision.reasons)}
           ${compactMeta("Risks", decision.risks)}
           ${compactMeta("Required overrides", decision.required_overrides)}
@@ -1211,10 +1231,10 @@ function renderExecutor(actions) {
       return `
         <div class="compact-item stage-card">
           <div class="stage-card-header">
-            <strong>${escapeHtml(action.action_type)}</strong>
+            <strong>${escapeHtml(displayLabel(action.action_type))}</strong>
             ${badge(action.status)}
           </div>
-          <div class="stage-meta">${escapeHtml(action.execution_mode)} - ${escapeHtml(action.idempotency_key)}</div>
+          <div class="stage-meta">${escapeHtml(displayLabel(action.execution_mode))} - ${escapeHtml(action.idempotency_key)}</div>
           ${sideEffects}
           ${compactMeta("Planned steps", result.planned_steps)}
           ${compactMeta("Requires", result.requires)}
@@ -1533,8 +1553,8 @@ function latestPolicyDecision() {
 }
 
 function policyDecisionDetail(decision) {
-  const requiredOverrides = (decision.required_overrides || []).join(", ");
-  const base = `${decision.decision} policy for ${decision.action_type}`;
+  const requiredOverrides = displayList(decision.required_overrides);
+  const base = `${displayLabel(decision.decision)} policy for ${displayLabel(decision.action_type)}`;
   return requiredOverrides ? `${base}; requires ${requiredOverrides}` : base;
 }
 
