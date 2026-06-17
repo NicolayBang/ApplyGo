@@ -33,7 +33,7 @@ product. The implemented system demonstrates:
 
 If you only have a couple of minutes, focus on this:
 
-1. Read `docs/capstone/reviewer-brief.md`.
+1. Read `docs/capstone/reviewer-quickstart.md`.
 2. Look at the dashboard evidence screenshot below.
 3. Skim `docs/capstone/mvp-status.md`.
 
@@ -84,6 +84,7 @@ manual intake -> parse/classify -> state progression -> scoring -> policy check 
 
 Useful reviewer entry points:
 
+- `docs/capstone/reviewer-quickstart.md`: fastest public reviewer entry point with screenshot-led reading path
 - `docs/capstone/release-pack.md`: fastest recruiter/reviewer reading order
 - `docs/capstone/reviewer-brief.md`: concise capstone/recruiter overview
 - `docs/capstone/codespaces-demo.md`: quick Codespaces demo path for reviewers
@@ -112,11 +113,12 @@ The dashboard includes a `Sample job` prefill button so reviewers can run the de
 
 For the cleanest first pass through the public repo:
 
-1. Read `docs/capstone/release-pack.md`.
-2. Read `docs/capstone/reviewer-brief.md`.
-3. Read `docs/capstone/mvp-status.md`.
-4. Use `docs/capstone/codespaces-demo.md` if you want the fastest runnable demo.
-5. Use `docs/capstone/dashboard-demo-flow.md` for the detailed step-by-step workflow.
+1. Read `docs/capstone/reviewer-quickstart.md`.
+2. Read `docs/capstone/release-pack.md`.
+3. Read `docs/capstone/reviewer-brief.md`.
+4. Read `docs/capstone/mvp-status.md`.
+5. Use `docs/capstone/codespaces-demo.md` if you want the fastest runnable demo.
+6. Use `docs/capstone/dashboard-demo-flow.md` for the detailed step-by-step workflow.
 
 This path stays grounded in implemented behavior and avoids pulling future-looking architecture notes
 ahead of the current capstone baseline.
