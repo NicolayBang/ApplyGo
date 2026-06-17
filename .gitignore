@@ -38,3 +38,6 @@ evidence/
 
 # Claude Code local instructions
 CLAUDE.local.md
+
+# Local session working notes (not for commit)
+.session-notes.md

@@ -1567,6 +1567,8 @@ async function createManualApplication() {
     return;
   }
 
+  const intakeSubmit = elements.intakeForm.querySelector("button[type='submit']");
+  if (intakeSubmit) intakeSubmit.disabled = true;
   setStatus("loading", "Creating", "Creating job and application records.");
 
   try {
@@ -1602,6 +1604,8 @@ async function createManualApplication() {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Create failed", `${error.message}.${hint}`);
+  } finally {
+    if (intakeSubmit) intakeSubmit.disabled = false;
   }
 }
 
@@ -1655,6 +1659,8 @@ async function loadRecentApplications(options = {}) {
   const base = apiBase();
   elements.apiBase.value = base;
 
+  elements.recentApplicationsButton.disabled = true;
+
   if (!options.quiet) {
     setStatus("loading", "Loading", "Fetching recent applications from the backend.");
   }
@@ -1670,6 +1676,8 @@ async function loadRecentApplications(options = {}) {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Recent failed", `${error.message}.${hint}`);
+  } finally {
+    elements.recentApplicationsButton.disabled = false;
   }
 }
 
@@ -1739,6 +1747,7 @@ async function scoreApplication() {
 
   if (!applicationId) return;
 
+  elements.scoreButton.disabled = true;
   setStatus("loading", "Scoring", "Scoring application using deterministic job data.");
 
   try {
@@ -1755,15 +1764,18 @@ async function scoreApplication() {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Score failed", `${error.message}.${hint}`);
+  } finally {
+    updateWorkflowReadiness();
   }
 }
 
-async function transitionApplicationState(targetState) {
+async function transitionApplicationState(targetState, button = null) {
   const applicationId = requireApplicationId();
   const base = apiBase();
 
   if (!applicationId) return;
 
+  if (button) button.disabled = true;
   setStatus("loading", "State", `Moving application to ${targetState}.`);
 
   try {
@@ -1787,6 +1799,8 @@ async function transitionApplicationState(targetState) {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "State failed", `${error.message}.${hint}`);
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -1800,6 +1814,7 @@ async function evaluatePolicy() {
     return;
   }
 
+  elements.policyButton.disabled = true;
   setStatus("loading", "Policy", "Evaluating dry-run follow-up policy.");
 
   try {
@@ -1821,6 +1836,8 @@ async function evaluatePolicy() {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Policy failed", `${error.message}.${hint}`);
+  } finally {
+    updateWorkflowReadiness();
   }
 }
 
@@ -1836,6 +1853,7 @@ async function dryRunFollowUp() {
     return;
   }
 
+  elements.dryRunButton.disabled = true;
   setStatus("loading", "Dry run", "Planning follow-up action with the executor stub.");
 
   try {
@@ -1860,6 +1878,8 @@ async function dryRunFollowUp() {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Dry-run failed", `${error.message}.${hint}`);
+  } finally {
+    updateWorkflowReadiness();
   }
 }
 
@@ -1869,6 +1889,8 @@ async function recordPacketReview(decision) {
 
   if (!applicationId) return;
 
+  const reviewButtons = elements.packetReviewForm.querySelectorAll("button[type='submit']");
+  reviewButtons.forEach((b) => { b.disabled = true; });
   setStatus("loading", "Review", "Recording human packet review decision.");
 
   try {
@@ -1895,6 +1917,8 @@ async function recordPacketReview(decision) {
         ? ` Could not reach ${base}. Check Codespaces port 8000 visibility and auth.`
         : "";
     setStatus("error", "Review failed", `${error.message}.${hint}`);
+  } finally {
+    renderPacketReviewControls();
   }
 }
 
@@ -1954,7 +1978,7 @@ elements.scoreButton.addEventListener("click", () => {
 elements.stateActions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-state-target]");
   if (!button) return;
-  transitionApplicationState(button.dataset.stateTarget);
+  transitionApplicationState(button.dataset.stateTarget, button);
 });
 
 elements.policyButton.addEventListener("click", () => {
