@@ -147,3 +147,20 @@ def test_dashboard_event_summary_uses_canonical_packet_review_name() -> None:
 
     assert 'event.event_type === "application_packet.reviewed"' in script_response.text
     assert "Packet review:" in script_response.text
+
+
+def test_dashboard_uses_human_friendly_filter_and_state_labels() -> None:
+    """Dashboard reviewer text should present readable labels instead of raw enum values."""
+    index_response = client.get("/ui/index.html")
+    script_response = client.get("/ui/app.js")
+
+    assert index_response.status_code == 200
+    assert script_response.status_code == 200
+
+    assert '<option value="ApplicationCreated">Created</option>' in index_response.text
+    assert '<option value="ReadyForReview">Ready for review</option>' in index_response.text
+    assert '<option value="needs_review">Needs review</option>' in index_response.text
+    assert '<option value="not_recommended">Not recommended</option>' in index_response.text
+    assert 'ApplicationCreated: "Created"' in script_response.text
+    assert 'ReadyForReview: "Ready for review"' in script_response.text
+    assert 'needs_review: "Needs review"' in script_response.text
