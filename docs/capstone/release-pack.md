@@ -12,16 +12,17 @@ boundaries are.
 
 ### If you have 5 minutes
 
-1. Read `reviewer-brief.md`.
-2. Skim `mvp-status.md`.
-3. Look at the dashboard screenshot in the root `README.md`.
+1. Read `reviewer-quickstart.md`.
+2. Read `reviewer-brief.md`.
+3. Skim `mvp-status.md`.
 
 ### If you have 15 minutes
 
-1. Read `reviewer-brief.md`.
-2. Read `m1-release-notes.md`.
-3. Read `mvp-status.md`.
-4. Open `dashboard-demo-flow.md`.
+1. Read `reviewer-quickstart.md`.
+2. Read `reviewer-brief.md`.
+3. Read `m1-release-notes.md`.
+4. Read `mvp-status.md`.
+5. Open `dashboard-demo-flow.md`.
 
 ### If you want to run the demo
 
@@ -31,6 +32,7 @@ boundaries are.
 
 ## What To Read First
 
+- `reviewer-quickstart.md`: fastest screenshot-led public reviewer entry point
 - `reviewer-brief.md`: shortest explanation of what ApplyGo is and what was built
 - `mvp-status.md`: current implemented scope, non-goals, and next direction
 - `m1-release-notes.md`: milestone framing, validation evidence, and handoff language
@@ -57,13 +59,15 @@ boundaries are.
 ## Suggested Public Reading Order
 
 1. `README.md`
-2. `docs/capstone/reviewer-brief.md`
-3. `docs/capstone/mvp-status.md`
-4. `docs/capstone/m1-release-notes.md`
-5. `docs/capstone/codespaces-demo.md` or `docs/capstone/dashboard-demo-flow.md`
+2. `docs/capstone/reviewer-quickstart.md`
+3. `docs/capstone/reviewer-brief.md`
+4. `docs/capstone/mvp-status.md`
+5. `docs/capstone/m1-release-notes.md`
+6. `docs/capstone/codespaces-demo.md` or `docs/capstone/dashboard-demo-flow.md`
 
 ## Notes For Reviewers
 
 Future milestone material exists in the repository, but the public capstone story should stay
 anchored to implemented behavior. When in doubt, prefer `README.md`, `reviewer-brief.md`,
-`mvp-status.md`, and the M1 validation docs over future-looking architecture notes.
+`reviewer-quickstart.md`, `mvp-status.md`, and the M1 validation docs over future-looking
+architecture notes.
