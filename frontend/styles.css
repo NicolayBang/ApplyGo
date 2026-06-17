@@ -396,6 +396,12 @@ button:disabled {
   margin-top: 16px;
 }
 
+.summary-grid > .panel,
+.summary-list,
+.compact-list {
+  min-width: 0;
+}
+
 .intake-panel {
   margin-top: 16px;
 }
@@ -574,6 +580,7 @@ button:disabled {
 .panel {
   border: 1px solid var(--line);
   border-radius: 12px;
+  min-width: 0;
   padding: 18px;
   background: var(--surface);
   box-shadow: 0 10px 26px rgba(15, 31, 54, 0.05);
@@ -1401,9 +1408,31 @@ button:disabled {
   }
 }
 
-@media (min-width: 921px) and (max-width: 1120px) {
+@media (min-width: 921px) and (max-width: 1320px) {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .review-evidence-heading h2 {
+    font-size: 20px;
+  }
+
+  .summary-grid {
+    gap: 14px;
+  }
+
+  .summary-signal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .recent-application-meta {
+    justify-content: flex-start;
+  }
+
+  .panel {
+    padding: 16px;
   }
 }
 
@@ -1473,8 +1502,16 @@ button:disabled {
     padding: 16px;
   }
 
+  .panel {
+    padding: 14px;
+  }
+
   .summary-signal-row > div {
     min-height: auto;
+  }
+
+  .compact-item {
+    padding: 9px;
   }
 
   .summary-panel .detail-list dd,
