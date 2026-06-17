@@ -167,6 +167,10 @@ production deployment work is intentionally excluded from the current MVP.
 5. Install backend dependencies.
 6. Run the FastAPI app.
 
+The example environment keeps dev-friendly values such as `APP_DEBUG=true`, while the backend
+package default is now `debug=False` unless you opt into debug mode. Cross-origin frontend access is
+also limited to explicit localhost or Codespaces origins instead of wildcard credentialed CORS.
+
 Example commands:
 
 ```powershell
