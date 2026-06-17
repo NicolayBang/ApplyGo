@@ -1140,6 +1140,32 @@ function downloadTextFile(fileName, text) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function actorLabel(value) {
+  const labels = {
+    system: "System",
+    user: "User",
+    policy: "Policy engine",
+    worker: "Worker",
+    scoring: "Scoring",
+  };
+
+  return labels[value] || displayLabel(value || "system");
+}
+
+function eventTitle(event) {
+  const labels = {
+    "application.created": "Application created",
+    "application.state_changed": "Application state updated",
+    "application.scored": "Application scored",
+    policy_decision_logged: "Policy decision recorded",
+    executor_attempt_logged: "Preview attempt recorded",
+    executor_result_logged: "Preview result recorded",
+    "application_packet.reviewed": "Packet review recorded",
+  };
+
+  return labels[event.event_type] || displayLabel(event.event_type) || "Audit event";
+}
+
 function eventSummary(event) {
   const payload = event.payload || {};
 
@@ -1238,8 +1264,9 @@ function renderTimeline(events) {
         <li>
           <div class="event-time">${escapeHtml(formatDate(event.created_at))}</div>
           <div class="event-body">
-            <strong>${escapeHtml(event.event_type)}</strong>
-            <div class="meta">Actor: ${escapeHtml(event.actor || "system")}</div>
+            <strong>${escapeHtml(eventTitle(event))}</strong>
+            <div class="meta">Actor: ${escapeHtml(actorLabel(event.actor || "system"))}</div>
+            <div class="meta">Event key: ${escapeHtml(event.event_type)}</div>
             <div class="meta">${escapeHtml(eventSummary(event))}</div>
             <div class="meta">${safeJson(event.payload)}</div>
           </div>
