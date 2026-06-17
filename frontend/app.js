@@ -1480,6 +1480,15 @@ function initializeApiBase() {
   elements.apiBase.value = normalizeApiBase(inferApiBaseFromBrowser());
 }
 
+function populateJobFields(job) {
+  elements.jobTitle.value = job.title || "";
+  elements.jobCompany.value = job.company || "";
+  elements.jobLocation.value = job.location || "";
+  elements.jobUrl.value = job.source_url || "";
+  elements.remoteOk.checked = Boolean(job.remote_ok);
+  elements.jobDescription.value = job.raw_text || "";
+}
+
 async function createManualApplication() {
   const title = elements.jobTitle.value.trim();
   const company = elements.jobCompany.value.trim();
@@ -1548,14 +1557,30 @@ function requireApplicationId() {
   return applicationId;
 }
 
-function loadSampleJob() {
-  elements.jobTitle.value = sampleJob.title;
-  elements.jobCompany.value = sampleJob.company;
-  elements.jobLocation.value = sampleJob.location;
-  elements.jobUrl.value = sampleJob.source_url;
-  elements.remoteOk.checked = sampleJob.remote_ok;
-  elements.jobDescription.value = sampleJob.raw_text;
-  setStatus("", "Sample loaded", "Review the sample job, then create the application.");
+function loadSampleJob(options = {}) {
+  populateJobFields(sampleJob);
+
+  if (!options.quiet) {
+    setStatus("", "Sample loaded", "Review the sample job, then create the application.");
+  }
+}
+
+function resetRecentFilters() {
+  elements.recentStateFilter.value = "";
+  elements.recentRecommendationFilter.value = "";
+  elements.recentCompanyFilter.value = "";
+  elements.recentSortFilter.value = "updated_at:desc";
+}
+
+function resetDashboardToDemo() {
+  initializeApiBase();
+  elements.applicationId.value = "";
+  elements.packetReviewNotes.value = "";
+  resetRecentFilters();
+  loadSampleJob({ quiet: true });
+  renderRecentApplications([]);
+  renderAudit(demoAudit, demoReviewSummary);
+  setStatus("", "Demo reset", "Dashboard restored to the sample review baseline.");
 }
 
 async function loadRecentApplications(options = {}) {
@@ -1918,9 +1943,7 @@ elements.packetReviewForm.addEventListener("submit", (event) => {
 });
 
 elements.demoButton.addEventListener("click", () => {
-  elements.applicationId.value = "";
-  renderAudit(demoAudit, demoReviewSummary);
-  setStatus("", "Demo mode", "Using local demo data until a backend application ID is provided.");
+  resetDashboardToDemo();
 });
 
 elements.sampleJobButton.addEventListener("click", () => {
@@ -1957,4 +1980,4 @@ elements.apiBase.addEventListener("blur", () => {
 });
 
 initializeApiBase();
-renderAudit(demoAudit, demoReviewSummary);
+resetDashboardToDemo();
