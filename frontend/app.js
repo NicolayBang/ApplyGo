@@ -493,6 +493,15 @@ function detailRows(rows) {
   `;
 }
 
+function emptyState(title, detail) {
+  return `
+    <div class="empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(detail)}</p>
+    </div>
+  `;
+}
+
 function renderDetailValue(value) {
   if (Array.isArray(value)) {
     const items = value.map(displayLabel).filter(Boolean);
@@ -662,7 +671,10 @@ function readinessValue(isReady) {
 function renderReviewSummary(summary) {
   if (!summary) {
     elements.reviewSummaryStatus.textContent = "No summary";
-    elements.reviewSummary.innerHTML = '<p class="empty">No review summary loaded.</p>';
+    elements.reviewSummary.innerHTML = emptyState(
+      "No review summary yet",
+      "Create or load an application to generate reviewer readiness signals.",
+    );
     return;
   }
 
@@ -718,7 +730,10 @@ function renderReviewSummary(summary) {
 
 function renderScoreDetails(application) {
   if (!application.fit_score && !application.confidence && !application.recommendation) {
-    elements.scoreList.innerHTML = '<p class="empty">No score recorded.</p>';
+    elements.scoreList.innerHTML = emptyState(
+      "No score recorded",
+      "Run scoring to generate fit evidence, confidence, and recommendation signals.",
+    );
     return;
   }
 
@@ -1108,8 +1123,10 @@ function renderPacketReviewHistory() {
   const reviews = [...packetReviewHistory()].reverse();
 
   if (!reviews.length) {
-    elements.packetReviewHistory.innerHTML =
-      '<p class="empty">No packet review history recorded yet.</p>';
+    elements.packetReviewHistory.innerHTML = emptyState(
+      "No packet review history yet",
+      "Record a human packet review decision to preserve manual approval evidence.",
+    );
     return;
   }
 
@@ -1218,7 +1235,10 @@ function eventSummary(event) {
 
 function renderPolicy(decisions) {
   if (!decisions.length) {
-    elements.policyList.innerHTML = '<p class="empty">No policy decisions recorded.</p>';
+    elements.policyList.innerHTML = emptyState(
+      "No policy decisions recorded",
+      "Evaluate policy to record whether the dry-run preview is allowed, blocked, or sent for review.",
+    );
     return;
   }
 
@@ -1242,7 +1262,10 @@ function renderPolicy(decisions) {
 
 function renderExecutor(actions) {
   if (!actions.length) {
-    elements.executorList.innerHTML = '<p class="empty">No executor actions recorded.</p>';
+    elements.executorList.innerHTML = emptyState(
+      "No preview actions recorded",
+      "Run the dry-run preview to capture executor evidence without external side effects.",
+    );
     return;
   }
 
@@ -1274,7 +1297,10 @@ function renderTimeline(events) {
   elements.eventCount.textContent = `${events.length} ${events.length === 1 ? "event" : "events"}`;
 
   if (!events.length) {
-    elements.timeline.innerHTML = '<li class="empty">No audit events recorded.</li>';
+    elements.timeline.innerHTML = `<li class="empty">${emptyState(
+      "No audit events recorded",
+      "Load an application or use demo data to inspect the workflow timeline.",
+    )}</li>`;
     return;
   }
 
@@ -1308,8 +1334,10 @@ function focusLatestTimelineEvent() {
 
 function renderRecentApplications(applications) {
   if (!applications.length) {
-    elements.recentApplicationsList.innerHTML =
-      '<p class="empty">No applications found. Adjust filters or create a sample job to continue the guided review.</p>';
+    elements.recentApplicationsList.innerHTML = emptyState(
+      "No applications found",
+      "Adjust the filters, load recent records again, or create a sample job to continue the guided review.",
+    );
     return;
   }
 

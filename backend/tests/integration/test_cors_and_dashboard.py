@@ -186,6 +186,8 @@ def test_dashboard_renders_review_summary_readiness() -> None:
     assert "ready_for_submission" in script_response.text
     assert "readiness-item" in style_response.text
     assert "badge.blocked" in style_response.text
+    assert "No review summary yet" in script_response.text
+    assert ".empty-state" in style_response.text
 
 
 def test_dashboard_summarizes_audit_timeline_events() -> None:
@@ -204,3 +206,20 @@ def test_dashboard_summarizes_audit_timeline_events() -> None:
     assert "Policy decision:" in script_response.text
     assert "Executor result:" in script_response.text
     assert "application.scored" in script_response.text
+
+
+def test_dashboard_empty_states_guide_reviewers_to_next_step() -> None:
+    """Empty dashboard panels should tell reviewers what action unblocks the view."""
+    script_response = client.get("/ui/app.js")
+    style_response = client.get("/ui/styles.css")
+
+    assert script_response.status_code == 200
+    assert style_response.status_code == 200
+    assert "No score recorded" in script_response.text
+    assert "Run scoring to generate fit evidence" in script_response.text
+    assert "No policy decisions recorded" in script_response.text
+    assert "No preview actions recorded" in script_response.text
+    assert "No applications found" in script_response.text
+    assert "No packet review history yet" in script_response.text
+    assert "No audit events recorded" in script_response.text
+    assert ".empty-state" in style_response.text
