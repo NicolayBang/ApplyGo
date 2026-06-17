@@ -26,6 +26,20 @@ def test_cors_headers_present_on_health_endpoint() -> None:
     assert response.headers.get("access-control-allow-credentials") == "true"
 
 
+def test_disallowed_origin_does_not_receive_cors_access() -> None:
+    """Unknown origins should not be treated as valid credentialed frontend callers."""
+    response = client.options(
+        "/health",
+        headers={
+            "Origin": "http://evil.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.headers.get("access-control-allow-origin") is None
+
+
 def test_cors_headers_present_on_audit_endpoint() -> None:
     """The dashboard can fetch /applications/{id}/audit cross-origin."""
     response = client.options(

@@ -13,23 +13,14 @@ from applypilot.config.settings import get_settings
 settings = get_settings()
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 
-# Build allowed origins. In Codespaces, cross-origin fetch from the forwarded
-# frontend port requires the exact origin + credentials, since wildcard is
-# incompatible with credentials. Outside Codespaces we fall back to localhost.
+# Build explicit allowed origins. In Codespaces, cross-origin fetch from the
+# forwarded frontend port requires the exact origin + credentials.
 _codespace = os.environ.get("CODESPACE_NAME", "")
 _cs_domain = os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN", "app.github.dev")
-
-if _codespace:
-    _allowed_origins = [
-        f"https://{_codespace}-4173.{_cs_domain}",
-        f"https://{_codespace}-3000.{_cs_domain}",
-        f"https://{_codespace}-5173.{_cs_domain}",
-        "http://localhost:4173",
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ]
-else:
-    _allowed_origins = ["*"]
+_allowed_origins = settings.allowed_cors_origins(
+    codespace_name=_codespace,
+    codespaces_domain=_cs_domain,
+)
 
 app.add_middleware(
     CORSMiddleware,
