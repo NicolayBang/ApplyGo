@@ -164,3 +164,36 @@ def test_dashboard_uses_human_friendly_filter_and_state_labels() -> None:
     assert 'ApplicationCreated: "Created"' in script_response.text
     assert 'ReadyForReview: "Ready for review"' in script_response.text
     assert 'needs_review: "Needs review"' in script_response.text
+
+
+def test_dashboard_policy_and_executor_cards_stay_human_readable() -> None:
+    """Policy and executor evidence should remain reviewer-facing while preserving technical detail access."""
+    script_response = client.get("/ui/app.js")
+    style_response = client.get("/ui/styles.css")
+
+    assert script_response.status_code == 200
+    assert style_response.status_code == 200
+
+    assert "policyDecisionSummary" in script_response.text
+    assert "executorActionSummary" in script_response.text
+    assert "Preview rule recorded" in script_response.text
+    assert "Preview action recorded" in script_response.text
+    assert "Technical details" in script_response.text
+    assert "Decision ID" in script_response.text
+    assert "Run ID" in script_response.text
+    assert "Action ID" in script_response.text
+    assert ".stage-summary" in style_response.text
+    assert ".stage-list" in style_response.text
+    assert ".inline-technical-details" in style_response.text
+
+
+def test_dashboard_mobile_density_breakpoints_remain_wired() -> None:
+    """Dashboard CSS should preserve the breakpoint work that keeps review evidence readable on smaller screens."""
+    style_response = client.get("/ui/styles.css")
+
+    assert style_response.status_code == 200
+
+    assert "@media (min-width: 921px) and (max-width: 1320px)" in style_response.text
+    assert "@media (max-width: 760px)" in style_response.text
+    assert ".summary-grid > .panel" in style_response.text
+    assert ".summary-signal-row" in style_response.text
