@@ -1954,7 +1954,11 @@ elements.scoreButton.addEventListener("click", () => {
 elements.stateActions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-state-target]");
   if (!button) return;
-  transitionApplicationState(button.dataset.stateTarget);
+  const target = button.dataset.stateTarget;
+  if (target === "Rejected" || target === "Archived") {
+    if (!window.confirm(`Move this application to ${displayLabel(target)}? This will be recorded in the audit trail and cannot be undone from the dashboard.`)) return;
+  }
+  transitionApplicationState(target);
 });
 
 elements.policyButton.addEventListener("click", () => {
@@ -2007,6 +2011,9 @@ elements.packetReviewForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const decision = event.submitter?.value;
   if (!decision) return;
+  if (decision === "rejected") {
+    if (!window.confirm("Reject this packet? The rejection will be recorded in the audit trail.")) return;
+  }
   recordPacketReview(decision);
 });
 
