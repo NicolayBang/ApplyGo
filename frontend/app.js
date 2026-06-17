@@ -781,6 +781,63 @@ function compactMeta(label, values) {
   return `<div class="meta"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(items.join(", "))}</div>`;
 }
 
+function listBlock(label, values) {
+  const items = Array.isArray(values) ? values.map(displayLabel).filter(Boolean) : [];
+  if (!items.length) return "";
+
+  return `
+    <div class="stage-list-block">
+      <span>${escapeHtml(label)}</span>
+      <ul class="stage-list">
+        ${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function policyDecisionSummary(decision) {
+  const primaryReason = Array.isArray(decision.reasons) ? decision.reasons.find(Boolean) : "";
+  if (primaryReason) return primaryReason;
+
+  if (decision.decision === "allow") {
+    return "This preview action is allowed.";
+  }
+
+  if (decision.decision === "review") {
+    return "This preview action needs human review before it can proceed.";
+  }
+
+  if (decision.decision === "deny" || decision.allowed === false) {
+    return "This preview action is blocked until the policy conditions change.";
+  }
+
+  return "Policy evidence recorded for this preview action.";
+}
+
+function executorActionSummary(action) {
+  const result = action.result || {};
+  const status = displayLabel(action.status || result.status || "Recorded");
+
+  if (result.side_effects === false) {
+    return `${status} with no external side effects.`;
+  }
+
+  if (result.side_effects === true) {
+    return `${status} with external side effects enabled.`;
+  }
+
+  return `${status} execution evidence recorded.`;
+}
+
+function technicalDetailsBlock(rows) {
+  return `
+    <details class="technical-details inline-technical-details">
+      <summary>Technical details</summary>
+      ${detailRows(rows)}
+    </details>
+  `;
+}
+
 function latestExecutorAction() {
   return (currentAudit.executor_actions || []).at(-1);
 }
@@ -1250,10 +1307,15 @@ function renderPolicy(decisions) {
             <strong>${escapeHtml(displayLabel(decision.action_type))}</strong>
             ${badge(decision.decision)}
           </div>
-          <div class="stage-meta">${escapeHtml(displayLabel(decision.mode))} - ${escapeHtml(formatDate(decision.created_at))}</div>
-          ${compactMeta("Reasons", decision.reasons)}
-          ${compactMeta("Risks", decision.risks)}
-          ${compactMeta("Required overrides", decision.required_overrides)}
+          <div class="stage-meta">Preview rule recorded ${escapeHtml(formatDate(decision.created_at))}</div>
+          <p class="stage-summary">${escapeHtml(policyDecisionSummary(decision))}</p>
+          ${listBlock("Risks", decision.risks)}
+          ${listBlock("Required overrides", decision.required_overrides)}
+          ${technicalDetailsBlock([
+            ["Mode", displayLabel(decision.mode)],
+            ["Allowed", decision.allowed ? "Yes" : "No"],
+            ["Decision ID", decision.id],
+          ])}
         </div>
       `,
     )
@@ -1283,10 +1345,16 @@ function renderExecutor(actions) {
             <strong>${escapeHtml(displayLabel(action.action_type))}</strong>
             ${badge(action.status)}
           </div>
-          <div class="stage-meta">${escapeHtml(displayLabel(action.execution_mode))} - ${escapeHtml(action.idempotency_key)}</div>
+          <div class="stage-meta">Preview action recorded ${escapeHtml(formatDate(action.created_at))}</div>
+          <p class="stage-summary">${escapeHtml(executorActionSummary(action))}</p>
           ${sideEffects}
-          ${compactMeta("Planned steps", result.planned_steps)}
-          ${compactMeta("Requires", result.requires)}
+          ${listBlock("Planned steps", result.planned_steps)}
+          ${listBlock("Requires", result.requires)}
+          ${technicalDetailsBlock([
+            ["Mode", displayLabel(action.execution_mode)],
+            ["Run ID", action.idempotency_key],
+            ["Action ID", action.id],
+          ])}
         </div>
       `;
     })

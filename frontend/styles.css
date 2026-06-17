@@ -912,6 +912,48 @@ button:disabled {
   font-weight: 500;
 }
 
+.stage-summary {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.stage-list-block {
+  display: grid;
+  gap: 6px;
+}
+
+.stage-list-block span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stage-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
+  color: #556579;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.inline-technical-details {
+  border-top: 1px solid #dfe8f3;
+  margin-top: 2px;
+  padding-top: 10px;
+}
+
+.inline-technical-details summary {
+  color: #516173;
+}
+
+.inline-technical-details .detail-list {
+  margin-top: 8px;
+}
+
 .side-effect-banner {
   border-radius: 8px;
   padding: 9px 10px;
