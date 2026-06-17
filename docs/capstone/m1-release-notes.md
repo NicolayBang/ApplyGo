@@ -76,11 +76,11 @@ These are future milestone concerns and should not be implied during the M1 demo
 
 Recommended presentation order:
 
-1. Start with `reviewer-brief.md`.
-2. Use `codespaces-demo.md` or local Docker setup to start the app.
-3. Present with `m1-demo-script.md`.
-4. Validate with `m1-demo-review-checklist.md`.
-5. Use `mvp-status.md` to explain current scope and boundaries.
+1. Start with `reviewer-quickstart.md`.
+2. Continue with `reviewer-brief.md` and `mvp-status.md`.
+3. Use `codespaces-demo.md` or local Docker setup to start the app.
+4. Present with `m1-demo-script.md`.
+5. Validate with `m1-demo-review-checklist.md`.
 
 Recommended next milestone direction:
 
