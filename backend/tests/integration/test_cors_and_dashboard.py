@@ -78,13 +78,19 @@ def test_dashboard_can_prefill_sample_job_for_demo() -> None:
     assert index_response.status_code == 200
     assert script_response.status_code == 200
     assert 'id="sample-job-button"' in index_response.text
+    assert 'id="demo-button"' in index_response.text
+    assert ">Reset demo<" in index_response.text
     assert "sampleJob" in script_response.text
+    assert "resetDashboardToDemo" in script_response.text
+    assert "resetRecentFilters" in script_response.text
     assert "loadSampleJob" in script_response.text
+    assert "populateJobFields" in script_response.text
     assert "Backend Platform Engineer" in script_response.text
     assert "ApplyGo Demo Co." in script_response.text
     assert "https://jobs.lever.co/applygo/backend-platform-engineer" in script_response.text
     assert "full-time remote role" in script_response.text
     assert "salary range of $95,000 - $125,000" in script_response.text
+    assert "Dashboard restored to the sample review baseline." in script_response.text
 
 
 def test_dashboard_can_load_recent_applications() -> None:
