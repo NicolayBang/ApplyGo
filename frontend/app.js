@@ -249,6 +249,14 @@ function isValidUuid(value) {
   );
 }
 
+function debounce(fn, wait) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
 function hasLoadedApplication() {
   const applicationId = currentApplicationId();
   return isValidUuid(applicationId) && currentAudit.application?.id === applicationId;
@@ -2022,7 +2030,8 @@ elements.recentApplicationsButton.addEventListener("click", () => {
   loadRecentApplications();
 });
 
-elements.recentFiltersForm.addEventListener("change", () => {
+elements.recentFiltersForm.addEventListener("change", (event) => {
+  if (event.target === elements.recentCompanyFilter) return;
   loadRecentApplications();
 });
 
@@ -2030,6 +2039,11 @@ elements.recentFiltersForm.addEventListener("submit", (event) => {
   event.preventDefault();
   loadRecentApplications();
 });
+
+elements.recentCompanyFilter.addEventListener(
+  "input",
+  debounce(() => loadRecentApplications(), 300),
+);
 
 elements.recentApplicationsList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-application-id]");
