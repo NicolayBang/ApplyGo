@@ -193,7 +193,13 @@ def test_dashboard_summarizes_audit_timeline_events() -> None:
     script_response = client.get("/ui/app.js")
 
     assert script_response.status_code == 200
+    assert "eventTitle" in script_response.text
     assert "eventSummary" in script_response.text
+    assert "Application created" in script_response.text
+    assert "Application state updated" in script_response.text
+    assert "Policy decision recorded" in script_response.text
+    assert "Preview result recorded" in script_response.text
+    assert "Event key:" in script_response.text
     assert "State change:" in script_response.text
     assert "Policy decision:" in script_response.text
     assert "Executor result:" in script_response.text
