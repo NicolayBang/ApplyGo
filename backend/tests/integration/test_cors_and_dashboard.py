@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+
 from fastapi.testclient import TestClient
 
 from applypilot.main import app
@@ -9,6 +11,12 @@ from applypilot.main import app
 
 client = TestClient(app)
 FRONTEND_ORIGIN = "http://localhost:3000"
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+FRONTEND_APP = REPO_ROOT / "frontend" / "app"
+
+
+def _source(relative_path: str) -> str:
+    return (FRONTEND_APP / relative_path).read_text(encoding="utf-8")
 
 
 def test_cors_headers_present_on_health_endpoint() -> None:
@@ -56,176 +64,146 @@ def test_cors_headers_present_on_audit_endpoint() -> None:
 
 
 def test_dashboard_manual_intake_collects_job_description() -> None:
-    """The static dashboard includes raw job text intake for scoring and classification."""
+    """The dashboard includes raw job text intake for scoring and classification."""
     index_response = client.get("/ui/index.html")
-    script_response = client.get("/ui/app.js")
+    intake_source = _source("src/components/ManualIntakePanel.tsx")
 
     assert index_response.status_code == 200
-    assert script_response.status_code == 200
-    assert 'id="job-description"' in index_response.text
-    assert "jobDescription" in script_response.text
-    assert "raw_text" in script_response.text
-    assert "job_type" in script_response.text
-    assert "ats_type" in script_response.text
-    assert "salary_raw" in script_response.text
+    assert "assets/" in index_response.text
+    assert "Job description" in intake_source
+    assert "raw_text" in intake_source
+    assert "intakeToJobCreate" in intake_source
 
 
 def test_dashboard_can_prefill_sample_job_for_demo() -> None:
-    """The static dashboard can prefill sample job data for faster demos."""
+    """The dashboard can prefill sample job data for faster demos."""
     index_response = client.get("/ui/index.html")
-    script_response = client.get("/ui/app.js")
+    app_source = _source("src/App.tsx")
+    sample_source = _source("src/domain/sampleJob.ts")
 
     assert index_response.status_code == 200
-    assert script_response.status_code == 200
-    assert 'id="sample-job-button"' in index_response.text
-    assert 'id="demo-button"' in index_response.text
-    assert ">Reset demo<" in index_response.text
-    assert "sampleJob" in script_response.text
-    assert "resetDashboardToDemo" in script_response.text
-    assert "resetRecentFilters" in script_response.text
-    assert "loadSampleJob" in script_response.text
-    assert "populateJobFields" in script_response.text
-    assert "Backend Platform Engineer" in script_response.text
-    assert "ApplyGo Demo Co." in script_response.text
-    assert "https://jobs.lever.co/applygo/backend-platform-engineer" in script_response.text
-    assert "full-time remote role" in script_response.text
-    assert "salary range of $95,000 - $125,000" in script_response.text
-    assert "Dashboard restored to the sample review baseline." in script_response.text
+    assert "sampleIntakeForm" in app_source
+    assert "resetDemo" in app_source
+    assert "Dashboard restored to the sample review baseline." in _source("src/state/dashboardState.ts")
+    assert "Backend Platform Engineer" in sample_source
+    assert "ApplyGo Demo Co." in sample_source
+    assert "https://jobs.lever.co/applygo/backend-platform-engineer" in sample_source
+    assert "full-time remote role" in sample_source
+    assert "salary range of $95,000 - $125,000" in sample_source
 
 
 def test_dashboard_can_load_recent_applications() -> None:
-    """The static dashboard can list recent applications and load one by ID."""
+    """The dashboard can list recent applications and load one by ID."""
     index_response = client.get("/ui/index.html")
-    style_response = client.get("/ui/styles.css")
-    script_response = client.get("/ui/app.js")
+    recent_source = _source("src/components/RecentApplicationsPanel.tsx")
+    filters_source = _source("src/domain/recentFilters.ts")
+    api_source = _source("src/api/client.ts")
+    styles_source = _source("src/styles.css")
 
     assert index_response.status_code == 200
-    assert style_response.status_code == 200
-    assert script_response.status_code == 200
-    assert 'id="recent-applications-button"' in index_response.text
-    assert 'id="recent-filters-form"' in index_response.text
-    assert 'id="recent-state-filter"' in index_response.text
-    assert 'id="recent-recommendation-filter"' in index_response.text
-    assert 'id="recent-company-filter"' in index_response.text
-    assert 'id="recent-sort-filter"' in index_response.text
-    assert 'id="recent-applications-list"' in index_response.text
-    assert "loadRecentApplications" in script_response.text
-    assert "recentApplicationQuery" in script_response.text
-    assert "URLSearchParams" in script_response.text
-    assert "sort_by" in script_response.text
-    assert "sort_dir" in script_response.text
-    assert "recommendation" in script_response.text
-    assert "company" in script_response.text
-    assert "data-application-id" in script_response.text
-    assert "recent-application" in style_response.text
-    assert "recent-filters" in style_response.text
+    assert "Load recent" in recent_source
+    assert "Any state" in recent_source
+    assert "Any recommendation" in recent_source
+    assert "Search company" in recent_source
+    assert "buildRecentApplicationQuery" in filters_source
+    assert "URLSearchParams" in filters_source
+    assert "sort_by" in filters_source
+    assert "sort_dir" in filters_source
+    assert "recommendation" in filters_source
+    assert "company" in filters_source
+    assert "/applications?" in api_source
+    assert "recent-application" in styles_source
+    assert "recent-filters" in styles_source
 
 
 def test_dashboard_exposes_state_progression_controls() -> None:
-    """The static dashboard can advance applications through governed states."""
+    """The dashboard can advance applications through governed states."""
     index_response = client.get("/ui/index.html")
-    script_response = client.get("/ui/app.js")
+    app_source = _source("src/App.tsx")
+    workflow_source = _source("src/domain/workflow.ts")
 
     assert index_response.status_code == 200
-    assert script_response.status_code == 200
-    assert 'id="state-actions"' in index_response.text
-    assert "stateTransitions" in script_response.text
-    assert "/applications/${applicationId}/state" in script_response.text
-    assert "ReadyForReview" in script_response.text
-    assert "visibleStateTransitions" in script_response.text
-    assert "hasSubmissionExecutorEvidence" in script_response.text
-    assert "Dry-run before marking submitted." in script_response.text
-    assert "Next states" in script_response.text
+    assert "stateTransitions" in workflow_source
+    assert "/applications/${applicationId}/state" in _source("src/api/client.ts")
+    assert "ReadyForReview" in workflow_source
+    assert "visibleStateTransitions" in workflow_source
+    assert "hasSubmissionExecutorEvidence" in workflow_source
+    assert "Dry-run before marking submitted." in _source("src/components/WorkflowActions.tsx")
+    assert "Confirm" in app_source
 
 
 def test_dashboard_exposes_demo_readiness_guards() -> None:
-    """The static dashboard guides reviewers through the demo order."""
+    """The dashboard guides reviewers through the demo order."""
     index_response = client.get("/ui/index.html")
-    style_response = client.get("/ui/styles.css")
-    script_response = client.get("/ui/app.js")
+    app_source = _source("src/App.tsx")
+    workflow_source = _source("src/domain/workflow.ts")
+    workflow_component = _source("src/components/WorkflowActions.tsx")
+    styles_source = _source("src/styles.css")
 
     assert index_response.status_code == 200
-    assert style_response.status_code == 200
-    assert script_response.status_code == 200
-    assert 'id="workflow-hint"' in index_response.text
-    assert "updateWorkflowReadiness" in script_response.text
-    assert "setActionMetadata" in script_response.text
-    assert "Create or load an application before scoring." in script_response.text
-    assert "Create or load an application before policy evaluation." in script_response.text
-    assert "Score the application to generate reviewer evidence." in script_response.text
-    assert "Evaluate whether policy allows the dry-run preview." in script_response.text
-    assert "Score the application before evaluating policy." in script_response.text
-    assert "Evaluate policy before dry-run." in script_response.text
-    assert "Policy requires review before dry-run:" in script_response.text
-    assert "Create or load an application before dry-run." in script_response.text
-    assert "Plan the approved follow-up action without side effects." in script_response.text
-    assert "dryRunBlockReason" in script_response.text
-    assert "policyDecisionDetail" in script_response.text
-    assert "fit_score" in script_response.text
-    assert "recommendation" in script_response.text
-    assert "compactMeta" in script_response.text
-    assert "Required overrides" in script_response.text
-    assert "Planned steps" in script_response.text
-    assert "Side effects" in script_response.text
-    assert "button:disabled" in style_response.text
-    assert "clearStateActions" in script_response.text
-    assert "focusLatestTimelineEvent" in script_response.text
-    assert 'loadAudit({ focusTimeline: true })' in script_response.text
-    assert "scrollIntoView" in script_response.text
+    assert "workflowReadiness" in workflow_source
+    assert "Score the application before evaluating policy." in workflow_component
+    assert "Evaluate policy before dry-run." in workflow_component
+    assert "Policy requires review before dry-run:" in workflow_source
+    assert "Plan the approved follow-up action without side effects." in workflow_component
+    assert "dryRunBlockReason" in workflow_source
+    assert "policyDecisionDetail" in workflow_source
+    assert "fit_score" in _source("src/api/types.ts")
+    assert "recommendation" in _source("src/api/types.ts")
+    assert "Planned steps" in _source("src/domain/packet.ts")
+    assert "Side effects" in _source("src/components/EvidenceGrid.tsx")
+    assert "button:disabled" in styles_source
+    assert "setStatus" in app_source
 
 
 def test_dashboard_renders_review_summary_readiness() -> None:
-    """The static dashboard shows compact review readiness from the API."""
+    """The dashboard shows compact review readiness from the API."""
     index_response = client.get("/ui/index.html")
-    style_response = client.get("/ui/styles.css")
-    script_response = client.get("/ui/app.js")
+    review_source = _source("src/components/ReviewReadiness.tsx")
+    api_source = _source("src/api/client.ts")
+    styles_source = _source("src/styles.css")
 
     assert index_response.status_code == 200
-    assert style_response.status_code == 200
-    assert script_response.status_code == 200
-    assert 'id="review-summary"' in index_response.text
-    assert 'id="review-summary-status"' in index_response.text
-    assert "/applications/${applicationId}/review-summary" in script_response.text
-    assert "renderReviewSummary" in script_response.text
-    assert "ready_for_policy" in script_response.text
-    assert "ready_for_dry_run" in script_response.text
-    assert "ready_for_submission" in script_response.text
-    assert "readiness-item" in style_response.text
-    assert "badge.blocked" in style_response.text
-    assert "No review summary yet" in script_response.text
-    assert ".empty-state" in style_response.text
+    assert "/applications/${applicationId}/review-summary" in api_source
+    assert "Review readiness" in review_source
+    assert "ready_for_policy" in review_source
+    assert "ready_for_dry_run" in review_source
+    assert "ready_for_submission" in review_source
+    assert "readiness-item" in styles_source
+    assert "badge.blocked" in styles_source
+    assert ".empty-state" in styles_source
 
 
 def test_dashboard_summarizes_audit_timeline_events() -> None:
-    """The static dashboard renders readable summaries for audit timeline events."""
-    script_response = client.get("/ui/app.js")
+    """The dashboard renders readable summaries for audit timeline events."""
+    timeline_source = _source("src/components/AuditTimeline.tsx")
 
-    assert script_response.status_code == 200
-    assert "eventTitle" in script_response.text
-    assert "eventSummary" in script_response.text
-    assert "Application created" in script_response.text
-    assert "Application state updated" in script_response.text
-    assert "Policy decision recorded" in script_response.text
-    assert "Preview result recorded" in script_response.text
-    assert "Event key:" in script_response.text
-    assert "State change:" in script_response.text
-    assert "Policy decision:" in script_response.text
-    assert "Executor result:" in script_response.text
-    assert "application.scored" in script_response.text
+    assert "eventTitle" in timeline_source
+    assert "eventSummary" in timeline_source
+    assert "Application created" in timeline_source
+    assert "Application state updated" in timeline_source
+    assert "Policy decision recorded" in timeline_source
+    assert "Preview result recorded" in timeline_source
+    assert "Event key:" in timeline_source
+    assert "State change:" in timeline_source
+    assert "Policy decision:" in timeline_source
+    assert "Executor result:" in timeline_source
+    assert "application.scored" in timeline_source
 
 
 def test_dashboard_empty_states_guide_reviewers_to_next_step() -> None:
     """Empty dashboard panels should tell reviewers what action unblocks the view."""
-    script_response = client.get("/ui/app.js")
-    style_response = client.get("/ui/styles.css")
+    evidence_source = _source("src/components/EvidenceGrid.tsx")
+    recent_source = _source("src/components/RecentApplicationsPanel.tsx")
+    packet_source = _source("src/components/PacketPanel.tsx")
+    timeline_source = _source("src/components/AuditTimeline.tsx")
+    styles_source = _source("src/styles.css")
 
-    assert script_response.status_code == 200
-    assert style_response.status_code == 200
-    assert "No score recorded" in script_response.text
-    assert "Run scoring to generate fit evidence" in script_response.text
-    assert "No policy decisions recorded" in script_response.text
-    assert "No preview actions recorded" in script_response.text
-    assert "No applications found" in script_response.text
-    assert "No packet review history yet" in script_response.text
-    assert "No audit events recorded" in script_response.text
-    assert ".empty-state" in style_response.text
+    assert "No score recorded" in evidence_source
+    assert "Run scoring to generate fit evidence" in evidence_source
+    assert "No policy decisions recorded" in evidence_source
+    assert "No preview actions recorded" in evidence_source
+    assert "No applications loaded" in recent_source
+    assert "No packet review history yet" in packet_source
+    assert "No audit events recorded" in timeline_source
+    assert ".empty-state" in styles_source

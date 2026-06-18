@@ -32,8 +32,8 @@ app.add_middleware(
 
 app.include_router(api_router)
 
-# Serve the frontend from the same port so no cross-origin fetch is needed.
+# Serve the built frontend from the same port so no cross-origin fetch is needed.
 # Accessible at /ui/ — eliminates Codespaces port auth issues.
-_frontend_dir = pathlib.Path(__file__).parent.parent.parent.parent / "frontend"
-if _frontend_dir.exists():
-    app.mount("/ui", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+_frontend_dist = pathlib.Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
+if _frontend_dist.exists():
+    app.mount("/ui", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")

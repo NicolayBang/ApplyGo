@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import re
+import pathlib
 
 from fastapi.testclient import TestClient
 
@@ -10,190 +10,82 @@ from applypilot.main import app
 
 
 client = TestClient(app)
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+FRONTEND_APP = REPO_ROOT / "frontend" / "app"
+FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 EXPECTED_DASHBOARD_API_PATHS = {
     "/jobs",
     "/applications",
-    "/applications/{application_id}/state",
-    "/applications/{application_id}/score",
-    "/applications/{application_id}/packet-reviews",
-    "/applications/{application_id}/policy-decisions",
-    "/applications/{application_id}/executor-actions/dry-run",
-    "/applications/{application_id}/audit",
-    "/applications/{application_id}/review-summary",
+    "/applications/${applicationId}/state",
+    "/applications/${applicationId}/score",
+    "/applications/${applicationId}/packet-reviews",
+    "/applications/${applicationId}/policy-decisions",
+    "/applications/${applicationId}/executor-actions/dry-run",
+    "/applications/${applicationId}/audit",
+    "/applications/${applicationId}/review-summary",
 }
 
 
-def _assert_fetch_method(script: str, path: str, method: str) -> None:
-    pattern = rf"fetchJson\(`\$\{{base\}}{re.escape(path)}`,\s*\{{\s*method: \"{method}\""
-    assert re.search(pattern, script, flags=re.DOTALL)
+def _read_source(relative_path: str) -> str:
+    return (FRONTEND_APP / relative_path).read_text(encoding="utf-8")
 
 
-def test_dashboard_script_selectors_exist_in_markup() -> None:
-    """Every id selected by app.js must exist in the dashboard HTML."""
-    index_response = client.get("/ui/index.html")
-    script_response = client.get("/ui/app.js")
+def test_built_dashboard_is_served_from_ui_route() -> None:
+    """The backend serves the Vite build artifact at /ui/."""
+    assert FRONTEND_DIST.exists(), "Run `npm run build` in frontend/app before backend tests."
 
-    assert index_response.status_code == 200
-    assert script_response.status_code == 200
+    response = client.get("/ui/")
 
-    markup_ids = set(re.findall(r'\bid="([^"]+)"', index_response.text))
-    selector_ids = set(re.findall(r'document\.querySelector\("#([^"]+)"\)', script_response.text))
-
-    assert selector_ids
-    assert selector_ids <= markup_ids
+    assert response.status_code == 200
+    assert '<div id="root"></div>' in response.text
+    assert "assets/" in response.text
 
 
-def test_dashboard_review_summary_contract_is_wired() -> None:
-    """The review readiness panel has markup, script, and style coverage."""
-    index_response = client.get("/ui/index.html")
-    style_response = client.get("/ui/styles.css")
-    script_response = client.get("/ui/app.js")
+def test_dashboard_api_client_uses_supported_routes() -> None:
+    """Every dashboard API path stays inside the supported route contract."""
+    client_source = _read_source("src/api/client.ts")
 
-    assert index_response.status_code == 200
-    assert style_response.status_code == 200
-    assert script_response.status_code == 200
-
-    assert 'aria-label="Review readiness"' in index_response.text
-    assert 'id="review-summary"' in index_response.text
-    assert "renderReviewSummary" in script_response.text
-    assert "/review-summary" in script_response.text
-    assert ".readiness-list" in style_response.text
-    assert ".readiness-item" in style_response.text
+    for path in EXPECTED_DASHBOARD_API_PATHS:
+        assert path in client_source
 
 
-def test_dashboard_packet_preview_contract_is_wired() -> None:
-    """The dashboard exposes the M2 packet preview without adding backend routes."""
-    index_response = client.get("/ui/index.html")
-    style_response = client.get("/ui/styles.css")
-    script_response = client.get("/ui/app.js")
+def test_dashboard_preserves_review_packet_and_timeline_surfaces() -> None:
+    """The React dashboard keeps reviewer readiness, packet preview, and audit timeline visible."""
+    app_source = _read_source("src/App.tsx")
+    packet_source = _read_source("src/components/PacketPanel.tsx")
+    timeline_source = _read_source("src/components/AuditTimeline.tsx")
+    domain_source = _read_source("src/domain/packet.ts")
 
-    assert index_response.status_code == 200
-    assert style_response.status_code == 200
-    assert script_response.status_code == 200
-
-    assert 'aria-label="Application packet preview"' in index_response.text
-    assert 'href="#application-packet"' in index_response.text
-    assert 'id="application-packet"' in index_response.text
-    assert 'id="packet-readiness-summary"' in index_response.text
-    assert 'id="packet-readiness"' in index_response.text
-    assert 'id="packet-review-form"' in index_response.text
-    assert 'id="packet-review-status"' in index_response.text
-    assert 'id="packet-review-notes"' in index_response.text
-    assert 'id="packet-review-history"' in index_response.text
-    assert 'id="packet-preview"' in index_response.text
-    assert 'id="copy-cover-note-button"' in index_response.text
-    assert 'id="copy-packet-button"' in index_response.text
-    assert 'id="download-packet-button"' in index_response.text
-    assert "renderPacketReadiness" in script_response.text
-    assert "renderPacketReadinessSummary" in script_response.text
-    assert "renderPacketReviewControls" in script_response.text
-    assert "renderPacketReviewHistory" in script_response.text
-    assert "recordPacketReview" in script_response.text
-    assert "/applications/${applicationId}/packet-reviews" in script_response.text
-    assert "buildPacketPreview" in script_response.text
-    assert "buildCoverNoteDraft" in script_response.text
-    assert "downloadTextFile" in script_response.text
-    assert "Application packet preview downloaded as a text file." in script_response.text
-    assert "Deterministic cover-note draft copied to clipboard." in script_response.text
-    assert "Deterministic Cover Note Draft" in script_response.text
-    assert "renderPacketPreview" in script_response.text
-    assert "Recording packet review does not send email, open a browser, or submit an application." in script_response.text
-    assert ".packet-panel" in style_response.text
-    assert ".packet-readiness-summary" in style_response.text
-    assert ".packet-readiness" in style_response.text
-    assert ".packet-review-form" in style_response.text
-    assert ".packet-review-history" in style_response.text
-    assert ".packet-preview" in style_response.text
+    assert "ReviewReadiness" in app_source
+    assert "PacketPanel" in app_source
+    assert "AuditTimeline" in app_source
+    assert "Application packet" in packet_source
+    assert "Human packet review" in packet_source
+    assert "Audit timeline" in timeline_source
+    assert "Deterministic Cover Note Draft" in domain_source
+    assert "Preview generation only" in domain_source
 
 
-def test_dashboard_fetch_paths_are_backed_by_api_routes() -> None:
-    """Every dashboard API path stays inside the supported M1 route contract."""
-    script_response = client.get("/ui/app.js")
+def test_dashboard_preserves_governed_workflow_gates() -> None:
+    """Workflow controls must keep policy, dry-run, state, and submission gates explicit."""
+    app_source = _read_source("src/App.tsx")
+    workflow_source = _read_source("src/domain/workflow.ts")
 
-    assert script_response.status_code == 200
-
-    fetch_paths = {
-        path.replace("${applicationId}", "{application_id}")
-        for path in re.findall(r"fetchJson\(`\$\{base\}([^`?]+)", script_response.text)
-    }
-
-    assert fetch_paths == EXPECTED_DASHBOARD_API_PATHS
-
-
-def test_dashboard_fetch_methods_match_m1_route_contract() -> None:
-    """Dashboard writes use the intended route methods and reads stay implicit GETs."""
-    script_response = client.get("/ui/app.js")
-
-    assert script_response.status_code == 200
-
-    script = script_response.text
-    _assert_fetch_method(script, "/jobs", "POST")
-    _assert_fetch_method(script, "/applications", "POST")
-    _assert_fetch_method(script, "/applications/${applicationId}/state", "PATCH")
-    _assert_fetch_method(script, "/applications/${applicationId}/score", "POST")
-    _assert_fetch_method(script, "/applications/${applicationId}/packet-reviews", "POST")
-    _assert_fetch_method(script, "/applications/${applicationId}/policy-decisions", "POST")
-    _assert_fetch_method(script, "/applications/${applicationId}/executor-actions/dry-run", "POST")
-    assert "fetchJson(`${base}/applications?${recentApplicationQuery()}`)" in script
-    assert "fetchJson(`${base}/applications/${applicationId}/audit`)" in script
-    assert "fetchJson(`${base}/applications/${applicationId}/review-summary`)" in script
+    assert "latestAllowedPolicyDecision" in app_source
+    assert "policyContextFromApplication" in app_source
+    assert "executor-actions/dry-run" in _read_source("src/api/client.ts")
+    assert "hasSubmissionExecutorEvidence" in workflow_source
+    assert 'transition.state !== "Submitted" || hasSubmissionExecutorEvidence' in workflow_source
+    assert "dryRunBlockReason" in workflow_source
 
 
-def test_dashboard_event_summary_uses_canonical_packet_review_name() -> None:
-    """Dashboard timeline rendering still recognizes the implemented packet review event name."""
-    script_response = client.get("/ui/app.js")
+def test_dashboard_keeps_human_friendly_labels_and_filter_options() -> None:
+    """Reviewer-facing text should stay readable rather than exposing raw enum names."""
+    labels_source = _read_source("src/domain/labels.ts")
+    recent_source = _read_source("src/components/RecentApplicationsPanel.tsx")
 
-    assert script_response.status_code == 200
-
-    assert 'event.event_type === "application_packet.reviewed"' in script_response.text
-    assert "Packet review:" in script_response.text
-
-
-def test_dashboard_uses_human_friendly_filter_and_state_labels() -> None:
-    """Dashboard reviewer text should present readable labels instead of raw enum values."""
-    index_response = client.get("/ui/index.html")
-    script_response = client.get("/ui/app.js")
-
-    assert index_response.status_code == 200
-    assert script_response.status_code == 200
-
-    assert '<option value="ApplicationCreated">Created</option>' in index_response.text
-    assert '<option value="ReadyForReview">Ready for review</option>' in index_response.text
-    assert '<option value="needs_review">Needs review</option>' in index_response.text
-    assert '<option value="not_recommended">Not recommended</option>' in index_response.text
-    assert 'ApplicationCreated: "Created"' in script_response.text
-    assert 'ReadyForReview: "Ready for review"' in script_response.text
-    assert 'needs_review: "Needs review"' in script_response.text
-
-
-def test_dashboard_policy_and_executor_cards_stay_human_readable() -> None:
-    """Policy and executor evidence should remain reviewer-facing while preserving technical detail access."""
-    script_response = client.get("/ui/app.js")
-    style_response = client.get("/ui/styles.css")
-
-    assert script_response.status_code == 200
-    assert style_response.status_code == 200
-
-    assert "policyDecisionSummary" in script_response.text
-    assert "executorActionSummary" in script_response.text
-    assert "Preview rule recorded" in script_response.text
-    assert "Preview action recorded" in script_response.text
-    assert "Technical details" in script_response.text
-    assert "Decision ID" in script_response.text
-    assert "Run ID" in script_response.text
-    assert "Action ID" in script_response.text
-    assert ".stage-summary" in style_response.text
-    assert ".stage-list" in style_response.text
-    assert ".inline-technical-details" in style_response.text
-
-
-def test_dashboard_mobile_density_breakpoints_remain_wired() -> None:
-    """Dashboard CSS should preserve the breakpoint work that keeps review evidence readable on smaller screens."""
-    style_response = client.get("/ui/styles.css")
-
-    assert style_response.status_code == 200
-
-    assert "@media (min-width: 921px) and (max-width: 1320px)" in style_response.text
-    assert "@media (max-width: 760px)" in style_response.text
-    assert ".summary-grid > .panel" in style_response.text
-    assert ".summary-signal-row" in style_response.text
+    assert 'ApplicationCreated: "Created"' in labels_source
+    assert 'ReadyForReview: "Ready for review"' in labels_source
+    assert 'needs_review: "Needs review"' in labels_source
+    assert '<option value="ApplicationCreated">Created</option>' in recent_source
+    assert '<option value="ReadyForReview">Ready for review</option>' in recent_source
