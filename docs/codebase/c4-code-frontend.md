@@ -2,77 +2,67 @@
 
 ## Overview
 
-- **Location**: `frontend/`
-- **Implementation**: Dependency-free HTML, CSS, and JavaScript.
-- **Serving modes**: Static-file preview or FastAPI `/ui`.
-- **Purpose**: Demonstrate and inspect the governed Milestone 1 workflow.
+- **Location**: `frontend/app/`
+- **Implementation**: React, TypeScript, Vite, and TanStack Query.
+- **Build output**: `frontend/dist/`
+- **Serving mode**: FastAPI `/ui` serves the built Vite assets.
+- **Purpose**: Demonstrate and inspect the governed workflow without changing backend contracts.
 
-## Files
+## Source Areas
 
-| File | Responsibility |
+| Area | Responsibility |
 |---|---|
-| `index.html` | Dashboard structure and workflow controls |
-| `styles.css` | Visual system and responsive layout |
-| `app.js` | Demo fixture, API client, rendering, workflow actions |
-| `README.md` | Runbook and troubleshooting |
+| `src/api/` | Typed API client, route calls, query/mutation hooks |
+| `src/domain/` | Pure workflow, readiness, packet, label, filter, and demo-data logic |
+| `src/state/` | Local reducer state for API base, selected app, filters, notes, and status |
+| `src/components/` | Dashboard panels and reviewer-facing UI |
+| `src/styles.css` | Visual system and responsive layout |
 
-## `app.js` Responsibilities
+## Runtime Responsibilities
 
-### State and fixtures
-
-- `demoAudit` supports offline review.
-- `demoReviewSummary` supports offline review-readiness rendering.
-- `stateTransitions` mirrors the backend transition graph for available controls.
-- `sampleJob` prefills a repeatable manual-intake demonstration.
-- `visibleStateTransitions()` hides submission until audit prerequisites are present.
-
-### Rendering
-
-- `renderSummary()` displays job, workflow, and score context.
-- `renderStateActions()` exposes only valid next-state controls.
-- `renderScoreDetails()` displays score evidence and review signals.
-- `renderPolicy()` shows outcome explanations and required overrides.
-- `renderExecutor()` shows side-effect status, safeguards, and planned steps.
-- `renderReviewSummary()` shows policy, dry-run, submission, and next-state readiness.
-- `eventSummary()` and `renderTimeline()` produce readable audit-event descriptions.
-- `renderAudit()` coordinates the complete response.
-
-### API and workflow actions
-
-- `createManualApplication()` creates a job and application.
-- `scoreApplication()` records deterministic scoring.
-- `transitionApplicationState()` applies a selected valid transition.
-- `evaluatePolicy()` records a policy decision.
-- `dryRunFollowUp()` submits a policy-authorized dry-run plan.
-- `loadAudit()` refreshes the full audit summary and compact review summary.
-
-### Safety and readiness
-
-The dashboard validates UUIDs, tracks whether an application is loaded, disables actions
-whose prerequisites are missing, and requires an allowed recorded policy decision before
-offering the dry-run action. It also requires matching policy and executor evidence before
-offering the `Submitted` state transition. The review-readiness panel surfaces the same evidence in
-a compact reviewer view.
+- Demo fixtures support offline review with no backend required.
+- Manual intake creates a job and application through existing JSON routes.
+- Live mode loads audit and review-summary read models from the backend.
+- Workflow controls expose only valid next-state actions and keep destructive choices explicit.
+- Policy evaluation must precede executor dry-run.
+- Dry-run must precede the `Submitted` transition becoming available.
+- Packet preview and cover note text are deterministic client-side outputs.
+- Packet review records human review evidence without external side effects.
+- Audit timeline remains visible for every loaded application.
 
 ## Validation
 
-CI runs `node --check frontend/app.js` as a lightweight syntax gate for the dependency-free
-dashboard. Backend integration tests continue to verify that the dashboard assets are
-served, expose the expected workflow controls, and keep JavaScript selectors aligned with the HTML
-asset contract.
+Frontend gates:
+
+```bash
+cd frontend/app
+npm ci
+npm run typecheck
+npm run test
+npm run build
+```
+
+Backend static asset tests expect `frontend/dist/` to exist:
+
+```bash
+cd frontend/app
+npm run build
+cd ../../backend
+python -m pytest tests/integration/test_dashboard_asset_contract.py
+```
 
 ## API Contract
 
-The dashboard uses the same-origin API by default, with configurable local API-base support
-for static-file preview. Its primary read model is:
+The dashboard preserves the existing backend route shapes. Its primary read models are:
 
 - `GET /applications/{application_id}/audit`
 - `GET /applications/{application_id}/review-summary`
 
 The audit response contains the application, ordered events, policy decisions, and executor actions.
-The review-summary response contains compact readiness flags and guarded next states.
+The review-summary response contains compact readiness flags, packet review data, and guarded next
+states.
 
 ## Scope
 
-The dashboard does not perform browser automation, send email, generate documents, or
-submit live applications.
+The dashboard does not perform browser automation, send email, generate documents, or submit live
+applications.

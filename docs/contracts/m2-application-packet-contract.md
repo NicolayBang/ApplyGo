@@ -189,7 +189,9 @@ Do not add these events until implementation exists.
 
 Frontend-only preview:
 
-- `node --check frontend/app.js`
+- `npm run typecheck`
+- `npm run test`
+- `npm run build`
 - relevant dashboard asset contract tests
 - manual dashboard inspection when layout changes
 

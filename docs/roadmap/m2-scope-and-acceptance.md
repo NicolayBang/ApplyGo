@@ -130,7 +130,7 @@ For docs-only PRs:
 
 For frontend-only packet preview PRs:
 
-- run `node --check frontend/app.js`;
+- run the frontend typecheck, test, and build gates from `frontend/app`;
 - run the relevant dashboard asset contract tests;
 - manually inspect the dashboard if layout changes are visible.
 

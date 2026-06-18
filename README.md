@@ -145,7 +145,7 @@ production deployment work is intentionally excluded from the current MVP.
 ## Repository layout
 
 - `backend/`: FastAPI backend, domain boundaries, and worker placeholders
-- `frontend/`: static M1 audit dashboard served by the backend at `/ui`
+- `frontend/`: React + TypeScript audit dashboard built with Vite and served by the backend at `/ui`
 - `docs/architecture/`: implementation notes tied to the locked plan
 
 ## Initial stack
