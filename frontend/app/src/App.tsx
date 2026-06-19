@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ApplicationState, PacketReviewDecision, RecentApplicationFilters } from "./api/types";
 import { queryKeys, useDashboardMutations, useDashboardQuery, useRecentApplicationsQuery } from "./api/queries";
@@ -63,6 +63,8 @@ function downloadTextFile(fileName: string, text: string) {
 export function App() {
   const [state, dispatch] = useReducer(dashboardReducer, window.location, initialDashboardState);
   const [intakeForm, setIntakeForm] = useState<IntakeFormState>(sampleIntakeForm);
+  const actionLockRef = useRef(false);
+  const [actionLocked, setActionLocked] = useState(false);
   const debouncedFilters = useDebouncedValue(state.recentFilters, 300);
   const queryClient = useQueryClient();
   const dashboardQuery = useDashboardQuery(state.apiBase, state.applicationId);
@@ -73,6 +75,7 @@ export function App() {
   const audit = liveData?.audit ?? demoAudit;
   const reviewSummary = liveData?.reviewSummary ?? demoReviewSummary;
   const busy =
+    actionLocked ||
     dashboardQuery.isFetching ||
     mutations.createManualApplication.isPending ||
     mutations.scoreApplication.isPending ||
@@ -142,20 +145,38 @@ export function App() {
     dispatch({ type: "setStatus", value: { label, message, tone } });
   };
 
+  const runExclusiveAction = async (action: () => Promise<void>) => {
+    if (actionLockRef.current) {
+      setStatus("Action running", "Wait for the current dashboard request to finish before starting another.", "loading");
+      return;
+    }
+
+    actionLockRef.current = true;
+    setActionLocked(true);
+    try {
+      await action();
+    } finally {
+      actionLockRef.current = false;
+      setActionLocked(false);
+    }
+  };
+
   const loadAudit = async () => {
-    if (!state.applicationId) {
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard(state.apiBase, state.applicationId) });
-      setStatus("Demo mode", "Using local demo data until a backend application ID is provided.");
-      return;
-    }
+    await runExclusiveAction(async () => {
+      if (!state.applicationId) {
+        await queryClient.cancelQueries({ queryKey: queryKeys.dashboard(state.apiBase, state.applicationId) });
+        setStatus("Demo mode", "Using local demo data until a backend application ID is provided.");
+        return;
+      }
 
-    if (!isValidUuid(state.applicationId)) {
-      setStatus("Invalid ID", "Application ID must be a valid UUID.", "error");
-      return;
-    }
+      if (!isValidUuid(state.applicationId)) {
+        setStatus("Invalid ID", "Application ID must be a valid UUID.", "error");
+        return;
+      }
 
-    setStatus("Loading", "Fetching audit summary from the backend.", "loading");
-    await dashboardQuery.refetch();
+      setStatus("Loading", "Fetching audit summary from the backend.", "loading");
+      await dashboardQuery.refetch();
+    });
   };
 
   const createManualApplication = async () => {
@@ -165,15 +186,17 @@ export function App() {
       return;
     }
 
-    try {
-      setStatus("Creating", "Creating job and application records.", "loading");
-      const application = await mutations.createManualApplication.mutateAsync(job);
-      dispatch({ type: "setApplicationId", value: application.id });
-      dispatch({ type: "setRecentEnabled", value: true });
-      setStatus("Created", "Manual application created and audit trail loaded.");
-    } catch (error) {
-      setStatus("Create failed", error instanceof Error ? error.message : "Application creation failed.", "error");
-    }
+    await runExclusiveAction(async () => {
+      try {
+        setStatus("Creating", "Creating job and application records.", "loading");
+        const application = await mutations.createManualApplication.mutateAsync(job);
+        dispatch({ type: "setApplicationId", value: application.id });
+        dispatch({ type: "setRecentEnabled", value: true });
+        setStatus("Created", "Manual application created and audit trail loaded.");
+      } catch (error) {
+        setStatus("Create failed", error instanceof Error ? error.message : "Application creation failed.", "error");
+      }
+    });
   };
 
   const transitionApplicationState = async (targetState: ApplicationState, destructive: boolean) => {
@@ -181,30 +204,34 @@ export function App() {
       return;
     }
 
-    try {
-      setStatus("State", `Moving application to ${targetState}.`, "loading");
-      await mutations.transitionState.mutateAsync({
-        state: targetState,
-        actor: "user",
-        payload: {
-          source: "dashboard",
-          previous_state: audit.application.state,
-        },
-      });
-      setStatus("State updated", `Application moved to ${targetState}.`);
-    } catch (error) {
-      setStatus("State failed", error instanceof Error ? error.message : "State transition failed.", "error");
-    }
+    await runExclusiveAction(async () => {
+      try {
+        setStatus("State", `Moving application to ${targetState}.`, "loading");
+        await mutations.transitionState.mutateAsync({
+          state: targetState,
+          actor: "user",
+          payload: {
+            source: "dashboard",
+            previous_state: audit.application.state,
+          },
+        });
+        setStatus("State updated", `Application moved to ${targetState}.`);
+      } catch (error) {
+        setStatus("State failed", error instanceof Error ? error.message : "State transition failed.", "error");
+      }
+    });
   };
 
   const scoreApplication = async () => {
-    try {
-      setStatus("Scoring", "Scoring application using deterministic job data.", "loading");
-      await mutations.scoreApplication.mutateAsync();
-      setStatus("Scored", "Application score recorded in the audit trail.");
-    } catch (error) {
-      setStatus("Score failed", error instanceof Error ? error.message : "Scoring failed.", "error");
-    }
+    await runExclusiveAction(async () => {
+      try {
+        setStatus("Scoring", "Scoring application using deterministic job data.", "loading");
+        await mutations.scoreApplication.mutateAsync();
+        setStatus("Scored", "Application score recorded in the audit trail.");
+      } catch (error) {
+        setStatus("Score failed", error instanceof Error ? error.message : "Scoring failed.", "error");
+      }
+    });
   };
 
   const evaluatePolicy = async () => {
@@ -214,18 +241,20 @@ export function App() {
       return;
     }
 
-    try {
-      setStatus("Policy", "Evaluating dry-run follow-up policy.", "loading");
-      await mutations.evaluatePolicy.mutateAsync({
-        requested_action: "send_follow_up_email",
-        worker: "email",
-        mode: "dry_run",
-        context,
-      });
-      setStatus("Policy logged", "Policy decision recorded in the audit trail.");
-    } catch (error) {
-      setStatus("Policy failed", error instanceof Error ? error.message : "Policy evaluation failed.", "error");
-    }
+    await runExclusiveAction(async () => {
+      try {
+        setStatus("Policy", "Evaluating dry-run follow-up policy.", "loading");
+        await mutations.evaluatePolicy.mutateAsync({
+          requested_action: "send_follow_up_email",
+          worker: "email",
+          mode: "dry_run",
+          context,
+        });
+        setStatus("Policy logged", "Policy decision recorded in the audit trail.");
+      } catch (error) {
+        setStatus("Policy failed", error instanceof Error ? error.message : "Policy evaluation failed.", "error");
+      }
+    });
   };
 
   const dryRunFollowUp = async () => {
@@ -235,21 +264,23 @@ export function App() {
       return;
     }
 
-    try {
-      setStatus("Dry run", "Planning follow-up action with the executor stub.", "loading");
-      await mutations.dryRun.mutateAsync({
-        policy_decision_id: decision.id,
-        action_type: "send_follow_up_email",
-        idempotency_key: `dashboard-follow-up-${state.applicationId}`,
-        payload: {
-          source: "dashboard",
-          template: "manual_follow_up",
-        },
-      });
-      setStatus("Dry-run logged", "Executor dry-run result recorded in the audit trail.");
-    } catch (error) {
-      setStatus("Dry-run failed", error instanceof Error ? error.message : "Dry-run failed.", "error");
-    }
+    await runExclusiveAction(async () => {
+      try {
+        setStatus("Dry run", "Planning follow-up action with the executor stub.", "loading");
+        await mutations.dryRun.mutateAsync({
+          policy_decision_id: decision.id,
+          action_type: "send_follow_up_email",
+          idempotency_key: `dashboard-follow-up-${state.applicationId}`,
+          payload: {
+            source: "dashboard",
+            template: "manual_follow_up",
+          },
+        });
+        setStatus("Dry-run logged", "Executor dry-run result recorded in the audit trail.");
+      } catch (error) {
+        setStatus("Dry-run failed", error instanceof Error ? error.message : "Dry-run failed.", "error");
+      }
+    });
   };
 
   const recordPacketReview = async (decision: PacketReviewDecision) => {
@@ -257,19 +288,21 @@ export function App() {
       return;
     }
 
-    try {
-      setStatus("Review", "Recording human packet review decision.", "loading");
-      await mutations.recordPacketReview.mutateAsync({
-        decision,
-        reviewed_by: "human",
-        source: "dashboard",
-        notes: state.packetReviewNotes.trim() || null,
-      });
-      dispatch({ type: "setPacketReviewNotes", value: "" });
-      setStatus("Review recorded", "Packet review recorded. No email, browser action, or submission occurred.", "success");
-    } catch (error) {
-      setStatus("Review failed", error instanceof Error ? error.message : "Packet review failed.", "error");
-    }
+    await runExclusiveAction(async () => {
+      try {
+        setStatus("Review", "Recording human packet review decision.", "loading");
+        await mutations.recordPacketReview.mutateAsync({
+          decision,
+          reviewed_by: "human",
+          source: "dashboard",
+          notes: state.packetReviewNotes.trim() || null,
+        });
+        dispatch({ type: "setPacketReviewNotes", value: "" });
+        setStatus("Review recorded", "Packet review recorded. No email, browser action, or submission occurred.", "success");
+      } catch (error) {
+        setStatus("Review failed", error instanceof Error ? error.message : "Packet review failed.", "error");
+      }
+    });
   };
 
   const copyText = async (text: string, successMessage: string) => {
@@ -306,6 +339,7 @@ export function App() {
           setIntakeForm(sampleIntakeForm());
           dispatch({ type: "resetDemo", apiBase: state.apiBase });
         }}
+        busy={busy}
       />
       <StatusRow status={state.status} />
       <section className="guided-overview" aria-label="Guided workflow overview">
@@ -330,6 +364,7 @@ export function App() {
       <ManualIntakePanel
         form={intakeForm}
         isCreating={mutations.createManualApplication.isPending}
+        disabled={busy}
         onChange={setIntakeForm}
         onCreate={createManualApplication}
         onSample={() => {
