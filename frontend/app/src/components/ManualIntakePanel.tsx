@@ -35,12 +35,14 @@ export function intakeToJobCreate(form: IntakeFormState): JobCreate {
 export function ManualIntakePanel({
   form,
   isCreating,
+  disabled,
   onChange,
   onCreate,
   onSample,
 }: {
   form: IntakeFormState;
   isCreating: boolean;
+  disabled: boolean;
   onChange: (form: IntakeFormState) => void;
   onCreate: () => void;
   onSample: () => void;
@@ -98,7 +100,7 @@ export function ManualIntakePanel({
           />
           <span>Remote ok</span>
         </label>
-        <button type="submit" disabled={isCreating}>
+        <button type="submit" disabled={disabled}>
           <ClipboardPlus aria-hidden="true" size={16} />
           {isCreating ? "Creating" : "Create"}
         </button>

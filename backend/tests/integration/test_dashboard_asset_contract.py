@@ -73,6 +73,8 @@ def test_dashboard_preserves_governed_workflow_gates() -> None:
 
     assert "latestAllowedPolicyDecision" in app_source
     assert "policyContextFromApplication" in app_source
+    assert "actionLockRef" in app_source
+    assert "runExclusiveAction" in app_source
     assert "executor-actions/dry-run" in _read_source("src/api/client.ts")
     assert "hasSubmissionExecutorEvidence" in workflow_source
     assert 'transition.state !== "Submitted" || hasSubmissionExecutorEvidence' in workflow_source

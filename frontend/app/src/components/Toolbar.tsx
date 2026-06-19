@@ -7,6 +7,7 @@ export function Toolbar({
   onApplicationIdChange,
   onLoadAudit,
   onResetDemo,
+  busy,
 }: {
   apiBase: string;
   applicationId: string;
@@ -14,6 +15,7 @@ export function Toolbar({
   onApplicationIdChange: (value: string) => void;
   onLoadAudit: () => void;
   onResetDemo: () => void;
+  busy: boolean;
 }) {
   return (
     <section className="toolbar" aria-label="Audit dashboard controls" id="dashboard">
@@ -49,11 +51,11 @@ export function Toolbar({
             onChange={(event) => onApplicationIdChange(event.target.value)}
           />
         </label>
-        <button type="submit" title="Load application audit evidence">
+        <button type="submit" title="Load application audit evidence" disabled={busy}>
           <Search aria-hidden="true" size={16} />
           Load audit
         </button>
-        <button type="button" className="secondary-button" onClick={onResetDemo} title="Reset to local demo data">
+        <button type="button" className="secondary-button" onClick={onResetDemo} title="Reset to local demo data" disabled={busy}>
           <RotateCcw aria-hidden="true" size={16} />
           Reset demo
         </button>
