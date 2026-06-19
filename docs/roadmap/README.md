@@ -12,6 +12,8 @@ Roadmap docs are planning aids. They do not override:
 
 ## Current Milestones
 
+- `milestone-implementation-status.md` - M1-M9 implementation status table, remaining gaps, and
+  recommended roadmap order.
 - `m2-kickoff-plan.md` - proposed M2 direction after M1 MVP readiness.
 - `m2-scope-and-acceptance.md` - M2 scope, demo path, acceptance criteria, and implementation notes.
 - `../contracts/m2-application-packet-contract.md` - draft M2 packet boundary for the first implementation slice.
