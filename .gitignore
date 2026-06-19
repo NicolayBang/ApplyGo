@@ -33,6 +33,7 @@ Thumbs.db
 
 # Local tooling
 *.log
+.session-notes.md
 *.sqlite3
 alembic.ini.backup
 *.egg-info/
