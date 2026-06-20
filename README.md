@@ -160,54 +160,68 @@ production deployment work is intentionally excluded from the current MVP.
 
 ## Getting started
 
-1. Copy `.env.example` to `.env` and adjust values.
-2. Start local services with Docker Compose.
-3. Run database migrations.
-4. Create a Python virtual environment inside `backend/`.
-5. Install backend dependencies.
-6. Run the FastAPI app.
+The root `Makefile` is the canonical façade for daily operations. Docker Compose owns PostgreSQL,
+Redis, migrations, and the packaged API/UI; local Python/Node tooling supports fast iteration and
+mirrors the CI quality gates. Run `make help` to see every target grouped by purpose and its safety
+behavior.
 
 The example environment keeps dev-friendly values such as `APP_DEBUG=true`, while the backend
 package default is now `debug=False` unless you opt into debug mode. Cross-origin frontend access is
 also limited to explicit localhost or Codespaces origins instead of wildcard credentialed CORS.
 
-Example commands:
+First-time setup and packaged run:
 
-```powershell
-Copy-Item .env.example .env
-docker compose up -d postgres redis
-docker compose run --rm migrate
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e .
-uvicorn applypilot.main:app --reload
-```
-
-To run the packaged backend and dashboard through Docker after migrations:
-
-```powershell
-docker compose --profile app up -d api
+```bash
+make init      # idempotent: create .env (if absent), backend venv, install backend+frontend deps
+make up        # build and start the packaged API/UI stack (runs migrations via its dependency)
+make health    # probe /health and /ui/
 ```
 
 Then open `http://localhost:8000/ui/`.
+
+Common targets:
+
+```bash
+make help                # list all targets and safety notes (default target)
+make status              # Compose service status
+make logs                # tail logs (optional: make logs SERVICE=api)
+make upgrade             # rebuild/recreate the running app from the working tree and apply migrations
+make down                # stop containers; PostgreSQL/Redis volumes are PRESERVED
+make destroy CONFIRM=1   # the ONLY command that deletes database volumes
+```
+
+Two-terminal local development (separate foreground processes):
+
+```bash
+make api-dev   # FastAPI in reload mode after provisioning DB/Redis and migrating
+make web-dev   # Vite frontend dev server
+```
+
+The underlying `docker compose` and backend commands still work directly; the Makefile only
+centralizes them so contributors do not have to memorize command chains.
 
 ## Validation
 
 For DB-backed validation in Codespaces or local Docker, use `docs/devops/codespaces.md`.
 
-The current validation path runs migrations, backend tests, and the seed-to-dashboard check:
+Use the Make validation targets, which mirror the GitHub Actions gates:
 
-```powershell
-docker compose up -d postgres redis
-docker compose run --rm migrate
-cd backend
-python -m pytest
-python -m scripts.validate_seed_to_dashboard
+```bash
+make test-frontend   # frontend typecheck-aware test suite (vitest)
+make test-backend    # auto-starts PostgreSQL/Redis, applies migrations, runs pytest
+make test            # both suites
+make check           # merge-ready CI-equivalent gate (fail-fast)
 ```
 
+`make check` runs the same substantive gates as CI in the same order: frontend install/typecheck/
+test/build, backend lint, migrations, the full backend test suite, and the FastAPI import smoke
+test. The database-backed backend targets start PostgreSQL/Redis and apply migrations automatically,
+leaving the services running afterward.
+
 When PostgreSQL is available, the backend test suite also exercises database constraints, audit
-retention, packet review persistence, and the M3 company identity cutover regression path.
+retention, packet review persistence, and the M3 company identity cutover regression path. The
+underlying commands (`docker compose run --rm migrate`, `python -m pytest`,
+`python -m scripts.validate_seed_to_dashboard`) remain available directly.
 
 The Compose migration runner uses the same Alembic migration chain as local backend commands. For
 an optional demo seed and audit validation inside Compose, run:
