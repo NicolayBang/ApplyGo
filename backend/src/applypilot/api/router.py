@@ -6,17 +6,34 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from applypilot.db.dependencies import TrackerUnitOfWork, get_tracker_unit
+from applypilot.db.tracker import (
+    M5ConflictError,
+    M5Error,
+    M5NotFoundError,
+)
 from applypilot.domain.executor import ExecutionMode, ExecutorRequest
 from applypilot.domain.executor.schemas import ExecutorActionRead, ExecutorDryRunRequest
 from applypilot.domain.applications.models import (
+    AnswerCreate,
+    AnswerRead,
+    AnswerUpdate,
+    ApplicationAnswerCreate,
+    ApplicationAnswerRead,
     ApplicationAuditRead,
     ApplicationCreate,
+    ApplicationDocumentCreate,
+    ApplicationDocumentRead,
+    ApplicationPacketRead,
     ApplicationPacketReviewCreate,
     ApplicationPacketReviewRead,
     ApplicationRead,
     ApplicationReviewSummaryRead,
     ApplicationScoreRequest,
     ApplicationStateUpdate,
+    DocumentCreate,
+    DocumentRead,
+    DocumentVersionCreate,
+    DocumentVersionRead,
     EventLogRead,
     JobCreate,
     JobRead,
@@ -460,6 +477,337 @@ def _next_states(state_value: str, has_submission_evidence: bool) -> list[str]:
     if state_value == ApplicationState.APPROVED.value and not has_submission_evidence:
         return [state for state in next_states if state != ApplicationState.SUBMITTED.value]
     return next_states
+
+
+# ---------------------------------------------------------------------------
+# M5 document/answer/packet routes
+# ---------------------------------------------------------------------------
+
+def _m5_http_error(exc: M5Error) -> HTTPException:
+    """Map an M5 contract error to its HTTP status (404 / 409 / 400)."""
+    if isinstance(exc, M5NotFoundError):
+        status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(exc, M5ConflictError):
+        status_code = status.HTTP_409_CONFLICT
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST
+    return HTTPException(status_code=status_code, detail=str(exc))
+
+
+@router.post(
+    "/documents",
+    response_model=DocumentRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["documents"],
+)
+def create_document(
+    request: DocumentCreate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Create a reusable logical document."""
+    try:
+        document = unit.tracker.create_document(
+            doc_type=request.doc_type, name=request.name
+        )
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(document)
+    return document
+
+
+@router.get("/documents", response_model=list[DocumentRead], tags=["documents"])
+def list_documents(
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> list[object]:
+    """List non-archived logical documents in deterministic order."""
+    return unit.tracker.list_documents()
+
+
+@router.get(
+    "/documents/{document_id}",
+    response_model=DocumentRead,
+    tags=["documents"],
+)
+def get_document(
+    document_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Read one logical document by ID (including archived)."""
+    try:
+        return unit.tracker.get_document(document_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+
+@router.post(
+    "/documents/{document_id}/archive",
+    response_model=DocumentRead,
+    tags=["documents"],
+)
+def archive_document(
+    document_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Idempotently archive a logical document."""
+    try:
+        document = unit.tracker.archive_document(document_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(document)
+    return document
+
+
+@router.post(
+    "/documents/{document_id}/versions",
+    response_model=DocumentVersionRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["documents"],
+)
+def add_document_version(
+    document_id: UUID,
+    request: DocumentVersionCreate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Append an immutable version to a logical document."""
+    try:
+        version = unit.tracker.add_document_version(
+            document_id,
+            content=request.content,
+            content_json=request.content_json,
+        )
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(version)
+    return version
+
+
+@router.get(
+    "/documents/{document_id}/versions",
+    response_model=list[DocumentVersionRead],
+    tags=["documents"],
+)
+def list_document_versions(
+    document_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> list[object]:
+    """List a document's immutable versions in ascending version order."""
+    try:
+        return unit.tracker.list_document_versions(document_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+
+@router.get(
+    "/document-versions/{version_id}",
+    response_model=DocumentVersionRead,
+    tags=["documents"],
+)
+def get_document_version(
+    version_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Read one immutable document version by ID."""
+    try:
+        return unit.tracker.get_document_version(version_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+
+@router.post(
+    "/answers",
+    response_model=AnswerRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["answers"],
+)
+def create_answer(
+    request: AnswerCreate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Create a reusable library answer."""
+    try:
+        answer = unit.tracker.create_answer(
+            question_key=request.question_key,
+            question_text=request.question_text,
+            answer_text=request.answer_text,
+        )
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(answer)
+    return answer
+
+
+@router.get("/answers", response_model=list[AnswerRead], tags=["answers"])
+def list_answers(
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> list[object]:
+    """List non-archived library answers ordered by question_key, then id."""
+    return unit.tracker.list_answers()
+
+
+@router.get("/answers/{answer_id}", response_model=AnswerRead, tags=["answers"])
+def get_answer(
+    answer_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Read one library answer by ID (including archived)."""
+    try:
+        return unit.tracker.get_answer(answer_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+
+@router.patch("/answers/{answer_id}", response_model=AnswerRead, tags=["answers"])
+def update_answer(
+    answer_id: UUID,
+    request: AnswerUpdate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Edit a library answer's current text in place (never the question_key)."""
+    try:
+        answer = unit.tracker.update_answer(
+            answer_id,
+            question_text=request.question_text,
+            answer_text=request.answer_text,
+        )
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(answer)
+    return answer
+
+
+@router.post(
+    "/answers/{answer_id}/archive",
+    response_model=AnswerRead,
+    tags=["answers"],
+)
+def archive_answer(
+    answer_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Idempotently archive a library answer."""
+    try:
+        answer = unit.tracker.archive_answer(answer_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(answer)
+    return answer
+
+
+@router.post(
+    "/applications/{application_id}/documents",
+    response_model=ApplicationDocumentRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["applications"],
+)
+def attach_application_document(
+    application_id: UUID,
+    request: ApplicationDocumentCreate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Attach one exact document version to an application (append-only)."""
+    try:
+        attachment = unit.tracker.attach_document(
+            application_id,
+            document_version_id=request.document_version_id,
+            role=request.role,
+            display_order=request.display_order,
+            actor=request.actor,
+        )
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(attachment)
+    return attachment
+
+
+@router.get(
+    "/applications/{application_id}/documents",
+    response_model=list[ApplicationDocumentRead],
+    tags=["applications"],
+)
+def list_application_documents(
+    application_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> list[object]:
+    """List an application's document attachments in deterministic order."""
+    try:
+        return unit.tracker.list_application_documents(application_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+
+@router.post(
+    "/applications/{application_id}/answers",
+    response_model=ApplicationAnswerRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["applications"],
+)
+def record_application_answer(
+    application_id: UUID,
+    request: ApplicationAnswerCreate,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> object:
+    """Record an immutable answer snapshot (sourced from the library or manual)."""
+    try:
+        snapshot = unit.tracker.record_application_answer(
+            application_id,
+            answer_library_id=request.answer_library_id,
+            question_key=request.question_key,
+            question_text=request.question_text,
+            answer_text=request.answer_text,
+            actor=request.actor,
+        )
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+    unit.commit()
+    unit.refresh(snapshot)
+    return snapshot
+
+
+@router.get(
+    "/applications/{application_id}/answers",
+    response_model=list[ApplicationAnswerRead],
+    tags=["applications"],
+)
+def list_application_answers(
+    application_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> list[object]:
+    """List an application's immutable answer snapshots ordered by created_at, id."""
+    try:
+        return unit.tracker.list_application_answers(application_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
+
+
+@router.get(
+    "/applications/{application_id}/packet",
+    response_model=ApplicationPacketRead,
+    tags=["applications"],
+)
+def get_application_packet(
+    application_id: UUID,
+    unit: TrackerUnitOfWork = Depends(get_tracker_unit),
+) -> dict[str, object]:
+    """Return the application packet read model (documents, answers, latest M2 review)."""
+    try:
+        return unit.tracker.get_packet(application_id)
+    except M5Error as exc:
+        raise _m5_http_error(exc) from exc
 
 
 api_router.include_router(router)
