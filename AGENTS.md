@@ -395,6 +395,7 @@ Apply this convention only to future work.
 - Keep Alembic migrations in dedicated commits.
 - Before committing migrations, verify they are deterministic and aligned with the canonical data model.
 - Run gates before merge: ruff, pytest, alembic upgrade head, backend starts, /health works.
+  `make check` runs these centralized, CI-equivalent gates locally.
 - If code, models, states, or workflow behavior conflict with the locked architecture PDF, stop and flag architecture drift.
 - Do not resolve architecture drift silently.
 - Resolve drift only by aligning code to the PDF or creating an approved ADR.
@@ -529,7 +530,18 @@ boundaries, or the requirement to preserve auditability and deterministic behavi
 ## Dev Environment
 
 - Local Docker and GitHub Codespaces are both supported.
-- `docker-compose.yml` is the shared source of truth.
+- `docker-compose.yml` is the shared source of truth for service definitions (PostgreSQL, Redis,
+  migrations, packaged API/UI).
+- The root `Makefile` is the canonical command façade for daily operations. It wraps Docker Compose
+  and the local Python/Node tooling; it does not replace `docker-compose.yml` or introduce a second
+  Compose file, dependency manager, or Makefile-generated tracked state.
+- `make help` is the discoverable entry point. Key targets: `make init` (idempotent bootstrap),
+  `make up` / `make upgrade` / `make down` (packaged-app lifecycle), `make api-dev` / `make web-dev`
+  (local iteration), and `make check` (merge-ready CI-equivalent gate).
+- Volume-removal is gated: `make down` preserves PostgreSQL/Redis volumes, and `make destroy`
+  (requires `CONFIRM=1`) is the only volume-removal command.
+- The CI workflow (`.github/workflows/ci.yml`) remains the source of truth for quality-gate ordering;
+  the Makefile only centralizes the same gates so they can be run locally.
 - No machine-specific setup should be required.
 - Environment changes must be documented.
 
