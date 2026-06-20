@@ -231,6 +231,13 @@ The current dry-run does not automatically advance application state after execu
 ## Open Database Decisions
 
 - Approve or reject the normalized future model through ADR-0002 before adding tables.
+- The richer M5 document/answer model is now drafted as **Proposed / Not Implemented** in
+  `docs/contracts/m5-packet-document-answer-contract.md`. It would transform the M1 `documents`
+  placeholder into a reusable logical library plus immutable `document_versions`,
+  `application_documents`, `answer_library`, and `application_answers`, starting from migration
+  `0012` (after the implemented `0011` baseline) via an additive backfill. The implemented `documents`
+  table above remains the baseline until
+  that contract is approved by Nicolay and Francis and its migration is implemented and validated.
 - ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
   compatibility schema, migration `0010` backfills legacy job rows, and migration `0011` completes
   the M3 baseline cutover by requiring `jobs.company_id` and renaming raw provenance to
