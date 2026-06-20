@@ -3,10 +3,14 @@
 from sqlalchemy import CheckConstraint
 
 from applypilot.db.models import (
+    AnswerLibrary,
     Application,
+    ApplicationAnswer,
+    ApplicationDocument,
     ApplicationPacketReview,
     Company,
     Document,
+    DocumentVersion,
     EmailThread,
     EventLogEntry,
     ExecutorAction,
@@ -28,6 +32,20 @@ def check_constraint_names(model: type) -> set[str]:
         for constraint in model.__table__.constraints
         if isinstance(constraint, CheckConstraint)
     }
+
+
+def fk_ondelete(model: type, column_name: str) -> str | None:
+    column = model.__table__.c[column_name]
+    foreign_key = next(iter(column.foreign_keys))
+    return foreign_key.ondelete
+
+
+def index_names(model: type) -> set[str]:
+    return {index.name for index in model.__table__.indexes}
+
+
+def index_by_name(model: type, name: str):
+    return next(index for index in model.__table__.indexes if index.name == name)
 
 
 def test_application_owned_records_cascade_with_application() -> None:
@@ -159,3 +177,107 @@ def test_m1_value_check_constraints_are_declared_on_models() -> None:
         "ck_executor_actions_status_m1",
         "ck_executor_actions_worker_m1",
     }.issubset(check_constraint_names(ExecutorAction))
+
+
+# ---------------------------------------------------------------------------
+# M5 document / answer model (Proposed contract -> additive implementation)
+# ---------------------------------------------------------------------------
+
+def test_m5_documents_logical_library_schema() -> None:
+    table = Document.__table__
+
+    # M5 logical-library fields.
+    assert table.c.name.nullable is False
+    assert table.c.is_archived.nullable is False
+    assert table.c.updated_at.nullable is False
+
+    # Legacy single-application columns retained during the compatibility window.
+    assert {"application_id", "content", "content_json", "version"}.issubset(table.c.keys())
+    assert application_fk_ondelete(Document) == "CASCADE"
+
+    assert {
+        "ck_documents_doc_type_m5",
+        "ck_documents_name_not_blank_m5",
+    }.issubset(check_constraint_names(Document))
+    assert {
+        "ix_documents_doc_type",
+        "ix_documents_is_archived",
+    }.issubset(index_names(Document))
+
+
+def test_m5_document_versions_are_immutable_and_versioned() -> None:
+    table = DocumentVersion.__table__
+
+    # Immutable rows carry no updated_at.
+    assert "updated_at" not in table.c.keys()
+    assert table.c.checksum.nullable is False
+    assert fk_ondelete(DocumentVersion, "document_id") == "RESTRICT"
+
+    assert {
+        "ck_document_versions_version_positive_m5",
+        "ck_document_versions_payload_present_m5",
+    }.issubset(check_constraint_names(DocumentVersion))
+    assert {
+        "ix_document_versions_document_id",
+        "ix_document_versions_checksum",
+        "uq_document_versions_document_id_version_number_m5",
+    }.issubset(index_names(DocumentVersion))
+    assert index_by_name(
+        DocumentVersion, "uq_document_versions_document_id_version_number_m5"
+    ).unique is True
+
+
+def test_m5_application_documents_bind_exact_version() -> None:
+    assert fk_ondelete(ApplicationDocument, "application_id") == "RESTRICT"
+    assert fk_ondelete(ApplicationDocument, "document_version_id") == "RESTRICT"
+
+    assert {
+        "ck_application_documents_role_m5",
+        "ck_application_documents_display_order_non_negative_m5",
+    }.issubset(check_constraint_names(ApplicationDocument))
+    assert index_by_name(
+        ApplicationDocument, "uq_application_documents_app_version_role_m5"
+    ).unique is True
+
+    # Append-only, audit-preserving: never delete-cascaded with the application.
+    assert "delete" not in Application.application_documents.property.cascade
+    assert "delete-orphan" not in Application.application_documents.property.cascade
+    assert Application.application_documents.property.passive_deletes == "all"
+
+
+def test_m5_answer_library_active_uniqueness_and_archive() -> None:
+    table = AnswerLibrary.__table__
+
+    assert table.c.is_archived.nullable is False
+    assert "ck_answer_library_question_key_not_blank_m5" in check_constraint_names(
+        AnswerLibrary
+    )
+
+    active_unique = index_by_name(
+        AnswerLibrary, "uq_answer_library_question_key_active_m5"
+    )
+    assert active_unique.unique is True
+    # Partial unique index over non-archived rows only.
+    assert active_unique.dialect_options["postgresql"]["where"] is not None
+
+
+def test_m5_application_answers_are_immutable_snapshots() -> None:
+    table = ApplicationAnswer.__table__
+
+    # Immutable snapshot: no updated_at; optional library provenance.
+    assert "updated_at" not in table.c.keys()
+    assert table.c.answer_library_id.nullable is True
+
+    assert fk_ondelete(ApplicationAnswer, "application_id") == "RESTRICT"
+    assert fk_ondelete(ApplicationAnswer, "answer_library_id") == "RESTRICT"
+
+    assert "ck_application_answers_question_key_not_blank_m5" in check_constraint_names(
+        ApplicationAnswer
+    )
+    assert index_by_name(
+        ApplicationAnswer, "uq_application_answers_app_question_key_m5"
+    ).unique is True
+
+    assert "delete" not in Application.application_answers.property.cascade
+    assert "delete-orphan" not in Application.application_answers.property.cascade
+    assert Application.application_answers.property.passive_deletes == "all"
