@@ -250,3 +250,192 @@ class ApplicationReviewSummaryRead(BaseModel):
     ready_for_policy: bool
     ready_for_dry_run: bool
     ready_for_submission: bool
+
+
+# ---------------------------------------------------------------------------
+# M5 document/answer/packet schemas
+# ---------------------------------------------------------------------------
+# Request models keep semantically validated fields as plain types so the tracker
+# can enforce canonical-value, blank, payload, mode, and reference rules and the
+# router can map them to 400/404/409. FastAPI's 422 is reserved for syntactically
+# malformed JSON/UUID/type input. Content fields (content, content_json,
+# question_text, answer_text) are never trimmed or rewritten.
+
+
+class DocumentCreate(BaseModel):
+    doc_type: str
+    name: str
+
+
+class DocumentRead(BaseModel):
+    id: uuid.UUID
+    doc_type: str
+    name: str
+    is_archived: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentVersionCreate(BaseModel):
+    content: str | None = None
+    content_json: dict | None = None
+
+
+class DocumentVersionRead(BaseModel):
+    id: uuid.UUID
+    document_id: uuid.UUID
+    version_number: int
+    content: str | None = None
+    content_json: dict | None = None
+    checksum: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AnswerCreate(BaseModel):
+    question_key: str
+    question_text: str
+    answer_text: str
+
+
+class AnswerUpdate(BaseModel):
+    question_text: str | None = None
+    answer_text: str | None = None
+
+
+class AnswerRead(BaseModel):
+    id: uuid.UUID
+    question_key: str
+    question_text: str
+    answer_text: str
+    is_archived: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApplicationDocumentCreate(BaseModel):
+    document_version_id: uuid.UUID
+    role: str
+    display_order: int
+    actor: str | None = None
+
+
+class ApplicationDocumentRead(BaseModel):
+    """Attachment projection: own identity plus the linked document/version facts."""
+
+    id: uuid.UUID
+    application_id: uuid.UUID
+    document_id: uuid.UUID
+    document_version_id: uuid.UUID
+    role: str
+    display_order: int
+    version_number: int
+    checksum: str
+    created_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _project(cls, value: object) -> object:
+        if isinstance(value, dict):
+            return value
+        version = getattr(value, "document_version", None)
+        return {
+            "id": getattr(value, "id", None),
+            "application_id": getattr(value, "application_id", None),
+            "document_id": getattr(version, "document_id", None),
+            "document_version_id": getattr(value, "document_version_id", None),
+            "role": getattr(value, "role", None),
+            "display_order": getattr(value, "display_order", None),
+            "version_number": getattr(version, "version_number", None),
+            "checksum": getattr(version, "checksum", None),
+            "created_at": getattr(value, "created_at", None),
+        }
+
+    model_config = {"from_attributes": True}
+
+
+class ApplicationAnswerCreate(BaseModel):
+    answer_library_id: uuid.UUID | None = None
+    question_key: str | None = None
+    question_text: str | None = None
+    answer_text: str | None = None
+    actor: str | None = None
+
+
+class ApplicationAnswerRead(BaseModel):
+    id: uuid.UUID
+    application_id: uuid.UUID
+    answer_library_id: uuid.UUID | None = None
+    question_key: str
+    question_text: str
+    answer_text: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PacketDocumentRead(BaseModel):
+    """Deterministic packet projection of one attached, exact document version."""
+
+    application_document_id: uuid.UUID
+    document_id: uuid.UUID
+    document_version_id: uuid.UUID
+    role: str
+    version_number: int
+    checksum: str
+    display_order: int
+
+    @model_validator(mode="before")
+    @classmethod
+    def _project(cls, value: object) -> object:
+        if isinstance(value, dict):
+            return value
+        version = getattr(value, "document_version", None)
+        return {
+            "application_document_id": getattr(value, "id", None),
+            "document_id": getattr(version, "document_id", None),
+            "document_version_id": getattr(value, "document_version_id", None),
+            "role": getattr(value, "role", None),
+            "version_number": getattr(version, "version_number", None),
+            "checksum": getattr(version, "checksum", None),
+            "display_order": getattr(value, "display_order", None),
+        }
+
+    model_config = {"from_attributes": True}
+
+
+class PacketAnswerRead(BaseModel):
+    """Packet projection of one immutable answer snapshot (never re-derived from the library)."""
+
+    application_answer_id: uuid.UUID
+    answer_library_id: uuid.UUID | None = None
+    question_key: str
+    question_text: str
+    answer_text: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def _project(cls, value: object) -> object:
+        if isinstance(value, dict):
+            return value
+        return {
+            "application_answer_id": getattr(value, "id", None),
+            "answer_library_id": getattr(value, "answer_library_id", None),
+            "question_key": getattr(value, "question_key", None),
+            "question_text": getattr(value, "question_text", None),
+            "answer_text": getattr(value, "answer_text", None),
+        }
+
+    model_config = {"from_attributes": True}
+
+
+class ApplicationPacketRead(BaseModel):
+    application: ApplicationRead
+    documents: list[PacketDocumentRead] = Field(default_factory=list)
+    answers: list[PacketAnswerRead] = Field(default_factory=list)
+    latest_packet_review: ApplicationPacketReviewRead | None = None
