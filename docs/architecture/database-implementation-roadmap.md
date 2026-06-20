@@ -342,15 +342,20 @@ No deletion policy may silently erase proof that an action was permitted and att
 
 ### G. M5 packet and answer contract
 
-**Status:** FUTURE / M5
+**Status:** FUTURE / M5 — DRAFTED AS PROPOSED, NOT IMPLEMENTED
+
+The per-milestone M5 contract is now drafted in
+`docs/contracts/m5-packet-document-answer-contract.md`. It remains **Proposed / Not Implemented** and
+authorizes no migration; Nicolay and Francis must approve it (and reaffirm ADR-0002's M5 direction)
+before schema work begins.
 
 Proposed entities:
 
-- `documents`
-- `document_versions`
-- `application_documents`
-- `answer_library`
-- `application_answers`
+- `documents` (reusable logical document library)
+- `document_versions` (immutable rendered versions)
+- `application_documents` (append-only attachment of an exact version)
+- `answer_library` (current reusable answers)
+- `application_answers` (immutable answer snapshots)
 
 The contract must define:
 

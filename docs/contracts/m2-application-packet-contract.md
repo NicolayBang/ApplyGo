@@ -104,6 +104,11 @@ This contract does not approve:
 - LLM-required happy paths;
 - production deployment.
 
+The deferred document/version/answer entities are now described as **Proposed / Not Implemented** in
+`docs/contracts/m5-packet-document-answer-contract.md`. That M5 contract does not change this M2
+boundary: M2 remains a reviewer-facing, review-only packet aggregate, and the M5 versioned model
+authorizes nothing until Nicolay and Francis approve it.
+
 ## Packet Preview Shape
 
 A non-persisted packet preview may use this shape:

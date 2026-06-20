@@ -219,5 +219,122 @@ Missing applications return `404`.
 - `company_source_text` is raw intake provenance and must not become canonical company truth.
 - The dashboard currently consumes `/jobs`, `/applications`, state updates, scoring, policy
   decisions, dry-run executor actions, packet reviews, audit summaries, and review summaries.
-- This contract intentionally excludes future list/update/delete packet review APIs, document
-  versioning APIs, recruiter communication APIs, and real external execution APIs.
+- This contract intentionally excludes future list/update/delete packet review APIs, recruiter
+  communication APIs, and real external execution APIs from the implemented boundary.
+- The document/answer/packet-read-model resources below are recorded only as a **Proposed M5 API —
+  Not Implemented** design and authorize no endpoint.
+
+## Proposed M5 API — Not Implemented
+
+**Status:** Proposed / Not Implemented. This section authorizes no endpoint, route handler, or
+frontend change. It records the future HTTP surface for the M5 document/answer/packet model defined
+in `docs/contracts/m5-packet-document-answer-contract.md`, which requires explicit Nicolay + Francis
+approval before any implementation.
+
+All endpoints below are additive. They must preserve every implemented route, the implemented M2
+packet-review boundary, and the dashboard types in `frontend/app/src/api/types.ts`. None of them
+performs an external side effect, and none authorizes a delete endpoint or cascade behavior. M5
+remains a single workspace, so no request or response field carries `user_id`, account, or tenancy
+data.
+
+### Document library and immutable versions (proposed)
+
+```text
+POST   /documents                          # create a reusable logical document (doc_type, name)
+GET    /documents                          # list non-archived documents; archived excluded by default
+GET    /documents/{document_id}            # read one logical document
+POST   /documents/{document_id}/archive    # set is_archived = true (no delete)
+POST   /documents/{document_id}/versions   # append an immutable version (content and/or content_json)
+GET    /documents/{document_id}/versions   # list immutable versions ordered by version_number
+GET    /document-versions/{version_id}     # read one immutable version (version_number, checksum)
+```
+
+Proposed behavior:
+
+- `doc_type` and version payloads are validated; invalid `doc_type`, blank `name`, non-positive
+  version, or a version with neither `content` nor `content_json` return `400`.
+- Document versions are immutable: there is no update or delete route. A correction appends a new
+  version.
+- Missing `document_id`/`version_id` return `404`.
+
+### Answer library (proposed)
+
+```text
+POST   /answers                  # create a reusable answer (question_key, question_text, answer_text)
+GET    /answers                  # list non-archived library answers
+GET    /answers/{answer_id}      # read one library answer
+PATCH  /answers/{answer_id}      # edit current question_text/answer_text in place
+POST   /answers/{answer_id}/archive   # set is_archived = true (no delete)
+```
+
+Proposed behavior:
+
+- A duplicate active `question_key` (a non-archived row already using the key) returns `409`.
+- Editing or archiving a library answer never alters any historical `application_answers` snapshot.
+- Missing `answer_id` returns `404`.
+
+### Application document attachments and answer snapshots (proposed)
+
+```text
+POST   /applications/{application_id}/documents   # attach an EXACT document_version_id (role, display_order)
+GET    /applications/{application_id}/documents   # list attachments ordered by display_order
+POST   /applications/{application_id}/answers      # record an immutable answer snapshot (optional answer_library_id)
+GET    /applications/{application_id}/answers       # list immutable answer snapshots
+```
+
+Proposed behavior:
+
+- An attachment binds an exact `document_version_id` and never silently upgrades to a later version;
+  attaching a newer version is a new request.
+- A reference to a missing application, document version, or answer library row returns `400`
+  (invalid reference); a missing application path returns `404`.
+- Attachments and answer snapshots are append-only; there is no update or delete route.
+- Recording an answer snapshot may carry optional `answer_library_id` provenance only.
+
+### Application packet read model (proposed)
+
+```text
+GET    /applications/{application_id}/packet
+```
+
+Proposed response combines exact version projections, immutable answer snapshots, and the current M2
+review evidence:
+
+```json
+{
+  "application": {},
+  "documents": [
+    {
+      "application_document_id": "uuid",
+      "document_id": "uuid",
+      "document_version_id": "uuid",
+      "role": "resume|cover_letter|supporting|other",
+      "version_number": 1,
+      "checksum": "string",
+      "display_order": 0
+    }
+  ],
+  "answers": [
+    {
+      "application_answer_id": "uuid",
+      "answer_library_id": "uuid|null",
+      "question_key": "string",
+      "question_text": "string",
+      "answer_text": "string"
+    }
+  ],
+  "latest_packet_review": {}
+}
+```
+
+Proposed compatibility and error behavior:
+
+- Document entries project the **exact** attached `version_number` and `checksum`, ordered
+  deterministically by `display_order`, then `created_at`, then `id`.
+- Answer entries project immutable `application_answers` snapshots, never re-derived from the mutable
+  `answer_library`.
+- `latest_packet_review` reuses the implemented M2 review evidence and does not replace or weaken the
+  review-only boundary.
+- The read model is additive and compatible: an application with no M5 documents or answers returns
+  empty lists, and existing dashboard responses are unaffected.
+- A missing application returns `404`.
