@@ -71,6 +71,9 @@ class M5ConflictError(M5Error):
 
 _CANONICAL_DOC_TYPES = frozenset({"resume", "cover_letter", "supporting", "other"})
 _CANONICAL_ROLES = frozenset({"resume", "cover_letter", "supporting", "other"})
+_DOCUMENT_NAME_MAX_LENGTH = 256
+_QUESTION_KEY_MAX_LENGTH = 256
+_EVENT_ACTOR_MAX_LENGTH = 64
 
 
 def _normalize_actor(actor: object) -> str:
@@ -80,6 +83,12 @@ def _normalize_actor(actor: object) -> str:
         if trimmed:
             return trimmed
     return "system"
+
+
+def _validate_max_length(value: str, *, field_name: str, maximum: int) -> None:
+    """Reject values that exceed their persisted column length before flushing."""
+    if len(value) > maximum:
+        raise M5ValidationError(f"{field_name} must be at most {maximum} characters")
 
 
 def _content_checksum(content: str | None, content_json: object) -> str:
@@ -673,6 +682,9 @@ class Tracker:
         trimmed_name = name.strip() if isinstance(name, str) else name
         if not trimmed_name:
             raise M5ValidationError("name must not be blank")
+        _validate_max_length(
+            trimmed_name, field_name="name", maximum=_DOCUMENT_NAME_MAX_LENGTH
+        )
 
         document = Document(doc_type=doc_type, name=trimmed_name)
         self._session.add(document)
@@ -786,6 +798,9 @@ class Tracker:
         key = question_key.strip() if isinstance(question_key, str) else question_key
         if not key:
             raise M5ValidationError("question_key must not be blank")
+        _validate_max_length(
+            key, field_name="question_key", maximum=_QUESTION_KEY_MAX_LENGTH
+        )
 
         existing = (
             self._session.query(AnswerLibrary)
@@ -895,6 +910,9 @@ class Tracker:
             )
 
         actor_name = _normalize_actor(actor)
+        _validate_max_length(
+            actor_name, field_name="actor", maximum=_EVENT_ACTOR_MAX_LENGTH
+        )
         attachment = ApplicationDocument(
             application_id=application_id,
             document_version_id=document_version_id,
@@ -997,6 +1015,9 @@ class Tracker:
             )
 
         actor_name = _normalize_actor(actor)
+        _validate_max_length(
+            actor_name, field_name="actor", maximum=_EVENT_ACTOR_MAX_LENGTH
+        )
         snapshot = ApplicationAnswer(
             application_id=application_id,
             answer_library_id=provenance,

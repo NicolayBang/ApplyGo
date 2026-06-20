@@ -254,6 +254,9 @@ def test_review_summary_remains_unchanged_alongside_packet(client: TestClient) -
 def test_document_and_version_error_paths(client: TestClient) -> None:
     assert client.post("/documents", json={"doc_type": "banana", "name": "x"}).status_code == 400
     assert client.post("/documents", json={"doc_type": "resume", "name": "   "}).status_code == 400
+    assert client.post(
+        "/documents", json={"doc_type": "resume", "name": "x" * 257}
+    ).status_code == 400
 
     document_id = client.post(
         "/documents", json={"doc_type": "other", "name": "Doc"}
@@ -280,6 +283,10 @@ def test_answer_error_paths(client: TestClient) -> None:
     # Blank key is a 400.
     assert client.post(
         "/answers", json={"question_key": "  ", "question_text": "Q", "answer_text": "A"}
+    ).status_code == 400
+    assert client.post(
+        "/answers",
+        json={"question_key": "x" * 257, "question_text": "Q", "answer_text": "A"},
     ).status_code == 400
 
     answers = client.get("/answers").json()
@@ -316,6 +323,15 @@ def test_attachment_error_paths(client: TestClient) -> None:
     assert client.post(
         f"/applications/{application_id}/documents",
         json={"document_version_id": version_id, "role": "resume", "display_order": -1},
+    ).status_code == 400
+    assert client.post(
+        f"/applications/{application_id}/documents",
+        json={
+            "document_version_id": version_id,
+            "role": "resume",
+            "display_order": 0,
+            "actor": "x" * 65,
+        },
     ).status_code == 400
 
     first = client.post(
