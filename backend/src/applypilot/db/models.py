@@ -6,6 +6,13 @@ All entities attach to the Application record:
                           ->  PolicyDecision
                           ->  ExecutorAction
                           ->  EventLogEntry
+                          ->  ApplicationDocument
+                          ->  ApplicationAnswer
+
+M5 reusable document/answer model (additive, compatibility window):
+    Document (logical library)  ->  DocumentVersion (immutable)
+    DocumentVersion  <-  ApplicationDocument  ->  Application
+    AnswerLibrary (current)  <-  ApplicationAnswer (immutable)  ->  Application
 """
 
 from __future__ import annotations
@@ -198,6 +205,12 @@ class Application(Base):
     events: Mapped[list[EventLogEntry]] = relationship(
         back_populates="application", passive_deletes="all"
     )
+    application_documents: Mapped[list[ApplicationDocument]] = relationship(
+        back_populates="application", passive_deletes="all"
+    )
+    application_answers: Mapped[list[ApplicationAnswer]] = relationship(
+        back_populates="application", passive_deletes="all"
+    )
 
     __table_args__ = (
         CheckConstraint(
@@ -221,29 +234,280 @@ class Application(Base):
 # ---------------------------------------------------------------------------
 
 class Document(Base):
-    """Generated application documents: CV bullets, cover note, screening answers."""
+    """Reusable logical document library (M5).
+
+    The implemented M1 placeholder is transformed in place into the stable logical
+    identity of a document. A ``documents`` row owns no content directly; content lives
+    only in immutable ``document_versions`` rows. The legacy single-application columns
+    (``application_id`` cascade, ``content``, ``content_json``, ``version``) are retained
+    during the M5 compatibility window and are removed only by a later PR.
+    """
 
     __tablename__ = "documents"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    doc_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
+
+    # Retained legacy single-application columns (compatibility window; removed in a later PR).
     application_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("applications.id", ondelete="CASCADE"),
         nullable=False,
     )
-    doc_type: Mapped[str] = mapped_column(String(64), nullable=False)
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    application: Mapped[Application] = relationship(back_populates="documents")
+    versions: Mapped[list[DocumentVersion]] = relationship(
+        back_populates="document", passive_deletes="all"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "doc_type IN ('resume', 'cover_letter', 'supporting', 'other')",
+            name="ck_documents_doc_type_m5",
+        ),
+        CheckConstraint("name <> ''", name="ck_documents_name_not_blank_m5"),
+        Index("ix_documents_application_id", "application_id"),
+        Index("ix_documents_doc_type", "doc_type"),
+        Index("ix_documents_is_archived", "is_archived"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# DocumentVersion  (immutable rendered version)
+# ---------------------------------------------------------------------------
+
+class DocumentVersion(Base):
+    """Frozen, immutable rendering of one logical document (M5).
+
+    Never updated after insert; corrections append a new version. There is no
+    ``updated_at`` and no path mutates content, version_number, or checksum.
+    """
+
+    __tablename__ = "document_versions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    checksum: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    application: Mapped[Application] = relationship(back_populates="documents")
+    document: Mapped[Document] = relationship(back_populates="versions")
+    application_links: Mapped[list[ApplicationDocument]] = relationship(
+        back_populates="document_version", passive_deletes="all"
+    )
 
-    __table_args__ = (Index("ix_documents_application_id", "application_id"),)
+    __table_args__ = (
+        CheckConstraint(
+            "version_number > 0",
+            name="ck_document_versions_version_positive_m5",
+        ),
+        CheckConstraint(
+            "content IS NOT NULL OR content_json IS NOT NULL",
+            name="ck_document_versions_payload_present_m5",
+        ),
+        Index("ix_document_versions_document_id", "document_id"),
+        Index("ix_document_versions_checksum", "checksum"),
+        Index(
+            "uq_document_versions_document_id_version_number_m5",
+            "document_id",
+            "version_number",
+            unique=True,
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# ApplicationDocument  (append-only attachment of an exact version)
+# ---------------------------------------------------------------------------
+
+class ApplicationDocument(Base):
+    """Append-only attachment binding one exact document version to one application (M5).
+
+    Binds an exact ``document_version_id`` and never silently upgrades. Attaching a newer
+    version is a new row. ``ON DELETE RESTRICT`` on both FKs preserves attachment history.
+    """
+
+    __tablename__ = "application_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(String(64), nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    application: Mapped[Application] = relationship(back_populates="application_documents")
+    document_version: Mapped[DocumentVersion] = relationship(
+        back_populates="application_links"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('resume', 'cover_letter', 'supporting', 'other')",
+            name="ck_application_documents_role_m5",
+        ),
+        CheckConstraint(
+            "display_order >= 0",
+            name="ck_application_documents_display_order_non_negative_m5",
+        ),
+        Index("ix_application_documents_application_id", "application_id"),
+        Index("ix_application_documents_document_version_id", "document_version_id"),
+        Index(
+            "uq_application_documents_app_version_role_m5",
+            "application_id",
+            "document_version_id",
+            "role",
+            unique=True,
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# AnswerLibrary  (current reusable answers)
+# ---------------------------------------------------------------------------
+
+class AnswerLibrary(Base):
+    """Current, reusable question/answer record (M5).
+
+    Library answers are mutable (edit/archive in place); historical truth is preserved
+    separately in immutable ``application_answers`` snapshots, never by mutating the library.
+    """
+
+    __tablename__ = "answer_library"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    question_key: Mapped[str] = mapped_column(String(256), nullable=False)
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_text: Mapped[str] = mapped_column(Text, nullable=False)
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    application_answers: Mapped[list[ApplicationAnswer]] = relationship(
+        back_populates="answer_library_entry", passive_deletes="all"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "question_key <> ''",
+            name="ck_answer_library_question_key_not_blank_m5",
+        ),
+        Index("ix_answer_library_question_key", "question_key"),
+        Index("ix_answer_library_is_archived", "is_archived"),
+        Index(
+            "uq_answer_library_question_key_active_m5",
+            "question_key",
+            unique=True,
+            postgresql_where=text("is_archived IS false"),
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# ApplicationAnswer  (immutable answer snapshot)
+# ---------------------------------------------------------------------------
+
+class ApplicationAnswer(Base):
+    """Immutable per-application answer snapshot with optional library provenance (M5).
+
+    A row is the immutable question/answer used by an application. A later edit or archive
+    of the referenced library row never changes this snapshot. ``ON DELETE RESTRICT`` on
+    ``answer_library_id`` preserves provenance.
+    """
+
+    __tablename__ = "application_answers"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    answer_library_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("answer_library.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    question_key: Mapped[str] = mapped_column(String(256), nullable=False)
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    application: Mapped[Application] = relationship(back_populates="application_answers")
+    answer_library_entry: Mapped[AnswerLibrary | None] = relationship(
+        back_populates="application_answers"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "question_key <> ''",
+            name="ck_application_answers_question_key_not_blank_m5",
+        ),
+        Index("ix_application_answers_application_id", "application_id"),
+        Index("ix_application_answers_answer_library_id", "answer_library_id"),
+        Index(
+            "uq_application_answers_app_question_key_m5",
+            "application_id",
+            "question_key",
+            unique=True,
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
