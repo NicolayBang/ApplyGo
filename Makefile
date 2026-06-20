@@ -77,7 +77,7 @@ up: ## Build and start the packaged API/UI stack (runs migrations via dependency
 
 upgrade: ## Rebuild/recreate the running app from the working tree and apply migrations (no git fetch, no lockfile changes)
 	$(COMPOSE) --profile app build api
-	$(COMPOSE) run --rm migrate
+	$(COMPOSE) run --build --rm migrate
 	$(COMPOSE) --profile app up -d --force-recreate api
 
 down: ## Stop and remove containers; PostgreSQL/Redis volumes are PRESERVED
@@ -111,7 +111,7 @@ infra-up: ## Start only PostgreSQL and Redis for local backend work
 	$(COMPOSE) up -d postgres redis
 
 migrate: ## Apply Alembic migrations against the Compose database
-	$(COMPOSE) run --rm migrate
+	$(COMPOSE) run --build --rm migrate
 
 api-dev: infra-up migrate _require-venv ## Run FastAPI in reload mode after provisioning infrastructure
 	cd $(BACKEND_DIR) && $(VENV_BIN_REL)/python -m uvicorn applypilot.main:app --reload --host 0.0.0.0 --port $(BACKEND_PORT)
@@ -151,7 +151,7 @@ check: ## Merge-ready CI-equivalent gate (fail fast, non-zero on first failure)
 	$(MAKE) lint-backend
 	@echo "==> [6/8] Backend: migrations (alembic upgrade head)"
 	$(MAKE) infra-up
-	$(COMPOSE) run --rm migrate
+	$(COMPOSE) run --build --rm migrate
 	@echo "==> [7/8] Backend: tests (pytest)"
 	cd $(BACKEND_DIR) && $(VENV_BIN_REL)/python -m pytest
 	@echo "==> [8/8] Backend: FastAPI import smoke test"
