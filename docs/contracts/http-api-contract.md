@@ -237,7 +237,7 @@ performs an external side effect, and none authorizes a delete endpoint or casca
 remains a single workspace, so no request or response field carries `user_id`, account, or tenancy
 data.
 
-### Document library and immutable versions (proposed)
+### Document library and immutable versions (Proposed / Not Implemented)
 
 ```text
 POST   /documents                          # create a reusable logical document (doc_type, name)
@@ -257,7 +257,7 @@ Proposed behavior:
   version.
 - Missing `document_id`/`version_id` return `404`.
 
-### Answer library (proposed)
+### Answer library (Proposed / Not Implemented)
 
 ```text
 POST   /answers                  # create a reusable answer (question_key, question_text, answer_text)
@@ -273,7 +273,7 @@ Proposed behavior:
 - Editing or archiving a library answer never alters any historical `application_answers` snapshot.
 - Missing `answer_id` returns `404`.
 
-### Application document attachments and answer snapshots (proposed)
+### Application document attachments and answer snapshots (Proposed / Not Implemented)
 
 ```text
 POST   /applications/{application_id}/documents   # attach an EXACT document_version_id (role, display_order)
@@ -291,7 +291,7 @@ Proposed behavior:
 - Attachments and answer snapshots are append-only; there is no update or delete route.
 - Recording an answer snapshot may carry optional `answer_library_id` provenance only.
 
-### Application packet read model (proposed)
+### Application packet read model (Proposed / Not Implemented)
 
 ```text
 GET    /applications/{application_id}/packet

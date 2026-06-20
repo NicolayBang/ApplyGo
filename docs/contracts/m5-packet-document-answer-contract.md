@@ -79,7 +79,7 @@ All tables below are **Proposed / Not Implemented**. Types are PostgreSQL types.
 introduces them starts from implemented revision `0011` (first new revision `0012`). Every `id` is a
 UUID supplied by the ORM. Every `created_at`/`updated_at` is `timestamptz` defaulting to `now()`.
 
-### `documents` (reusable logical document library)
+### Proposed / Not Implemented: `documents` (reusable logical document library)
 
 The implemented placeholder `documents` table is transformed into the reusable logical document
 library. A `documents` row is the stable logical identity of a document; it owns no content directly.
@@ -103,7 +103,7 @@ Rules:
   remain attachable-history truth and remain readable through history projections.
 - A `documents` row never stores content, version numbers, or application ownership.
 
-### `document_versions` (immutable rendered versions)
+### Proposed / Not Implemented: `document_versions` (immutable rendered versions)
 
 A `document_versions` row is a frozen, immutable rendering of one logical document. It is never
 updated after insert.
@@ -132,7 +132,7 @@ Rules:
   edit.
 - `ON DELETE RESTRICT` to `documents` prevents deleting a logical document while versions exist.
 
-### `application_documents` (append-only attachment of an exact version)
+### Proposed / Not Implemented: `application_documents` (append-only attachment of an exact version)
 
 Attaches one exact `document_versions` row to one `applications` row. This is the document side of
 the document↔application many-to-many relationship in ADR-0002.
@@ -162,7 +162,7 @@ Rules:
 - `ON DELETE RESTRICT` on both foreign keys preserves the historical fact that a specific version was
   attached to a specific application.
 
-### `answer_library` (current reusable answers)
+### Proposed / Not Implemented: `answer_library` (current reusable answers)
 
 Stores the current, reusable question/answer record. Unlike document versions, library answers are
 mutable: the *current* reusable answer may be edited or archived. Historical truth is preserved
@@ -188,7 +188,7 @@ Rules:
 - Archiving (`is_archived = true`) removes the answer from default library reads but never deletes it
   and never alters any `application_answers` snapshot.
 
-### `application_answers` (immutable answer snapshots)
+### Proposed / Not Implemented: `application_answers` (immutable answer snapshots)
 
 Stores the immutable question-and-answer snapshot actually used by an application, with optional
 provenance back to the library record it was sourced from.
@@ -215,9 +215,9 @@ Rules:
 - Deterministic per-application uniqueness of a snapshot key:
   `uq_application_answers_app_question_key_m5 on (application_id, question_key)`.
 
-## Deletion, Archive, and Retention
+## Proposed / Not Implemented Deletion, Archive, and Retention
 
-- M5 authorizes **no delete endpoint** and **no destructive cascade**. There is no API or ORM path
+- This proposal defines **no delete endpoint** and **no destructive cascade**. There is no API or ORM path
   that removes documents, versions, attachments, library answers, or answer snapshots.
 - Library-style records (`documents`, `answer_library`) support **archive**, not delete. Archiving is
   a boolean state change that hides records from default reads while preserving them.
@@ -228,7 +228,7 @@ Rules:
   append-only audit-bearing truth and are never edited in place.
 - The `event_log` remains the append-only audit source; M5 adds no delete/update path to it.
 
-## Audit Events
+## Proposed / Not Implemented Audit Events
 
 M5 attachment and answer activity must append audit events that contain identifiers and metadata
 only — never full document or answer content. Candidate event names follow the implemented
@@ -267,7 +267,7 @@ Allowed payload fields (identifiers and metadata only):
 Audit payloads must never include `content`, `content_json`, `answer_text`, or `question_text`. Full
 content lives only on the immutable rows themselves.
 
-## Response Projections
+## Proposed / Not Implemented Response Projections
 
 The packet read model projects exact attached versions and answer snapshots together with the
 current implemented M2 review evidence. It must:
@@ -283,18 +283,22 @@ current implemented M2 review evidence. It must:
 The exact HTTP request/response shapes and error behavior are specified in the Proposed M5 API —
 Not Implemented section of `docs/contracts/http-api-contract.md`.
 
-## Future Additive Migration Path
+## Proposed / Not Implemented Future Additive Migration Path
 
 The migration is additive, deterministic, and must preserve every existing `documents` row. It starts
 from implemented revision `0011`. No step below is authorized until this contract is approved.
 
-1. **Add schema.** Create the M5 tables/columns and constraints. Introduce the reusable shape
-   alongside the existing placeholder data rather than dropping it.
+1. **Add schema.** Alter the existing `documents` table in place to add the logical-library fields,
+   retaining its legacy single-owner columns during compatibility, and create the other M5 tables and
+   constraints. Introduce the reusable shape alongside the existing placeholder data rather than
+   dropping and recreating the table.
 2. **Deterministic legacy-document backfill.** For every existing placeholder `documents` row
    (currently `application_id`-owned with `doc_type`, `content`, `content_json`, `version`), create a
    logical document, an initial immutable `document_versions` row carrying the existing content and a
    computed checksum, and an `application_documents` attachment that binds the original application to
-   that exact version with a deterministic `role` and `display_order`. The backfill must be
+   that exact version with a deterministic `role` and `display_order`. A legacy row with both content
+   fields null becomes an explicitly empty initial version (`content = ''`) with the checksum of that
+   empty value; it is not dropped or silently given generated content. The backfill must be
    reproducible and idempotent.
 3. **Validate preservation.** Prove row-count and referential-integrity preservation: every legacy
    document is represented by exactly one logical document, one initial version, and one attachment;
@@ -318,7 +322,7 @@ Each migration must prove, per ADR-0002 and the database implementation roadmap:
 - API and dashboard compatibility holds;
 - `ruff`, `pytest`, and `validate_seed_to_dashboard` pass.
 
-## Validation Requirements For A Future Implementation PR
+## Proposed / Not Implemented Validation Requirements For A Future Implementation PR
 
 Any implementation PR (PR 2 and later) must include runnable PostgreSQL-backed tests for:
 
@@ -335,7 +339,7 @@ Any implementation PR (PR 2 and later) must include runnable PostgreSQL-backed t
 - fresh upgrade from `0011` and representative legacy-data preservation;
 - API/dashboard compatibility and seed-to-dashboard validation.
 
-## Review Rule
+## Proposed / Not Implemented Review Rule
 
 This contract is Proposed / Not Implemented. No migration, ORM model, API handler, frontend change,
 delete endpoint, or cascade behavior is authorized by this document. Stop and obtain explicit Nicolay
