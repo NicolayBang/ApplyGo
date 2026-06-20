@@ -241,6 +241,10 @@ class Document(Base):
     only in immutable ``document_versions`` rows. The legacy single-application columns
     (``application_id`` cascade, ``content``, ``content_json``, ``version``) are retained
     during the M5 compatibility window and are removed only by a later PR.
+
+    During the compatibility window ``application_id`` is nullable (migration ``0013``):
+    a reusable logical document has no single application owner, so newly created library
+    documents leave it ``NULL`` while legacy rows keep their owning application.
     """
 
     __tablename__ = "documents"
@@ -255,10 +259,11 @@ class Document(Base):
     )
 
     # Retained legacy single-application columns (compatibility window; removed in a later PR).
-    application_id: Mapped[uuid.UUID] = mapped_column(
+    # Nullable since migration 0013: new logical-library documents have no owning application.
+    application_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("applications.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -274,7 +279,7 @@ class Document(Base):
         nullable=False,
     )
 
-    application: Mapped[Application] = relationship(back_populates="documents")
+    application: Mapped[Application | None] = relationship(back_populates="documents")
     versions: Mapped[list[DocumentVersion]] = relationship(
         back_populates="document", passive_deletes="all"
     )
