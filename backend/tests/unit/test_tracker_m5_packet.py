@@ -80,13 +80,13 @@ def test_create_document_rejects_non_canonical_type_and_blank_name(db_session) -
         tracker.create_document(doc_type="resume", name="   ")
 
 
-def test_create_document_trims_name_and_leaves_application_id_null(db_session) -> None:
+def test_create_document_trims_name(db_session) -> None:
     tracker = Tracker(db_session)
 
     document = tracker.create_document(doc_type="resume", name="  Primary resume  ")
 
     assert document.name == "Primary resume"
-    assert document.application_id is None
+    assert document.doc_type == "resume"
     assert document.is_archived is False
 
 

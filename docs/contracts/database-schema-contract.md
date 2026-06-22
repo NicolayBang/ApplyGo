@@ -122,20 +122,88 @@ Migration `0004` and the ORM align the database default with the implemented sta
 `ApplicationCreated`. Migration `0006` enforces the stable M1 state and automation-mode vocabularies
 with named PostgreSQL `CHECK` constraints.
 
-### `documents`
+### `documents` (M5 reusable logical library)
 
 | Column | PostgreSQL type | Null | Default | Key / index |
 |---|---|---:|---|---|
 | `id` | `uuid` | no | supplied by ORM | PK |
-| `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE CASCADE`), `ix_documents_application_id` |
-| `doc_type` | `varchar(64)` | no | none | |
+| `doc_type` | `varchar(64)` | no | none | `ix_documents_doc_type`, `ck_documents_doc_type_m5` |
+| `name` | `varchar(256)` | no | none | `ck_documents_name_not_blank_m5` |
+| `is_archived` | `boolean` | no | `false` | `ix_documents_is_archived` |
+| `created_at` | `timestamptz` | no | `now()` | |
+| `updated_at` | `timestamptz` | no | `now()` | |
+
+Migrations `0012`–`0014` implement the M5 reusable document library. A `documents` row is the stable
+logical identity of a document and owns no content directly; it has no owning application. Migration
+`0014` removed the legacy single-owner columns (`application_id`, `content`, `content_json`,
+`version`) and the `ix_documents_application_id` index after the read-model API switched off them.
+`ck_documents_doc_type_m5` enforces `doc_type IN ('resume','cover_letter','supporting','other')`.
+
+### `document_versions` (immutable rendered versions)
+
+| Column | PostgreSQL type | Null | Default | Key / index |
+|---|---|---:|---|---|
+| `id` | `uuid` | no | supplied by ORM | PK |
+| `document_id` | `uuid` | no | none | FK -> `documents.id` (`ON DELETE RESTRICT`), `ix_document_versions_document_id` |
+| `version_number` | `integer` | no | none | `ck_document_versions_version_positive_m5` |
 | `content` | `text` | yes | none | |
 | `content_json` | `jsonb` | yes | none | |
-| `version` | `integer` | no | `1` | |
+| `checksum` | `varchar(128)` | no | none | `ix_document_versions_checksum` |
 | `created_at` | `timestamptz` | no | `now()` | |
 
-This is a placeholder M1 document model. Immutable document versions and cross-application reuse
-are future work.
+Rows are immutable: there is no `updated_at` and no implemented path updates `content`,
+`content_json`, `version_number`, or `checksum`. `uq_document_versions_document_id_version_number_m5`
+makes `(document_id, version_number)` unique. `ck_document_versions_payload_present_m5` requires
+`content IS NOT NULL OR content_json IS NOT NULL`. `ON DELETE RESTRICT` preserves version history.
+
+### `application_documents` (append-only attachment of an exact version)
+
+| Column | PostgreSQL type | Null | Default | Key / index |
+|---|---|---:|---|---|
+| `id` | `uuid` | no | supplied by ORM | PK |
+| `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE RESTRICT`), `ix_application_documents_application_id` |
+| `document_version_id` | `uuid` | no | none | FK -> `document_versions.id` (`ON DELETE RESTRICT`), `ix_application_documents_document_version_id` |
+| `role` | `varchar(64)` | no | none | `ck_application_documents_role_m5` |
+| `display_order` | `integer` | no | none | `ck_application_documents_display_order_non_negative_m5` |
+| `created_at` | `timestamptz` | no | `now()` | |
+
+Append-only: attaching a newer version is a new row, never a silent upgrade.
+`uq_application_documents_app_version_role_m5` makes `(application_id, document_version_id, role)`
+unique. Both `ON DELETE RESTRICT` foreign keys preserve attachment history; no delete endpoint or
+cascade removal exists.
+
+### `answer_library` (current reusable answers)
+
+| Column | PostgreSQL type | Null | Default | Key / index |
+|---|---|---:|---|---|
+| `id` | `uuid` | no | supplied by ORM | PK |
+| `question_key` | `varchar(256)` | no | none | `ix_answer_library_question_key`, `ck_answer_library_question_key_not_blank_m5` |
+| `question_text` | `text` | no | none | |
+| `answer_text` | `text` | no | none | |
+| `is_archived` | `boolean` | no | `false` | `ix_answer_library_is_archived` |
+| `created_at` | `timestamptz` | no | `now()` | |
+| `updated_at` | `timestamptz` | no | `now()` | |
+
+Library answers are mutable (edit/archive in place). `uq_answer_library_question_key_active_m5`
+enforces a single active row per `question_key` where `is_archived IS false`. Historical truth lives
+only in immutable `application_answers` snapshots, never by mutating the library.
+
+### `application_answers` (immutable answer snapshots)
+
+| Column | PostgreSQL type | Null | Default | Key / index |
+|---|---|---:|---|---|
+| `id` | `uuid` | no | supplied by ORM | PK |
+| `application_id` | `uuid` | no | none | FK -> `applications.id` (`ON DELETE RESTRICT`), `ix_application_answers_application_id` |
+| `answer_library_id` | `uuid` | yes | none | FK -> `answer_library.id` (`ON DELETE RESTRICT`), `ix_application_answers_answer_library_id` |
+| `question_key` | `varchar(256)` | no | none | `ck_application_answers_question_key_not_blank_m5` |
+| `question_text` | `text` | no | none | |
+| `answer_text` | `text` | no | none | |
+| `created_at` | `timestamptz` | no | `now()` | |
+
+A row is the immutable question/answer used by an application; a later edit or archive of the
+referenced library row never changes this snapshot. `uq_application_answers_app_question_key_m5`
+makes `(application_id, question_key)` unique. `ON DELETE RESTRICT` on `answer_library_id` preserves
+provenance.
 
 ### `email_threads`
 
@@ -230,14 +298,16 @@ The current dry-run does not automatically advance application state after execu
 
 ## Open Database Decisions
 
-- Approve or reject the normalized future model through ADR-0002 before adding tables.
-- The richer M5 document/answer model is now drafted as **Proposed / Not Implemented** in
-  `docs/contracts/m5-packet-document-answer-contract.md`. It would transform the M1 `documents`
-  placeholder into a reusable logical library plus immutable `document_versions`,
-  `application_documents`, `answer_library`, and `application_answers`, starting from migration
-  `0012` (after the implemented `0011` baseline) via an additive backfill. The implemented `documents`
-  table above remains the baseline until
-  that contract is approved by Nicolay and Francis and its migration is implemented and validated.
+- The M5 document/answer model is **implemented**. Migrations `0012`–`0014` transformed the M1
+  `documents` placeholder into the reusable logical library plus immutable `document_versions`,
+  append-only `application_documents`, mutable `answer_library`, and immutable `application_answers`
+  documented above, with a deterministic legacy backfill and a final cleanup that retired the legacy
+  single-owner columns. See `docs/contracts/m5-packet-document-answer-contract.md` for the entity
+  contract. ADR-0002 remains **Proposed** as the governing relational direction; the implemented
+  tables prove the direction in code and migrations without implying the ADR was approved. Any
+  remaining Nicolay/Francis sign-off on ADR-0002 is recorded as governance status only.
+- The M7 normalized contacts/threads/messages model remains **Proposed / Not Implemented** under
+  ADR-0002 and requires approval before adding tables.
 - ADR-0005 records approved M3 company identity direction. Migration `0009` starts the
   compatibility schema, migration `0010` backfills legacy job rows, and migration `0011` completes
   the M3 baseline cutover by requiring `jobs.company_id` and renaming raw provenance to

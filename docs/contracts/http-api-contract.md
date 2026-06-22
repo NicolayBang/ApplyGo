@@ -221,23 +221,22 @@ Missing applications return `404`.
   decisions, dry-run executor actions, packet reviews, audit summaries, and review summaries.
 - This contract intentionally excludes future list/update/delete packet review APIs, recruiter
   communication APIs, and real external execution APIs from the implemented boundary.
-- The document/answer/packet-read-model resources below are recorded only as a **Proposed M5 API —
-  Not Implemented** design and authorize no endpoint.
+- The document/answer/packet-read-model resources below are **implemented** by the M5 read-model API.
 
-## Proposed M5 API — Not Implemented
+## M5 Document / Answer / Packet API — Implemented
 
-**Status:** Proposed / Not Implemented. This section authorizes no endpoint, route handler, or
-frontend change. It records the future HTTP surface for the M5 document/answer/packet model defined
-in `docs/contracts/m5-packet-document-answer-contract.md`, which requires explicit Nicolay + Francis
-approval before any implementation.
+**Status:** Implemented. This section describes live endpoints (router handlers in
+`backend/src/applypilot/api/router.py`) for the M5 document/answer/packet model defined in
+`docs/contracts/m5-packet-document-answer-contract.md` and backed by migrations `0012`–`0014`. The
+relational direction is governed by ADR-0002, which remains **Proposed**; the implemented endpoints
+prove the direction without implying the ADR itself was approved.
 
-All endpoints below are additive. They must preserve every implemented route, the implemented M2
-packet-review boundary, and the dashboard types in `frontend/app/src/api/types.ts`. None of them
-performs an external side effect, and none authorizes a delete endpoint or cascade behavior. M5
-remains a single workspace, so no request or response field carries `user_id`, account, or tenancy
-data.
+All endpoints below are additive. They preserve every prior implemented route, the implemented M2
+packet-review boundary, and the dashboard types in `frontend/app/src/api/types.ts`. None performs an
+external side effect, and none exposes a delete endpoint or cascade behavior. M5 is a single
+workspace, so no request or response field carries `user_id`, account, or tenancy data.
 
-### Document library and immutable versions (Proposed / Not Implemented)
+### Document library and immutable versions (Implemented)
 
 ```text
 POST   /documents                          # create a reusable logical document (doc_type, name)
@@ -249,7 +248,7 @@ GET    /documents/{document_id}/versions   # list immutable versions ordered by 
 GET    /document-versions/{version_id}     # read one immutable version (version_number, checksum)
 ```
 
-Proposed behavior:
+Behavior:
 
 - `doc_type` and version payloads are validated; invalid `doc_type`, blank `name`, non-positive
   version, or a version with neither `content` nor `content_json` return `400`.
@@ -257,7 +256,7 @@ Proposed behavior:
   version.
 - Missing `document_id`/`version_id` return `404`.
 
-### Answer library (Proposed / Not Implemented)
+### Answer library (Implemented)
 
 ```text
 POST   /answers                  # create a reusable answer (question_key, question_text, answer_text)
@@ -267,13 +266,13 @@ PATCH  /answers/{answer_id}      # edit current question_text/answer_text in pla
 POST   /answers/{answer_id}/archive   # set is_archived = true (no delete)
 ```
 
-Proposed behavior:
+Behavior:
 
 - A duplicate active `question_key` (a non-archived row already using the key) returns `409`.
 - Editing or archiving a library answer never alters any historical `application_answers` snapshot.
 - Missing `answer_id` returns `404`.
 
-### Application document attachments and answer snapshots (Proposed / Not Implemented)
+### Application document attachments and answer snapshots (Implemented)
 
 ```text
 POST   /applications/{application_id}/documents   # attach an EXACT document_version_id (role, display_order)
@@ -282,7 +281,7 @@ POST   /applications/{application_id}/answers      # record an immutable answer 
 GET    /applications/{application_id}/answers       # list immutable answer snapshots
 ```
 
-Proposed behavior:
+Behavior:
 
 - An attachment binds an exact `document_version_id` and never silently upgrades to a later version;
   attaching a newer version is a new request.
@@ -291,13 +290,13 @@ Proposed behavior:
 - Attachments and answer snapshots are append-only; there is no update or delete route.
 - Recording an answer snapshot may carry optional `answer_library_id` provenance only.
 
-### Application packet read model (Proposed / Not Implemented)
+### Application packet read model (Implemented)
 
 ```text
 GET    /applications/{application_id}/packet
 ```
 
-Proposed response combines exact version projections, immutable answer snapshots, and the current M2
+Response combines exact version projections, immutable answer snapshots, and the current M2
 review evidence:
 
 ```json
@@ -327,7 +326,7 @@ review evidence:
 }
 ```
 
-Proposed compatibility and error behavior:
+Compatibility and error behavior:
 
 - Document entries project the **exact** attached `version_number` and `checksum`, ordered
   deterministically by `display_order`, then `created_at`, then `id`.

@@ -1,18 +1,21 @@
 """SQLAlchemy ORM models - canonical application record hub.
 
 All entities attach to the Application record:
-    Job  ->  Application  ->  Document
-                          ->  EmailThread
+    Job  ->  Application  ->  EmailThread
                           ->  PolicyDecision
                           ->  ExecutorAction
                           ->  EventLogEntry
                           ->  ApplicationDocument
                           ->  ApplicationAnswer
 
-M5 reusable document/answer model (additive, compatibility window):
+M5 reusable document/answer model:
     Document (logical library)  ->  DocumentVersion (immutable)
     DocumentVersion  <-  ApplicationDocument  ->  Application
     AnswerLibrary (current)  <-  ApplicationAnswer (immutable)  ->  Application
+
+Documents are a standalone reusable library: they have no single owning application.
+An application uses a document only through an ApplicationDocument attachment that binds
+one exact, immutable DocumentVersion.
 """
 
 from __future__ import annotations
@@ -187,9 +190,6 @@ class Application(Base):
 
     # Relationships back to hub entities
     job: Mapped[Job] = relationship(back_populates="applications")
-    documents: Mapped[list[Document]] = relationship(
-        back_populates="application", cascade="all, delete-orphan"
-    )
     email_threads: Mapped[list[EmailThread]] = relationship(
         back_populates="application", cascade="all, delete-orphan"
     )
@@ -236,15 +236,14 @@ class Application(Base):
 class Document(Base):
     """Reusable logical document library (M5).
 
-    The implemented M1 placeholder is transformed in place into the stable logical
-    identity of a document. A ``documents`` row owns no content directly; content lives
-    only in immutable ``document_versions`` rows. The legacy single-application columns
-    (``application_id`` cascade, ``content``, ``content_json``, ``version``) are retained
-    during the M5 compatibility window and are removed only by a later PR.
+    A ``documents`` row is the stable logical identity of a document. It owns no content
+    directly and has no single owning application; content lives only in immutable
+    ``document_versions`` rows, and an application uses a document only through an
+    ``application_documents`` attachment binding one exact version.
 
-    During the compatibility window ``application_id`` is nullable (migration ``0013``):
-    a reusable logical document has no single application owner, so newly created library
-    documents leave it ``NULL`` while legacy rows keep their owning application.
+    The legacy single-application columns (``application_id`` cascade, ``content``,
+    ``content_json``, ``version``) and their index were retired by migration ``0014``
+    after the M5 read-model API switched off them.
     """
 
     __tablename__ = "documents"
@@ -258,17 +257,6 @@ class Document(Base):
         Boolean, default=False, server_default=text("false"), nullable=False
     )
 
-    # Retained legacy single-application columns (compatibility window; removed in a later PR).
-    # Nullable since migration 0013: new logical-library documents have no owning application.
-    application_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("applications.id", ondelete="CASCADE"),
-        nullable=True,
-    )
-    content: Mapped[str | None] = mapped_column(Text, nullable=True)
-    content_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -279,7 +267,6 @@ class Document(Base):
         nullable=False,
     )
 
-    application: Mapped[Application | None] = relationship(back_populates="documents")
     versions: Mapped[list[DocumentVersion]] = relationship(
         back_populates="document", passive_deletes="all"
     )
@@ -290,7 +277,6 @@ class Document(Base):
             name="ck_documents_doc_type_m5",
         ),
         CheckConstraint("name <> ''", name="ck_documents_name_not_blank_m5"),
-        Index("ix_documents_application_id", "application_id"),
         Index("ix_documents_doc_type", "doc_type"),
         Index("ix_documents_is_archived", "is_archived"),
     )
