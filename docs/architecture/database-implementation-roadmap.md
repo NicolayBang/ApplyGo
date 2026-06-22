@@ -342,14 +342,14 @@ No deletion policy may silently erase proof that an action was permitted and att
 
 ### G. M5 packet and answer contract
 
-**Status:** FUTURE / M5 — DRAFTED AS PROPOSED, NOT IMPLEMENTED
+**Status:** IMPLEMENTED FOR M5 DOCUMENT/ANSWER DATA AND PACKET READ MODEL
 
-The per-milestone M5 contract is now drafted in
-`docs/contracts/m5-packet-document-answer-contract.md`. It remains **Proposed / Not Implemented** and
-authorizes no migration; Nicolay and Francis must approve it (and reaffirm ADR-0002's M5 direction)
-before schema work begins.
+The per-milestone M5 contract in `docs/contracts/m5-packet-document-answer-contract.md` is
+implemented by migrations `0012`–`0014` and the packet read-model API. ADR-0002 remains
+**Proposed** as the governing relational direction; that governance status does not imply that the
+implemented M5 schema or API is future work.
 
-Proposed entities:
+Implemented entities:
 
 - `documents` (reusable logical document library)
 - `document_versions` (immutable rendered versions)
@@ -357,7 +357,7 @@ Proposed entities:
 - `answer_library` (current reusable answers)
 - `application_answers` (immutable answer snapshots)
 
-The contract must define:
+The implemented contract defines:
 
 - logical document identity versus immutable rendered version
 - uniqueness and ordering of version numbers
@@ -367,7 +367,7 @@ The contract must define:
 - answer ownership, sensitivity, approval, versioning, and provenance
 - deletion behavior for a version already used in an application
 
-The required many-to-many relationship is:
+The implemented many-to-many relationship is:
 
 ```text
 applications
@@ -375,8 +375,10 @@ applications
 <-> document_versions
 ```
 
-The current M1 `documents.application_id` model remains in place until this M5 contract and its data
-migration are approved.
+Migration `0014` removed the legacy M1 `documents.application_id`, `content`, `content_json`, and
+`version` compatibility columns after preservation checks confirmed that legacy-owned documents had
+immutable version and attachment representations. The cleanup is forward-only; recovery is by
+database snapshot restore or a forward corrective migration.
 
 ### H. M7 recruiter communication contract
 

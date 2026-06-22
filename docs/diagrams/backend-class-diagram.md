@@ -99,11 +99,49 @@ classDiagram
 
     class Document {
         +UUID id
-        +UUID application_id
         +str doc_type
+        +str name
+        +bool is_archived
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class DocumentVersion {
+        +UUID id
+        +UUID document_id
+        +int version_number
         +str content
         +dict content_json
-        +int version
+        +str checksum
+        +datetime created_at
+    }
+
+    class ApplicationDocument {
+        +UUID id
+        +UUID application_id
+        +UUID document_version_id
+        +str role
+        +int display_order
+        +datetime created_at
+    }
+
+    class AnswerLibrary {
+        +UUID id
+        +str question_key
+        +str question_text
+        +str answer_text
+        +bool is_archived
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class ApplicationAnswer {
+        +UUID id
+        +UUID application_id
+        +UUID answer_library_id
+        +str question_key
+        +str question_text
+        +str answer_text
         +datetime created_at
     }
 
@@ -315,12 +353,16 @@ classDiagram
 
     Company "1" --> "*" Job : jobs
     Job "1" --> "*" Application : applications
-    Application "1" --> "*" Document : documents
     Application "1" --> "*" EmailThread : email_threads
     Application "1" --> "*" ApplicationPacketReview : packet_reviews
     Application "1" --> "*" PolicyDecisionRecord : policy_decisions
     Application "1" --> "*" ExecutorAction : executor_actions
     Application "1" --> "*" EventLogEntry : events
+    Application "1" --> "*" ApplicationDocument : application_documents
+    Application "1" --> "*" ApplicationAnswer : application_answers
+    Document "1" --> "*" DocumentVersion : versions
+    DocumentVersion "1" --> "*" ApplicationDocument : attached_as
+    AnswerLibrary "1" --> "*" ApplicationAnswer : sourced_as
 
     ApiRouter --> TrackerUnitOfWork : uses
     TrackerUnitOfWork --> Tracker : exposes
@@ -331,6 +373,11 @@ classDiagram
     Tracker --> EventLogEntry : appends
     Tracker --> PolicyDecisionRecord : records
     Tracker --> ExecutorAction : records
+    Tracker --> Document : creates library docs
+    Tracker --> DocumentVersion : appends immutable versions
+    Tracker --> ApplicationDocument : attaches exact versions
+    Tracker --> AnswerLibrary : maintains answers
+    Tracker --> ApplicationAnswer : records snapshots
     Tracker --> JobIntakeClassifier : enriches intake
     Tracker --> ApplicationScorer : scores applications
     Tracker --> ApplicationStateMachine : validates transitions
@@ -367,7 +414,7 @@ classDiagram
 
 ## Notes
 
-- The ORM model is centered on `Application` as the canonical hub record.
+- The ORM model is centered on `Application` as the canonical hub record. Since the M5 cutover (migrations `0012`–`0014`), `Document` is a standalone reusable library with no owning application: an application uses a document only through an `ApplicationDocument` attachment binding one exact, immutable `DocumentVersion`. `AnswerLibrary` holds mutable current answers while `ApplicationAnswer` holds immutable per-application snapshots.
 - `ApiRouter` now exposes the implemented M2/M3 baseline: manual job intake, application creation, packet review persistence, scoring, policy evaluation, dry-run executor dispatch, event/audit reads, and the compact review summary.
 - `Tracker` is the current repository and orchestration boundary for creating jobs, resolving deterministic company identity, creating applications, listing/filtering applications, recording packet reviews, scoring, recording policy decisions, recording executor results, appending audit events, and protecting the `Submitted` transition.
 - `ApplicationStateMachine` owns transition validation. `Submitted` also requires `Tracker.submit_application`, an allowed policy decision, and matching executor evidence.
