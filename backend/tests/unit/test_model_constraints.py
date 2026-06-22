@@ -49,7 +49,7 @@ def index_by_name(model: type, name: str):
 
 
 def test_application_owned_records_cascade_with_application() -> None:
-    assert application_fk_ondelete(Document) == "CASCADE"
+    # Document is a standalone reusable library (no owning application) after 0014.
     assert application_fk_ondelete(EmailThread) == "CASCADE"
 
 
@@ -191,9 +191,21 @@ def test_m5_documents_logical_library_schema() -> None:
     assert table.c.is_archived.nullable is False
     assert table.c.updated_at.nullable is False
 
-    # Legacy single-application columns retained during the compatibility window.
-    assert {"application_id", "content", "content_json", "version"}.issubset(table.c.keys())
-    assert application_fk_ondelete(Document) == "CASCADE"
+    # The reusable library retains only its logical-identity columns (0014 cutover).
+    assert set(table.c.keys()) == {
+        "id",
+        "doc_type",
+        "name",
+        "is_archived",
+        "created_at",
+        "updated_at",
+    }
+    # The legacy single-application compatibility surface is removed by migration 0014.
+    assert {"application_id", "content", "content_json", "version"}.isdisjoint(
+        table.c.keys()
+    )
+    assert table.foreign_keys == set()
+    assert "ix_documents_application_id" not in index_names(Document)
 
     assert {
         "ck_documents_doc_type_m5",
